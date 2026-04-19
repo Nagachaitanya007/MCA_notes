@@ -8,11 +8,4 @@ services:
     startCommand: npm start
     plan: free
 
-  # The Python Daily Emailer Cron Job
-  - type: cron
-    name: daily-study-emailer
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python daily_mailer.py
-    schedule: "45 18 * * *" # 18:45 UTC = 12:15 AM IST (Temp Test Schedule)
-    plan: free
+
