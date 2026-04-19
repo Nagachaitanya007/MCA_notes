@@ -1,13 +1,12 @@
-name: Send Original Daily Note
+name: Send Daily Answers
 
 on:
   schedule:
-    # Runs at 04:30 UTC = 10:00 AM IST (Right before the Quiz!)
-    - cron: '30 4 * * *'
+    - cron: '30 5 * * *' # 05:30 UTC = 11:00 AM IST
   workflow_dispatch:
 
 jobs:
-  send_raw_note:
+  send_answers:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -24,8 +23,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           
-      - name: Send Daily Note Email
+      - name: Send Answers
         env:
           GMAIL_EMAIL: ${{ secrets.GMAIL_EMAIL }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-        run: python daily_mailer.py
+        run: python send_answers.py
