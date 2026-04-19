@@ -1,0 +1,31 @@
+name: Send System Design Note
+
+on:
+  schedule:
+    - cron: '30 7 * * *' # 07:30 UTC = 1:00 PM IST
+  workflow_dispatch:
+
+jobs:
+  send_sys_design_note:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: Generate and Send System Design Note
+        env:
+          GMAIL_EMAIL: ${{ secrets.GMAIL_EMAIL }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python generate_study_note.py "Large Scale System Design, Distributed Systems, Cloud Architecture, and Scalability"

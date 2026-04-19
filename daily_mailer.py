@@ -4,6 +4,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import markdown
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 # Load environment variables from a hidden .env file (override any existing system vars)
@@ -14,6 +15,10 @@ load_dotenv(override=True)
 SENDER_EMAIL = os.environ.get("GMAIL_EMAIL")
 SENDER_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD")
 RECEIVER_EMAIL = os.environ.get("GMAIL_EMAIL") # Sending to yourself
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 def get_markdown_files(directory):
     md_files = []
@@ -22,7 +27,7 @@ def get_markdown_files(directory):
         if 'notes-app' in root or '.git' in root or 'node_modules' in root or 'scratch' in root:
             continue
         for file in files:
-            if file.endswith(".md") and file not in ["implementation_plan.md", "task.md", "README.md"]:
+            if file.endswith(".md") and file not in ["implementation_plan.md", "task.md", "README.md", "walkthrough.md"]:
                 md_files.append(os.path.join(root, file))
     return md_files
 
@@ -30,16 +35,32 @@ def send_daily_note():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     md_files = get_markdown_files(base_dir)
     
-    if not md_files:
-        print("No markdown files found!")
-        return
-
-    # Pick a random note
-    chosen_file = random.choice(md_files)
-    title = os.path.basename(chosen_file).replace('.md', '')
+    use_local_note = random.choice([True, False])
     
-    with open(chosen_file, 'r', encoding='utf-8') as f:
-        md_content = f.read()
+    if use_local_note and md_files:
+        # Pick a random note
+        chosen_file = random.choice(md_files)
+        title = os.path.basename(chosen_file).replace('.md', '')
+        with open(chosen_file, 'r', encoding='utf-8') as f:
+            md_content = f.read()
+    else:
+        # Generate a new AI/GenAI note via Gemini
+        print("Generating a new GenAI study note...")
+        try:
+            model = genai.GenerativeModel('gemini-2.5-flash')
+            prompt = "You are an Expert FAANG Engineering Manager. Write a highly detailed, deeply technical study note on an advanced concept within Machine Learning, Artificial Intelligence, or Generative AI. It must be interview-focused. Include detailed code snippets and real-world examples. Format the entire response in clean Markdown, starting with an H1 heading for the topic."
+            response = model.generate_content(prompt)
+            md_content = response.text
+            title = "AI/GenAI Deep Dive (Generated)"
+        except Exception as e:
+            print(f"Gemini generation failed: {e}. Falling back to local note.")
+            if md_files:
+                chosen_file = random.choice(md_files)
+                title = os.path.basename(chosen_file).replace('.md', '')
+                with open(chosen_file, 'r', encoding='utf-8') as f:
+                    md_content = f.read()
+            else:
+                return
 
     # Convert Markdown to HTML
     html_content = markdown.markdown(md_content)

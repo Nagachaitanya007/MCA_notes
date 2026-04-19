@@ -1,0 +1,29 @@
+# Multi-Topic Interview Prep Architecture
+
+This is a fantastic strategy to cover all the bases for product-based company interviews. Instead of just sending local notes, we will use Gemini as a personalized technical writer to generate deep-dive study material with code snippets!
+
+## The Architecture
+Instead of writing multiple Python scripts that do the exact same thing, we can build **one powerful script** (`generate_study_note.py`) that accepts a "topic" as a command-line argument. Then, we just create new GitHub Action schedules to trigger that script with different topics.
+
+We will keep your 10:30 AM Quiz and 11:00 AM Answer system completely untouched.
+
+### 1. Upgrade the Existing "MCA Notes" Cron
+*   **[MODIFY]** `daily_mailer.py`: I will upgrade your original 10:00 AM script. Now, it will flip a coin:
+    *   *50% chance:* It sends one of your local markdown notes (like it does now).
+    *   *50% chance:* It uses Gemini to write a highly detailed, brand-new study note on an advanced Machine Learning or Generative AI concept, complete with code snippets.
+
+### 2. The New Java & System Design Crons
+*   **[NEW]** `generate_study_note.py`: A new Python script dedicated to writing deep-dive interview notes based on whatever topic we pass to it.
+*   **[NEW]** `.github/workflows/note_java.yml`: We will schedule this to run at **12:00 PM IST**. It will trigger the script with the topic: *"Java 8 to 21, JVM Internals, and Spring Boot Interview Concepts"*.
+*   **[NEW]** `.github/workflows/note_system_design.yml`: We will schedule this to run at **1:00 PM IST**. It will trigger the script with the topic: *"Large Scale System Design for FAANG Interviews"*.
+
+## Open Questions for You
+> [!IMPORTANT]
+> How does this schedule look to you?
+> - **10:00 AM:** Local MCA Note OR AI/GenAI Deep Dive (Upgraded existing cron)
+> - **10:30 AM:** AI Quiz
+> - **11:00 AM:** AI Answers
+> - **12:00 PM:** Java & Spring Boot Deep Dive
+> - **1:00 PM:** System Design Deep Dive
+> 
+> Let me know if you approve of this architecture and timing!
