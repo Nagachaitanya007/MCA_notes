@@ -6,6 +6,8 @@ from email.mime.text import MIMEText
 import markdown
 import google.generativeai as genai
 from dotenv import load_dotenv
+import datetime
+import re
 
 load_dotenv(override=True)
 
@@ -40,6 +42,24 @@ def generate_and_send_note():
         """
         response = model.generate_content(prompt)
         md_content = response.text
+        
+        # --- NEW FILE SAVING LOGIC ---
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        generated_dir = os.path.join(base_dir, "Generated-Notes")
+        os.makedirs(generated_dir, exist_ok=True)
+        
+        safe_topic = re.sub(r'[^a-zA-Z0-9]', '-', topic).strip('-')
+        safe_topic = re.sub(r'-+', '-', safe_topic)[:30]
+        date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+        filename = f"{date_str}-{safe_topic}.md"
+        file_path = os.path.join(generated_dir, filename)
+        
+        frontmatter = f"---\ntitle: {topic}\ndate: {datetime.datetime.now().isoformat()}\n---\n\n"
+        
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(frontmatter + md_content)
+        print(f"Saved generated note to: {file_path}")
+        
     except Exception as e:
         print(f"Gemini generation failed: {e}")
         sys.exit(1)

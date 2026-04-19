@@ -8,9 +8,13 @@ on:
 jobs:
   send_java_note:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -29,3 +33,11 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python generate_study_note.py "Java 8 to 21, JVM Internals, Concurrency, and Spring Boot Microservices"
+        
+      - name: Commit and Push Generated Note
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add Generated-Notes/
+          git commit -m "Auto-publish: Java Study Note" || exit 0
+          git push

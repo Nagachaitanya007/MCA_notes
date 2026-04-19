@@ -46,12 +46,34 @@ def send_daily_note():
     else:
         # Generate a new AI/GenAI note via Gemini
         print("Generating a new GenAI study note...")
+        import datetime
+        import re
         try:
             model = genai.GenerativeModel('gemini-2.5-flash')
             prompt = "You are an Expert FAANG Engineering Manager. Write a highly detailed, deeply technical study note on an advanced concept within Machine Learning, Artificial Intelligence, or Generative AI. It must be interview-focused. Include detailed code snippets and real-world examples. Format the entire response in clean Markdown, starting with an H1 heading for the topic."
             response = model.generate_content(prompt)
             md_content = response.text
             title = "AI/GenAI Deep Dive (Generated)"
+            
+            # --- NEW FILE SAVING LOGIC ---
+            generated_dir = os.path.join(base_dir, "Generated-Notes")
+            os.makedirs(generated_dir, exist_ok=True)
+            
+            match = re.search(r'^#\s+(.*)', md_content, re.MULTILINE)
+            extracted_title = match.group(1) if match else "GenAI-Deep-Dive"
+            safe_topic = re.sub(r'[^a-zA-Z0-9]', '-', extracted_title).strip('-')
+            safe_topic = re.sub(r'-+', '-', safe_topic)[:30]
+            
+            date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+            filename = f"{date_str}-{safe_topic}.md"
+            file_path = os.path.join(generated_dir, filename)
+            
+            frontmatter = f"---\ntitle: {extracted_title}\ndate: {datetime.datetime.now().isoformat()}\n---\n\n"
+            
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(frontmatter + md_content)
+            print(f"Saved generated note to: {file_path}")
+            
         except Exception as e:
             print(f"Gemini generation failed: {e}. Falling back to local note.")
             if md_files:
