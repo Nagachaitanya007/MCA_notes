@@ -3,11 +3,11 @@
 **NoteForge** is a fully automated, interview-grade study system designed for FAANG preparation. It leverages Google Gemini AI and GitHub Actions to generate, publish, and deliver deeply technical study notes and interactive quizzes every single day.
 
 ![NoteForge Hero](https://img.shields.io/badge/Stack-Next.js%20%7C%20Python%20%7C%20Gemini%20AI%20%7C%20GitHub%20Actions-blueviolet?style=for-the-badge)
-[![Live Demo](https://img.shields.io/badge/Live_Demo-Visit_NoteForge-success?style=for-the-badge&logo=render)](https://noteforge.onrender.com)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Visit_NoteForge-success?style=for-the-badge&logo=render)](https://mca-notes.onrender.com)
 
 ---
 
-### 🌐 [Visit Live App: noteforge.onrender.com](https://noteforge.onrender.com)
+### 🌐 [Visit Live App: noteforge.onrender.com](https://mca-notes.onrender.com)
 
 ---
 
