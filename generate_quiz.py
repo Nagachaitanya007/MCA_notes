@@ -1,7 +1,7 @@
 import os
 import json
 import random
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 
 from utils import send_email, get_markdown_files
@@ -14,7 +14,7 @@ if not GEMINI_API_KEY:
     print("Error: GEMINI_API_KEY not found in environment variables.")
     exit(1)
 
-genai.configure(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 def generate_quiz():
@@ -35,7 +35,8 @@ def generate_quiz():
         context_block = ""
 
     # Call Gemini
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # Updated to use the new SDK call style
+    pass
 
     prompt = f"""
     Act as a Senior AI/ML Interviewer. 
@@ -61,11 +62,10 @@ def generate_quiz():
     """
 
     print("Calling Gemini API...")
-    response = model.generate_content(
-        prompt,
-        generation_config=genai.GenerationConfig(
-            response_mime_type="application/json",
-        )
+    response = client.models.generate_content(
+        model='gemini-1.5-flash',
+        contents=prompt,
+        config={'response_mime_type': 'application/json'}
     )
 
     quiz_data = json.loads(response.text)

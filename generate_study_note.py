@@ -2,7 +2,7 @@ import os
 import sys
 import json
 import markdown
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 import datetime
 import re
@@ -17,7 +17,7 @@ if not GEMINI_API_KEY:
     print("Error: GEMINI_API_KEY not found in environment variables.")
     sys.exit(1)
 
-genai.configure(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 def generate_and_send_note():
@@ -43,7 +43,6 @@ def generate_and_send_note():
     exclusion_list = ", ".join(previously_covered[-30:]) if previously_covered else "None yet"
 
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = f"""
         You are an Expert FAANG Engineering Manager and Technical Writer. 
         Write a highly detailed, deeply technical study note on an advanced concept within this topic: "{topic}". 
@@ -55,7 +54,7 @@ def generate_and_send_note():
         [{exclusion_list}]
         Pick a completely different subtopic within "{topic}".
         """
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(model='gemini-1.5-flash', contents=prompt)
         md_content = response.text
 
         # Extract the subtopic from the H1 heading and save it

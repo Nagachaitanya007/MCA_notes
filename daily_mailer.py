@@ -1,7 +1,7 @@
 import os
 import random
 import markdown
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 import datetime
 import re
@@ -12,8 +12,9 @@ load_dotenv(override=True)
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
+client = None
 if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 def send_daily_note():
@@ -23,9 +24,8 @@ def send_daily_note():
     # Always generate a fresh AI note (no more coin-flip)
     print("Generating a new GenAI study note...")
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
         prompt = "You are an Expert FAANG Engineering Manager. Write a highly detailed, deeply technical study note on an advanced concept within Machine Learning, Artificial Intelligence, or Generative AI. It must be interview-focused. Include detailed code snippets and real-world examples. Format the entire response in clean Markdown, starting with an H1 heading for the topic."
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(model='gemini-1.5-flash', contents=prompt)
         md_content = response.text
         title = "AI/GenAI Deep Dive (Generated)"
 
