@@ -3,12 +3,16 @@ import path from 'path';
 
 const getRootDirectory = () => {
   const cwd = process.cwd();
+  
+  // Local Priority
+  if (fs.existsSync(path.join(cwd, 'generate_study_note.py'))) return cwd;
+  const parentDir = path.join(cwd, '..');
+  if (fs.existsSync(path.join(parentDir, 'generate_study_note.py'))) return parentDir;
+
+  // Production Fallback
   const prodPath = path.join(cwd, 'public', 'data-root');
   if (fs.existsSync(prodPath)) return prodPath;
 
-  if (cwd.endsWith('notes-app') || cwd.includes('notes-app/')) {
-    return path.join(cwd, '..');
-  }
   return cwd;
 };
 

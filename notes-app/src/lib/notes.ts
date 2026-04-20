@@ -2,17 +2,22 @@ import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 
-// Auto-detect the root directory of the repo
+// Ultra-robust root detector
 const getNotesDirectory = () => {
   const cwd = process.cwd();
+  
+  // 1. Local Priority: Check if we are inside notes-app or at the repo root
+  // We look for 'generate_study_note.py' as a marker of the real root
+  if (fs.existsSync(path.join(cwd, 'generate_study_note.py'))) return cwd;
+  
+  const parentDir = path.join(cwd, '..');
+  if (fs.existsSync(path.join(parentDir, 'generate_study_note.py'))) return parentDir;
+
+  // 2. Production Fallback: Check for the folder created during Render build
   const prodPath = path.join(cwd, 'public', 'data-root');
-  
   if (fs.existsSync(prodPath)) return prodPath;
-  
-  // Local fallback: find the parent directory if we are in notes-app
-  if (cwd.endsWith('notes-app') || cwd.includes('notes-app/')) {
-    return path.join(cwd, '..');
-  }
+
+  // 3. Ultimate fallback
   return cwd;
 };
 
@@ -85,33 +90,26 @@ export function getSortedNotesData(): NoteData[] {
 
   const allNotesData = filePaths.map((filePath) => {
     try {
+      const fileContents = fs.readFileSync(filePath, 'utf8');
+      const matterResult = matter(fileContents);
       const relativePath = path.relative(notesDirectory, filePath);
       const id = relativePath.replace(/\.md$/, '').replace(/\\/g, '/');
       const folder = path.dirname(relativePath).replace(/\\/g, '/');
-      const fileContents = fs.readFileSync(filePath, 'utf8');
-      const matterResult = matter(fileContents);
 
-      let title = matterResult.data.title;
-      if (!title) {
-        const h1Match = fileContents.match(/^#\s+(.*)/m);
-        title = h1Match ? h1Match[1] : path.basename(filePath, '.md');
-      }
-
-      let date = matterResult.data.date;
-      if (!date) {
-        date = fs.statSync(filePath).birthtime.toISOString();
-      }
-
-      const { readingTime, wordCount } = calculateReadingTime(matterResult.content);
+      // Use frontmatter if available, otherwise fallback to filename/disk info
+      const title = matterResult.data.title || path.basename(filePath, '.md').replace(/-/g, ' ');
+      const date = matterResult.data.date || fs.statSync(filePath).mtime.toISOString();
+      
+      const { readingTime, wordCount } = calculateReadingTime(fileContents);
 
       return {
         id,
         title,
-        date,
-        folder,
+        date: typeof date === 'string' ? date : date.toISOString(),
+        folder: folder === '.' ? 'Root' : folder,
         readingTime,
         wordCount,
-        headings: [] as { text: string; level: number; slug: string }[],
+        headings: extractHeadings(fileContents),
       };
     } catch (error) {
       console.error(`Error parsing note: ${filePath}`, error);
