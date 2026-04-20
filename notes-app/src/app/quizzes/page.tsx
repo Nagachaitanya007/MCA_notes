@@ -2,8 +2,8 @@ import { getAllQuizzes } from '@/lib/quizzes';
 import QuizCard from '@/app/components/QuizCard';
 import Link from 'next/link';
 
-export default function QuizzesPage() {
-  const quizzes = getAllQuizzes();
+export default async function QuizzesPage() {
+  const quizzes = await getAllQuizzes();
 
   return (
     <div className="py-8 sm:py-12 px-4 sm:px-6 lg:px-8">

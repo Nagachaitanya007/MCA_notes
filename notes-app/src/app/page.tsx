@@ -1,8 +1,8 @@
 import { getSortedNotesData } from '@/lib/notes';
 import NotesList from './components/NotesList';
 
-export default function Home() {
-  const allNotesData = getSortedNotesData();
+export default async function Home() {
+  const allNotesData = await getSortedNotesData();
 
   // Stats
   const totalNotes = allNotesData.length;

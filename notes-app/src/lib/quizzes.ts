@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { supabase } from './supabase';
 
 const getRootDirectory = () => {
   const cwd = process.cwd();
@@ -35,34 +36,62 @@ export interface QuizData {
   questions: QuizQuestion[];
 }
 
-export function getAllQuizzes(): QuizData[] {
-  if (!fs.existsSync(quizDirectory)) {
-    return [];
+export async function getAllQuizzes(): Promise<QuizData[]> {
+  const allQuizzes: QuizData[] = [];
+
+  // 1. Fetch from Supabase
+  try {
+    const { data: dbQuizzes, error } = await supabase
+      .from('quizzes')
+      .select('*')
+      .order('quiz_date', { ascending: false });
+
+    if (!error && dbQuizzes) {
+      dbQuizzes.forEach((quiz) => {
+        allQuizzes.push({
+          date: quiz.quiz_date,
+          topic: quiz.topic,
+          questions: quiz.questions,
+        });
+      });
+    }
+  } catch (e) {
+    console.error('Failed to fetch quizzes from Supabase:', e);
   }
 
-  const files = fs.readdirSync(quizDirectory)
-    .filter((f) => f.endsWith('.json'))
-    .sort()
-    .reverse(); // newest first
+  // 2. Fetch from Local Files (Fallback)
+  if (fs.existsSync(quizDirectory)) {
+    const files = fs.readdirSync(quizDirectory)
+      .filter((f) => f.endsWith('.json'))
+      .sort()
+      .reverse();
 
-  return files.map((file) => {
-    try {
-      const filePath = path.join(quizDirectory, file);
-      const contents = fs.readFileSync(filePath, 'utf8');
-      const data = JSON.parse(contents);
-      
-      // Extract date from filename like "quiz-2026-04-20.json"
-      const dateMatch = file.match(/quiz-(\d{4}-\d{2}-\d{2})/);
-      const date = dateMatch ? dateMatch[1] : file;
+    const localQuizzes = files.map((file) => {
+      try {
+        const filePath = path.join(quizDirectory, file);
+        const contents = fs.readFileSync(filePath, 'utf8');
+        const data = JSON.parse(contents);
+        const dateMatch = file.match(/quiz-(\d{4}-\d{2}-\d{2})/);
+        const date = dateMatch ? dateMatch[1] : file;
 
-      return {
-        date,
-        topic: data.topic || 'General',
-        questions: data.questions || [],
-      };
-    } catch (e) {
-      console.error(`Error reading quiz: ${file}`, e);
-      return null;
-    }
-  }).filter((q): q is QuizData => q !== null);
+        return {
+          date,
+          topic: data.topic || 'General',
+          questions: data.questions || [],
+        };
+      } catch (e) {
+        console.error(`Error reading local quiz: ${file}`, e);
+        return null;
+      }
+    }).filter((q): q is QuizData => q !== null);
+
+    // Combine and remove duplicates
+    localQuizzes.forEach(lq => {
+      if (!allQuizzes.find(aq => aq.date === lq.date)) {
+        allQuizzes.push(lq);
+      }
+    });
+  }
+
+  return allQuizzes.sort((a, b) => (a.date < b.date ? 1 : -1));
 }

@@ -15,7 +15,8 @@ export default async function NotePage({ params }: Props) {
   
   let noteData;
   try {
-    noteData = getNoteData(id);
+    noteData = await getNoteData(id);
+    if (!noteData) notFound();
   } catch (e) {
     notFound();
   }

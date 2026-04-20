@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import datetime
 import re
 
-from utils import send_email
+from utils import send_email, save_note_to_db
 
 load_dotenv(override=True)
 
@@ -85,6 +85,14 @@ def generate_and_send_note():
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(frontmatter + md_content)
         print(f"Saved generated note to: {file_path}")
+
+        # --- SAVE TO DATABASE ---
+        save_note_to_db(
+            title=new_subtopic,
+            content=md_content,
+            folder=topic,
+            slug=f"{date_str}-{safe_topic}"
+        )
 
     except Exception as e:
         print(f"Gemini generation failed: {e}")

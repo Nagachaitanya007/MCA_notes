@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
+import { supabase } from './supabase';
 
 // Ultra-robust root detector
 const getNotesDirectory = () => {
@@ -94,10 +95,36 @@ function getAllMarkdownFiles(dirPath: string, arrayOfFiles: string[] = []) {
   return arrayOfFiles;
 }
 
-export function getSortedNotesData(): NoteData[] {
-  const filePaths = getAllMarkdownFiles(notesDirectory);
+export async function getSortedNotesData(): Promise<NoteData[]> {
+  const allNotes: NoteData[] = [];
 
-  const allNotesData = filePaths.map((filePath) => {
+  // 1. Fetch from Supabase
+  try {
+    const { data: dbNotes, error } = await supabase
+      .from('notes')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && dbNotes) {
+      dbNotes.forEach((note) => {
+        allNotes.push({
+          id: note.slug,
+          title: note.title,
+          date: note.created_at,
+          folder: note.folder || 'Database',
+          readingTime: 5,
+          wordCount: 0,
+          headings: [],
+        });
+      });
+    }
+  } catch (e) {
+    console.error('Failed to fetch notes from Supabase:', e);
+  }
+
+  // 2. Fetch from Local Files (Fallback/Hybrid)
+  const filePaths = getAllMarkdownFiles(notesDirectory);
+  const localNotes = filePaths.map((filePath) => {
     try {
       const fileContents = fs.readFileSync(filePath, 'utf8');
       const matterResult = matter(fileContents);
@@ -105,7 +132,6 @@ export function getSortedNotesData(): NoteData[] {
       const id = relativePath.replace(/\.md$/, '').replace(/\\/g, '/');
       const folder = path.dirname(relativePath).replace(/\\/g, '/');
 
-      // Use frontmatter if available, otherwise fallback to filename/disk info
       const title = matterResult.data.title || path.basename(filePath, '.md').replace(/-/g, ' ');
       const date = matterResult.data.date || fs.statSync(filePath).mtime.toISOString();
       
@@ -126,40 +152,84 @@ export function getSortedNotesData(): NoteData[] {
     }
   }).filter((note): note is NoteData => note !== null);
 
-  return allNotesData.sort((a, b) => {
-    if (a.date < b.date) return 1;
-    return -1;
+  // Combine and remove duplicates (prefer DB if slug matches)
+  const combined = [...allNotes];
+  localNotes.forEach(ln => {
+    // If the local ID ends with the DB slug, or vice versa, they are the same note
+    const isDuplicate = combined.some(cn => 
+      cn.id === ln.id || 
+      ln.id.endsWith(cn.id) || 
+      cn.id.endsWith(ln.id)
+    );
+    
+    if (!isDuplicate) {
+      combined.push(ln);
+    }
   });
+
+  return combined.sort((a, b) => (a.date < b.date ? 1 : -1));
 }
 
-export function getNoteData(id: string): NoteData {
-  const fullPath = path.join(notesDirectory, `${id}.md`);
-  const fileContents = fs.readFileSync(fullPath, 'utf8');
-  const matterResult = matter(fileContents);
+export async function getNoteData(id: string): Promise<NoteData | null> {
+  // 1. Try Supabase first
+  try {
+    const { data, error } = await supabase
+      .from('notes')
+      .select('*')
+      .eq('slug', id)
+      .single();
 
-  let title = matterResult.data.title;
-  if (!title) {
-    const h1Match = fileContents.match(/^#\s+(.*)/m);
-    title = h1Match ? h1Match[1] : path.basename(fullPath, '.md');
+    if (!error && data) {
+      return {
+        id: data.slug,
+        title: data.title,
+        date: data.created_at,
+        folder: data.folder || 'Database',
+        contentMarkdown: data.content,
+        readingTime: 5,
+        wordCount: 0,
+        headings: extractHeadings(data.content),
+      };
+    }
+  } catch (e) {
+    console.error('Error fetching note from DB:', e);
   }
 
-  let date = matterResult.data.date;
-  if (!date) {
-    date = fs.statSync(fullPath).birthtime.toISOString();
+  // 2. Fallback to file system
+  try {
+    const fullPath = path.join(notesDirectory, `${id}.md`);
+    if (!fs.existsSync(fullPath)) return null;
+
+    const fileContents = fs.readFileSync(fullPath, 'utf8');
+    const matterResult = matter(fileContents);
+
+    let title = matterResult.data.title;
+    if (!title) {
+      const h1Match = fileContents.match(/^#\s+(.*)/m);
+      title = h1Match ? h1Match[1] : path.basename(fullPath, '.md');
+    }
+
+    let date = matterResult.data.date;
+    if (!date) {
+      date = fs.statSync(fullPath).birthtime.toISOString();
+    }
+
+    const folder = path.dirname(id).replace(/\\/g, '/');
+    const { readingTime, wordCount } = calculateReadingTime(matterResult.content);
+    const headings = extractHeadings(matterResult.content);
+
+    return {
+      id,
+      title,
+      date: typeof date === 'string' ? date : date.toISOString(),
+      folder,
+      readingTime,
+      wordCount,
+      headings,
+      contentMarkdown: matterResult.content,
+    };
+  } catch (e) {
+    console.error('Error reading local note:', e);
+    return null;
   }
-
-  const folder = path.dirname(id).replace(/\\/g, '/');
-  const { readingTime, wordCount } = calculateReadingTime(matterResult.content);
-  const headings = extractHeadings(matterResult.content);
-
-  return {
-    id,
-    title,
-    date,
-    folder,
-    readingTime,
-    wordCount,
-    headings,
-    contentMarkdown: matterResult.content,
-  };
 }

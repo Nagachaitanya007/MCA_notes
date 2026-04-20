@@ -4,7 +4,7 @@ import random
 from google import genai
 from dotenv import load_dotenv
 
-from utils import send_email, get_markdown_files
+from utils import send_email, get_markdown_files, save_quiz_to_db
 
 load_dotenv(override=True)
 
@@ -84,6 +84,12 @@ def generate_quiz():
     history_file = os.path.join(history_dir, f"quiz-{date_str}.json")
     with open(history_file, "w", encoding="utf-8") as f:
         json.dump(quiz_data, f, indent=2)
+
+    # --- SAVE TO DATABASE ---
+    save_quiz_to_db(
+        topic=quiz_data.get("topic", "General"),
+        questions=quiz_data.get("questions", [])
+    )
 
     print(f"Saved answers to {state_file} and archived to {history_file}")
 

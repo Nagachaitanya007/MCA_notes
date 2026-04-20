@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import datetime
 import re
 
-from utils import send_email, get_markdown_files
+from utils import send_email, get_markdown_files, save_note_to_db
 
 load_dotenv(override=True)
 
@@ -47,6 +47,14 @@ def send_daily_note():
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(frontmatter + md_content)
         print(f"Saved generated note to: {file_path}")
+
+        # --- SAVE TO DATABASE ---
+        save_note_to_db(
+            title=extracted_title,
+            content=md_content,
+            folder="Daily Note",
+            slug=f"{date_str}-{safe_topic}"
+        )
 
     except Exception as e:
         print(f"Gemini generation failed: {e}. Falling back to local note.")
