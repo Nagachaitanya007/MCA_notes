@@ -39,7 +39,7 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add Generated-Notes/
+          git add Generated-Notes/ || true
           git commit -m "Auto-publish: AI Deep Dive Note" || exit 0
           git push
 
