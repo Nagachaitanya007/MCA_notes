@@ -51,11 +51,11 @@ export default function NotesList({ notes }: { notes: NoteData[] }) {
         />
       </div>
 
-      {/* Folder Filter Pills */}
-      <div className="flex flex-wrap gap-2 mb-8">
+      {/* Folder Filter Pills - Scrollable on mobile */}
+      <div className="flex overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:overflow-visible sm:pb-0 sm:flex-wrap gap-2 mb-8 no-scrollbar">
         <button
           onClick={() => setActiveFolder(null)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${activeFolder === null
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${activeFolder === null
               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
               : 'bg-gray-800/60 text-gray-400 hover:bg-gray-800 hover:text-gray-200'
             }`}
@@ -68,7 +68,7 @@ export default function NotesList({ notes }: { notes: NoteData[] }) {
             <button
               key={folder}
               onClick={() => setActiveFolder(activeFolder === folder ? null : folder)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${activeFolder === folder
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${activeFolder === folder
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
                   : 'bg-gray-800/60 text-gray-400 hover:bg-gray-800 hover:text-gray-200'
                 }`}
@@ -80,20 +80,20 @@ export default function NotesList({ notes }: { notes: NoteData[] }) {
       </div>
 
       {/* Notes Grid */}
-      <div className="grid gap-4">
-        {filteredNotes.map((note, i) => (
+      <div className="grid gap-3 sm:gap-4">
+        {filteredNotes.map((note) => (
           <Link
             key={note.id}
             href={`/notes/${note.id}`}
-            className="group block bg-gray-900/50 border border-gray-800/60 rounded-xl p-5 hover:bg-gray-800/50 hover:border-gray-700/60 transition-all duration-200"
+            className="group block bg-gray-900/50 border border-gray-800/60 rounded-xl p-4 sm:p-5 hover:bg-gray-800/50 hover:border-gray-700/60 transition-all duration-200"
           >
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
               <div className="flex-1 min-w-0">
-                <h2 className="text-base font-semibold text-gray-100 group-hover:text-indigo-400 transition-colors truncate">
+                <h2 className="text-sm sm:text-base font-semibold text-gray-100 group-hover:text-indigo-400 transition-colors line-clamp-2">
                   {note.title}
                 </h2>
-                <div className="flex items-center gap-3 mt-2">
-                  <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                <div className="flex items-center gap-3 mt-2 sm:mt-2.5">
+                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-gray-500">
                     <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm2 0v8h12V8h-5.828l-2-2H4z" clipRule="evenodd" />
                     </svg>
@@ -101,13 +101,17 @@ export default function NotesList({ notes }: { notes: NoteData[] }) {
                   </span>
                 </div>
               </div>
-              <span className="text-xs text-gray-600 whitespace-nowrap">
-                {new Date(note.date).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </span>
+              <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:gap-1.5">
+                <span className="text-[10px] sm:text-xs text-gray-600 whitespace-nowrap order-last sm:order-first">
+                  {new Date(note.date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </span>
+                {/* Visual marker for unreviewed notes (optional addition) */}
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/40 sm:hidden"></div>
+              </div>
             </div>
           </Link>
         ))}

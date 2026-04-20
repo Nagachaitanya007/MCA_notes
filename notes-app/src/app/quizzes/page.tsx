@@ -6,22 +6,22 @@ export default function QuizzesPage() {
   const quizzes = getAllQuizzes();
 
   return (
-    <div className="py-12 px-4 sm:px-6 lg:px-8">
+    <div className="py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-10">
+        <div className="mb-8 sm:mb-10">
           <Link
             href="/"
-            className="inline-flex items-center text-gray-400 hover:text-indigo-400 font-medium transition-colors text-sm mb-6"
+            className="inline-flex items-center text-gray-400 hover:text-indigo-400 font-medium transition-colors text-xs sm:text-sm mb-4 sm:mb-6"
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Back to Notes
           </Link>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Quiz History</h1>
-          <p className="text-gray-400 mt-2">
-            {quizzes.length} quiz{quizzes.length !== 1 ? 'zes' : ''} generated so far. Select an answer, then reveal to check yourself.
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Quiz History</h1>
+          <p className="text-sm text-gray-400 mt-2">
+            {quizzes.length} quiz{quizzes.length !== 1 ? 'zes' : ''} generated so far.
           </p>
         </div>
 
