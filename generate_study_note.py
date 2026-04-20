@@ -43,7 +43,7 @@ def generate_and_send_note():
     exclusion_list = ", ".join(previously_covered[-30:]) if previously_covered else "None yet"
 
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = f"""
         You are an Expert FAANG Engineering Manager and Technical Writer. 
         Write a highly detailed, deeply technical study note on an advanced concept within this topic: "{topic}". 

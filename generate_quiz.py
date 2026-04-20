@@ -35,7 +35,7 @@ def generate_quiz():
         context_block = ""
 
     # Call Gemini
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash')
 
     prompt = f"""
     Act as a Senior AI/ML Interviewer. 
