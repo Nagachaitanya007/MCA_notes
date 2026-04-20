@@ -1,16 +1,19 @@
 import fs from 'fs';
 import path from 'path';
 
-// Auto-detect the quiz directory
-const getQuizDirectory = () => {
-  const localPath = path.join(process.cwd(), '..', 'Quiz-History');
-  const prodPath = path.join(process.cwd(), 'public', 'data-quizzes');
-  
+const getRootDirectory = () => {
+  const cwd = process.cwd();
+  const prodPath = path.join(cwd, 'public', 'data-root');
   if (fs.existsSync(prodPath)) return prodPath;
-  return localPath;
+
+  if (cwd.endsWith('notes-app') || cwd.includes('notes-app/')) {
+    return path.join(cwd, '..');
+  }
+  return cwd;
 };
 
-const quizDirectory = getQuizDirectory();
+// Check for Quiz-History inside the smart root
+const quizDirectory = path.join(getRootDirectory(), 'Quiz-History');
 
 export interface QuizQuestion {
   id: number;

@@ -2,13 +2,18 @@ import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 
-// Auto-detect the notes directory
+// Auto-detect the root directory of the repo
 const getNotesDirectory = () => {
-  const localPath = path.join(process.cwd(), '..', 'Generated-Notes');
-  const prodPath = path.join(process.cwd(), 'public', 'data-notes');
+  const cwd = process.cwd();
+  const prodPath = path.join(cwd, 'public', 'data-root');
   
   if (fs.existsSync(prodPath)) return prodPath;
-  return localPath;
+  
+  // Local fallback: find the parent directory if we are in notes-app
+  if (cwd.endsWith('notes-app') || cwd.includes('notes-app/')) {
+    return path.join(cwd, '..');
+  }
+  return cwd;
 };
 
 const notesDirectory = getNotesDirectory();
