@@ -41,3 +41,6 @@ jobs:
           git add .github/latest_answers.json
           git commit -m "Automated state save: Quiz Answers" || exit 0
           git push
+
+      - name: Trigger Render Deploy
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}

@@ -42,3 +42,6 @@ jobs:
           git add Generated-Notes/
           git commit -m "Auto-publish: AI Deep Dive Note" || exit 0
           git push
+
+      - name: Trigger Render Deploy
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
