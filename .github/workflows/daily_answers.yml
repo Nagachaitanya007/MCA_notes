@@ -2,7 +2,7 @@ name: Send Daily Answers
 
 on:
   schedule:
-    - cron: '30 5 * * *' # 05:30 UTC = 11:00 AM IST
+    - cron: '23 5 * * *' # 05:23 UTC ≈ 10:53 AM IST
   workflow_dispatch:
 
 jobs:

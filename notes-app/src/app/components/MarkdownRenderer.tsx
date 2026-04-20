@@ -33,6 +33,22 @@ export default function MarkdownRenderer({ content }: { content: string }) {
   return (
     <ReactMarkdown
       components={{
+        // Add IDs to headings so Table of Contents links work
+        h2: ({ children }) => {
+          const text = String(children).replace(/[*_`]/g, '').trim();
+          const slug = text.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+          return <h2 id={slug}>{children}</h2>;
+        },
+        h3: ({ children }) => {
+          const text = String(children).replace(/[*_`]/g, '').trim();
+          const slug = text.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+          return <h3 id={slug}>{children}</h3>;
+        },
+        h4: ({ children }) => {
+          const text = String(children).replace(/[*_`]/g, '').trim();
+          const slug = text.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+          return <h4 id={slug}>{children}</h4>;
+        },
         // Override code blocks with the copy button
         pre: ({ children }) => <>{children}</>,
         code: ({ className, children, ...props }) => {

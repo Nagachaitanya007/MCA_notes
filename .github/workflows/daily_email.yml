@@ -2,8 +2,8 @@ name: Send Original Daily Note
 
 on:
   schedule:
-    # Runs at 04:30 UTC = 10:00 AM IST (Right before the Quiz!)
-    - cron: '30 4 * * *'
+    # TEMPORARY TEST: Runs at 06:03 UTC = 11:33 AM IST
+    - cron: '3 6 * * *'
   workflow_dispatch:
 
 jobs:
