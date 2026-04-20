@@ -1,152 +1,114 @@
-<div align="center">
+# 🚀 NoteForge: AI-Powered Technical Study Engine
 
-# 🔥 NoteForge
+**NoteForge** is a fully automated, interview-grade study system designed for FAANG preparation. It leverages Google Gemini AI and GitHub Actions to generate, publish, and deliver deeply technical study notes and interactive quizzes every single day.
 
-**An AI-powered, self-growing knowledge base for FAANG interview preparation.**
-
-Built with Next.js · Gemini AI · GitHub Actions · Render
-
-[![Daily Notes](https://github.com/Nagachaitanya007/MCA_notes/actions/workflows/daily_email.yml/badge.svg)](https://github.com/Nagachaitanya007/MCA_notes/actions/workflows/daily_email.yml)
-[![Daily Quiz](https://github.com/Nagachaitanya007/MCA_notes/actions/workflows/daily_quiz.yml/badge.svg)](https://github.com/Nagachaitanya007/MCA_notes/actions/workflows/daily_quiz.yml)
-
-</div>
+![NoteForge Hero](https://img.shields.io/badge/Stack-Next.js%20%7C%20Python%20%7C%20Gemini%20AI%20%7C%20GitHub%20Actions-blueviolet?style=for-the-badge)
 
 ---
 
-## What is NoteForge?
+## 🏗️ System Architecture
 
-NoteForge is not a typical static notes website. It is a **fully automated content pipeline** that generates, publishes, and delivers interview-grade technical study material every single day — without any manual intervention.
+NoteForge operates as a self-sustaining ecosystem with zero manual intervention required.
 
-Every morning, GitHub Actions triggers a set of Python scripts that use Google's Gemini AI to generate deep-dive study notes on topics like **Java & Spring Boot**, **System Design**, and **AI/ML**. These notes are committed back to the repository, automatically deployed to a live Next.js website via Render, and emailed directly to your inbox.
+```mermaid
+graph TD
+    subgraph "Automation Engine (GitHub Actions)"
+        A[Cron Trigger] --> B[Python Scripts]
+        B --> C{Gemini 1.5 Flash API}
+        C -->|Generate Note| D[Markdown Storage]
+        C -->|Generate Quiz| E[JSON History]
+        D --> F[Git Auto-Commit]
+        E --> F
+    end
 
-## Architecture
+    subgraph "Delivery Pipeline"
+        F --> G[Gmail SMTP Service]
+        F --> H[Render Webhook]
+        G -->|Daily Email| I[User Inbox]
+    end
 
+    subgraph "Web Interface (Next.js 15)"
+        H --> J[NoteForge Web App]
+        J -->|Read Files| D
+        J -->|Read History| E
+        J -->|Display| K[Interactive UI]
+    end
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    GitHub Actions (Cron)                     │
-│                                                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────────────┐  │
-│  │ daily_email   │  │ daily_quiz   │  │ note_java /       │  │
-│  │ (10:00 AM)   │  │ (10:30 AM)   │  │ note_sys_design   │  │
-│  └──────┬───────┘  └──────┬───────┘  └────────┬──────────┘  │
-│         │                 │                    │             │
-│         ▼                 ▼                    ▼             │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │              Python Automation Layer                  │    │
-│  │  • Gemini AI content generation                      │    │
-│  │  • Markdown → HTML email formatting                  │    │
-│  │  • Gmail SMTP delivery                               │    │
-│  │  • File saving with frontmatter metadata             │    │
-│  └──────────────────────┬──────────────────────────────┘    │
-│                         │                                    │
-│                    git commit + push                         │
-│                         │                                    │
-└─────────────────────────┼────────────────────────────────────┘
-                          │
-                          ▼
-              ┌───────────────────────┐
-              │   Render (Auto-Deploy) │
-              │                       │
-              │   Next.js Web App     │
-              │   • Dark-themed UI    │
-              │   • Search & filter   │
-              │   • Markdown renderer │
-              └───────────────────────┘
-```
-
-## Features
-
-| Feature | Description |
-|---------|-------------|
-| 🤖 **AI Content Generation** | Gemini 2.5 Flash generates unique, interview-focused study notes daily |
-| 📧 **Automated Email Delivery** | Notes and quizzes delivered to your inbox on a schedule |
-| 📝 **Interactive Quizzes** | Scenario-based MCQs with delayed answer delivery (30 min) |
-| 🌐 **Live Web App** | Dark-themed Next.js site with search, filtering, and responsive design |
-| 🔄 **CI/CD Pipeline** | GitHub Actions → git commit → Render auto-deploy |
-| 📂 **Multi-Topic Support** | Java, System Design, AI/ML, and custom markdown notes |
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
-| **AI Engine** | Google Gemini 2.5 Flash API |
-| **Automation** | GitHub Actions (5 cron workflows) |
-| **Backend Scripts** | Python 3.13 (google-generativeai, markdown, smtplib) |
-| **Deployment** | Render (free tier, auto-deploy on push) |
-| **Email** | Gmail SMTP with App Passwords |
-
-## Daily Schedule (IST)
-
-| Time | Workflow | What Happens |
-|------|----------|-------------|
-| 10:00 AM | `daily_email.yml` | Sends an AI-generated or existing note via email |
-| 10:30 AM | `daily_quiz.yml` | Generates 3 MCQ questions and emails them |
-| 11:00 AM | `daily_answers.yml` | Sends the quiz answers and explanations |
-| 12:00 PM | `note_java.yml` | Generates a Java/Spring Boot deep-dive note |
-| 1:00 PM | `note_system_design.yml` | Generates a System Design deep-dive note |
-
-## Project Structure
-
-```
-MCA-notes/
-├── .github/workflows/       # 5 GitHub Actions cron jobs
-├── Generated-Notes/          # AI-generated markdown notes (auto-committed)
-├── Social-Media-and-Text-Analysis/  # Manual study notes
-├── notes-app/                # Next.js web application
-│   ├── src/app/              # Pages and components
-│   ├── src/lib/notes.ts      # Markdown file reader with frontmatter parsing
-│   └── src/app/components/   # Reusable UI components
-├── daily_mailer.py           # Sends daily AI/ML note
-├── generate_study_note.py    # Generates topic-specific notes
-├── generate_quiz.py          # Generates MCQ quizzes
-├── send_answers.py           # Sends quiz answers
-├── utils.py                  # Shared email & file utilities
-└── render.yaml               # Render deployment config
-```
-
-## Getting Started
-
-### Prerequisites
-- Node.js 18+
-- Python 3.13+
-- A Gmail account with an [App Password](https://support.google.com/accounts/answer/185833)
-- A [Gemini API Key](https://aistudio.google.com/app/apikey)
-
-### Local Development
-
-```bash
-# Clone the repository
-git clone https://github.com/Nagachaitanya007/MCA_notes.git
-cd MCA_notes
-
-# Set up Python environment
-pip install -r requirements.txt
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your credentials
-
-# Run the Next.js app
-cd notes-app
-npm install
-npm run dev
-```
-
-### Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `GMAIL_EMAIL` | Your Gmail address |
-| `GMAIL_APP_PASSWORD` | Gmail App Password (not your regular password) |
-| `GEMINI_API_KEY` | Google Gemini API key |
-
-## License
-
-This project is for educational and portfolio purposes.
 
 ---
 
-<div align="center">
-  <sub>Built with ❤️ by <a href="https://github.com/Nagachaitanya007">Naga Chaitanya</a></sub>
-</div>
+## 🌟 Key Features
+
+### 🧠 Autonomous Note Generation
+- **Topic Deduplication**: A custom tracking system (`covered_topics.json`) ensures the AI never generates the same subtopic twice, building a comprehensive knowledge base over time.
+- **Deep Technicality**: Prompt engineering ensures notes include senior-level code architecture, complexity analysis (Big O), and real-world system design trade-offs.
+
+### 📝 Spaced Repetition & Assessment
+- **Automated Quizzing**: Generates scenario-based multiple-choice questions based on the morning's study material.
+- **Interactive History**: A full archive of past quizzes is available on the web app with instant feedback and detailed explanations.
+
+### 💻 Premium Web Experience
+- **Real-time Search & Filter**: Search through hundreds of notes by topic, keyword, or category.
+- **Progress Tracking**: Localized "Mark as Reviewed" system to track personal study progress.
+- **Rich Aesthetics**: A sleek, dark-themed UI with Table of Contents navigation and one-click code copying.
+
+---
+
+## 🛠️ Technical Stack
+
+| Category | Technology |
+| :--- | :--- |
+| **Frontend** | Next.js 15 (App Router), Tailwind CSS 4, TypeScript |
+| **Backend** | Python 3.13, Node.js |
+| **AI Model** | Google Gemini 1.5 Flash (Generative AI) |
+| **CI/CD & Automation** | GitHub Actions (Cron Jobs) |
+| **Deployment** | Render (Auto-rebuild via Webhooks) |
+| **Communication** | Gmail SMTP API |
+
+---
+
+## 📅 The Daily Lifecycle (IST)
+
+| Time | Event | Outcome |
+| :--- | :--- | :--- |
+| **09:17 AM** | **Daily Note Pulse** | New technical note generated and emailed. |
+| **09:47 AM** | **Knowledge Check** | Daily quiz generated and sent to inbox. |
+| **10:23 AM** | **Results Sync** | Quiz answers revealed and archived to Web App. |
+| **11:13 AM** | **Specialized Deep Dive** | Java/Spring Boot specific technical note. |
+| **12:13 PM** | **Architecture Hour** | System Design & Scalability technical note. |
+
+---
+
+## 📂 Project Structure
+
+```text
+├── .github/workflows/    # 5x Automated CI/CD pipelines
+├── Generated-Notes/      # Database of AI-generated Markdown files
+├── Quiz-History/         # JSON database of all past quizzes
+├── notes-app/            # Next.js 15 Source Code
+├── generate_note.py      # Core AI generation logic
+├── utils.py              # Shared automation utilities
+└── covered_topics.json   # Topic deduplication database
+```
+
+---
+
+## ⚙️ Setup & Installation
+
+1. **Clone the Repo**: `git clone https://github.com/Nagachaitanya007/MCA_notes.git`
+2. **Web App**:
+   ```bash
+   cd notes-app
+   npm install
+   npm run dev
+   ```
+3. **Environment Variables**:
+   Configure these in GitHub Secrets:
+   - `GEMINI_API_KEY`: Google AI Studio Key.
+   - `GMAIL_EMAIL`: Your automation email.
+   - `GMAIL_APP_PASSWORD`: Gmail App Password.
+
+---
+
+**Developed by Naga Chaitanya**  
+*Turning automated learning into technical mastery.*
