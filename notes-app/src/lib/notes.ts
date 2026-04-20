@@ -2,8 +2,16 @@ import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 
-// The root of the MCA-notes workspace (one directory above the app)
-const notesDirectory = path.join(process.cwd(), '..');
+// Auto-detect the notes directory
+const getNotesDirectory = () => {
+  const localPath = path.join(process.cwd(), '..', 'Generated-Notes');
+  const prodPath = path.join(process.cwd(), 'public', 'data-notes');
+  
+  if (fs.existsSync(prodPath)) return prodPath;
+  return localPath;
+};
+
+const notesDirectory = getNotesDirectory();
 
 export interface NoteData {
   id: string;

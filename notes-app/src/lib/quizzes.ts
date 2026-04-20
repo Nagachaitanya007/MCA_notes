@@ -1,7 +1,16 @@
 import fs from 'fs';
 import path from 'path';
 
-const quizDirectory = path.join(process.cwd(), '..', 'Quiz-History');
+// Auto-detect the quiz directory
+const getQuizDirectory = () => {
+  const localPath = path.join(process.cwd(), '..', 'Quiz-History');
+  const prodPath = path.join(process.cwd(), 'public', 'data-quizzes');
+  
+  if (fs.existsSync(prodPath)) return prodPath;
+  return localPath;
+};
+
+const quizDirectory = getQuizDirectory();
 
 export interface QuizQuestion {
   id: number;
