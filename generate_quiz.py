@@ -63,7 +63,7 @@ def generate_quiz():
 
     print("Calling Gemini API...")
     response = client.models.generate_content(
-        model='gemini-2.0-flash',
+        model='gemini-flash-latest',
         contents=prompt,
         config={'response_mime_type': 'application/json'}
     )
