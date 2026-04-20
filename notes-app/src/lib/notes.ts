@@ -6,11 +6,41 @@ import matter from 'gray-matter';
 const notesDirectory = path.join(process.cwd(), '..');
 
 export interface NoteData {
-  id: string; // The file path relative to root, minus the .md extension
+  id: string;
   title: string;
   date: string;
   folder: string;
+  readingTime: number;
+  wordCount: number;
+  headings: { text: string; level: number; slug: string }[];
   contentMarkdown?: string;
+}
+
+function calculateReadingTime(content: string): { readingTime: number; wordCount: number } {
+  const plainText = content
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/[#*_~`>\-|]/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+  const words = plainText.split(/\s+/).filter((w) => w.length > 0);
+  const wordCount = words.length;
+  const readingTime = Math.max(1, Math.ceil(wordCount / 200));
+  return { readingTime, wordCount };
+}
+
+function extractHeadings(content: string): { text: string; level: number; slug: string }[] {
+  const headingRegex = /^(#{2,4})\s+(.+)$/gm;
+  const headings: { text: string; level: number; slug: string }[] = [];
+  let match;
+  while ((match = headingRegex.exec(content)) !== null) {
+    const text = match[2].replace(/[*_`]/g, '').trim();
+    const slug = text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+    headings.push({ text, level: match[1].length, slug });
+  }
+  return headings;
 }
 
 // Recursively find all markdown files
@@ -39,76 +69,77 @@ function getAllMarkdownFiles(dirPath: string, arrayOfFiles: string[] = []) {
 
 export function getSortedNotesData(): NoteData[] {
   const filePaths = getAllMarkdownFiles(notesDirectory);
-  
+
   const allNotesData = filePaths.map((filePath) => {
-    // Create an id based on the relative path
-    const relativePath = path.relative(notesDirectory, filePath);
-    const id = relativePath.replace(/\.md$/, '').replace(/\\/g, '/'); // Normalize slashes for URLs
-    
-    // Extract the folder name
-    const folder = path.dirname(relativePath).replace(/\\/g, '/');
-    
-    // Read file as string
-    const fileContents = fs.readFileSync(filePath, 'utf8');
+    try {
+      const relativePath = path.relative(notesDirectory, filePath);
+      const id = relativePath.replace(/\.md$/, '').replace(/\\/g, '/');
+      const folder = path.dirname(relativePath).replace(/\\/g, '/');
+      const fileContents = fs.readFileSync(filePath, 'utf8');
+      const matterResult = matter(fileContents);
 
-    // Use gray-matter to parse the post metadata section
-    const matterResult = matter(fileContents);
-
-    // If there is no frontmatter title, extract an H1 or use the filename
-    let title = matterResult.data.title;
-    if (!title) {
+      let title = matterResult.data.title;
+      if (!title) {
         const h1Match = fileContents.match(/^#\s+(.*)/m);
         title = h1Match ? h1Match[1] : path.basename(filePath, '.md');
-    }
+      }
 
-    // Attempt to extract a date from frontmatter, otherwise use file creation time
-    let date = matterResult.data.date;
-    if (!date) {
+      let date = matterResult.data.date;
+      if (!date) {
         date = fs.statSync(filePath).birthtime.toISOString();
+      }
+
+      const { readingTime, wordCount } = calculateReadingTime(matterResult.content);
+
+      return {
+        id,
+        title,
+        date,
+        folder,
+        readingTime,
+        wordCount,
+        headings: [] as { text: string; level: number; slug: string }[],
+      };
+    } catch (error) {
+      console.error(`Error parsing note: ${filePath}`, error);
+      return null;
     }
+  }).filter((note): note is NoteData => note !== null);
 
-    return {
-      id,
-      title,
-      date,
-      folder,
-    };
-  });
-
-  // Sort notes by date (newest first)
   return allNotesData.sort((a, b) => {
-    if (a.date < b.date) {
-      return 1;
-    } else {
-      return -1;
-    }
+    if (a.date < b.date) return 1;
+    return -1;
   });
 }
 
 export function getNoteData(id: string): NoteData {
   const fullPath = path.join(notesDirectory, `${id}.md`);
   const fileContents = fs.readFileSync(fullPath, 'utf8');
-
   const matterResult = matter(fileContents);
 
   let title = matterResult.data.title;
   if (!title) {
-      const h1Match = fileContents.match(/^#\s+(.*)/m);
-      title = h1Match ? h1Match[1] : path.basename(fullPath, '.md');
+    const h1Match = fileContents.match(/^#\s+(.*)/m);
+    title = h1Match ? h1Match[1] : path.basename(fullPath, '.md');
   }
 
   let date = matterResult.data.date;
   if (!date) {
-      date = fs.statSync(fullPath).birthtime.toISOString();
+    date = fs.statSync(fullPath).birthtime.toISOString();
   }
 
   const folder = path.dirname(id).replace(/\\/g, '/');
+  const { readingTime, wordCount } = calculateReadingTime(matterResult.content);
+  const headings = extractHeadings(matterResult.content);
 
   return {
     id,
     title,
     date,
     folder,
+    readingTime,
+    wordCount,
+    headings,
     contentMarkdown: matterResult.content,
   };
 }
