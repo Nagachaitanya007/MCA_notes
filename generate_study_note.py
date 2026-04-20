@@ -54,7 +54,7 @@ def generate_and_send_note():
         [{exclusion_list}]
         Pick a completely different subtopic within "{topic}".
         """
-        response = client.models.generate_content(model='gemini-1.5-flash', contents=prompt)
+        response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt)
         md_content = response.text
 
         # Extract the subtopic from the H1 heading and save it
