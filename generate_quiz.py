@@ -1,17 +1,13 @@
 import os
 import json
 import random
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 import google.generativeai as genai
 from dotenv import load_dotenv
 
+from utils import send_email, get_markdown_files
+
 load_dotenv(override=True)
 
-SENDER_EMAIL = os.environ.get("GMAIL_EMAIL")
-SENDER_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD")
-RECEIVER_EMAIL = os.environ.get("GMAIL_EMAIL")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 if not GEMINI_API_KEY:
@@ -20,21 +16,12 @@ if not GEMINI_API_KEY:
 
 genai.configure(api_key=GEMINI_API_KEY)
 
-def get_markdown_files(directory):
-    md_files = []
-    for root, dirs, files in os.walk(directory):
-        if 'notes-app' in root or '.git' in root or 'node_modules' in root or 'scratch' in root:
-            continue
-        for file in files:
-            if file.endswith(".md") and file not in ["implementation_plan.md", "task.md", "README.md", "walkthrough.md"]:
-                md_files.append(os.path.join(root, file))
-    return md_files
 
 def generate_quiz():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     md_files = get_markdown_files(base_dir)
     use_note = random.choice([True, False])
-    
+
     if use_note and md_files:
         chosen_file = random.choice(md_files)
         note_title = os.path.basename(chosen_file).replace('.md', '')
@@ -49,7 +36,7 @@ def generate_quiz():
 
     # Call Gemini
     model = genai.GenerativeModel('gemini-2.5-flash')
-    
+
     prompt = f"""
     Act as a Senior AI/ML Interviewer. 
     Generate 3 scenario-based Multiple Choice Questions based on {prompt_topic}. 
@@ -72,7 +59,7 @@ def generate_quiz():
       ]
     }}
     """
-    
+
     print("Calling Gemini API...")
     response = model.generate_content(
         prompt,
@@ -80,16 +67,25 @@ def generate_quiz():
             response_mime_type="application/json",
         )
     )
-    
+
     quiz_data = json.loads(response.text)
-    
-    # Save the answers to a JSON file for the next script
+
+    # Save the answers to latest_answers.json (for the answer email script)
     state_file = os.path.join(base_dir, ".github", "latest_answers.json")
     os.makedirs(os.path.dirname(state_file), exist_ok=True)
     with open(state_file, "w", encoding="utf-8") as f:
         json.dump(quiz_data, f, indent=2)
-        
-    print(f"Saved answers to {state_file}")
+
+    # Also archive to Quiz-History/ so no quiz is ever lost
+    import datetime
+    history_dir = os.path.join(base_dir, "Quiz-History")
+    os.makedirs(history_dir, exist_ok=True)
+    date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+    history_file = os.path.join(history_dir, f"quiz-{date_str}.json")
+    with open(history_file, "w", encoding="utf-8") as f:
+        json.dump(quiz_data, f, indent=2)
+
+    print(f"Saved answers to {state_file} and archived to {history_file}")
 
     # Build the HTML Email
     html_content = f"""
@@ -115,7 +111,7 @@ def generate_quiz():
             
             <p><strong>Heads up:</strong> The detailed answers and explanations will be sent to your inbox in exactly 30 minutes! Take your time to think through these scenarios.</p>
     """
-    
+
     for q in quiz_data['questions']:
         options_html = "".join([f"<li>{opt}</li>" for opt in q['options']])
         html_content += f"""
@@ -127,7 +123,7 @@ def generate_quiz():
                 </ul>
             </div>
         """
-        
+
     html_content += """
             <div class="footer">
                 Automated by GitHub Actions | Gemini-2.5-Flash
@@ -137,22 +133,11 @@ def generate_quiz():
     </html>
     """
 
-    # Send Email
-    message = MIMEMultipart("alternative")
-    message["Subject"] = f"Action Required: Daily AI Quiz ({quiz_data.get('topic', note_title)})"
-    message["From"] = SENDER_EMAIL
-    message["To"] = RECEIVER_EMAIL
-    message.attach(MIMEText(html_content, "html"))
+    send_email(
+        f"Action Required: Daily AI Quiz ({quiz_data.get('topic', note_title)})",
+        html_content,
+    )
 
-    try:
-        print("Sending Quiz Email...")
-        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        server.sendmail(SENDER_EMAIL, RECEIVER_EMAIL, message.as_string())
-        server.quit()
-        print("Success! Sent Quiz Email.")
-    except Exception as e:
-        print(f"Failed to send email. Error: {e}")
 
 if __name__ == "__main__":
     generate_quiz()

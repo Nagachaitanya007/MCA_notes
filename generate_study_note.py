@@ -1,19 +1,16 @@
 import os
 import sys
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import json
 import markdown
 import google.generativeai as genai
 from dotenv import load_dotenv
 import datetime
 import re
 
+from utils import send_email
+
 load_dotenv(override=True)
 
-SENDER_EMAIL = os.environ.get("GMAIL_EMAIL")
-SENDER_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD")
-RECEIVER_EMAIL = os.environ.get("GMAIL_EMAIL")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 if not GEMINI_API_KEY:
@@ -22,15 +19,29 @@ if not GEMINI_API_KEY:
 
 genai.configure(api_key=GEMINI_API_KEY)
 
+
 def generate_and_send_note():
     if len(sys.argv) < 2:
         print("Usage: python generate_study_note.py \"<Topic String>\"")
         sys.exit(1)
-        
+
     topic = sys.argv[1]
-    
+
     print(f"Generating study note for topic: {topic}")
+
+    # --- TOPIC DEDUPLICATION ---
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    tracker_file = os.path.join(base_dir, ".github", "covered_topics.json")
     
+    # Load previously covered subtopics
+    covered = {}
+    if os.path.exists(tracker_file):
+        with open(tracker_file, "r", encoding="utf-8") as f:
+            covered = json.load(f)
+    
+    previously_covered = covered.get(topic, [])
+    exclusion_list = ", ".join(previously_covered[-30:]) if previously_covered else "None yet"
+
     try:
         model = genai.GenerativeModel('gemini-2.5-flash')
         prompt = f"""
@@ -39,34 +50,50 @@ def generate_and_send_note():
         It must be interview-focused and designed for a Senior Engineer. 
         Include detailed code snippets and real-world system architecture examples where applicable. 
         Format the entire response in clean Markdown, starting with an H1 heading for the specific concept you chose.
+        
+        IMPORTANT: Do NOT cover any of these subtopics, as they have already been covered:
+        [{exclusion_list}]
+        Pick a completely different subtopic within "{topic}".
         """
         response = model.generate_content(prompt)
         md_content = response.text
+
+        # Extract the subtopic from the H1 heading and save it
+        h1_match = re.search(r'^#\s+(.*)', md_content, re.MULTILINE)
+        new_subtopic = h1_match.group(1).strip() if h1_match else "Unknown"
         
-        # --- NEW FILE SAVING LOGIC ---
-        base_dir = os.path.dirname(os.path.abspath(__file__))
+        if topic not in covered:
+            covered[topic] = []
+        covered[topic].append(new_subtopic)
+        
+        os.makedirs(os.path.dirname(tracker_file), exist_ok=True)
+        with open(tracker_file, "w", encoding="utf-8") as f:
+            json.dump(covered, f, indent=2)
+        print(f"Topic tracker updated: '{new_subtopic}' added under '{topic}'")
+
+        # Save generated note to file
         generated_dir = os.path.join(base_dir, "Generated-Notes")
         os.makedirs(generated_dir, exist_ok=True)
-        
+
         safe_topic = re.sub(r'[^a-zA-Z0-9]', '-', topic).strip('-')
         safe_topic = re.sub(r'-+', '-', safe_topic)[:30]
         date_str = datetime.datetime.now().strftime("%Y-%m-%d")
         filename = f"{date_str}-{safe_topic}.md"
         file_path = os.path.join(generated_dir, filename)
-        
-        frontmatter = f"---\ntitle: {topic}\ndate: {datetime.datetime.now().isoformat()}\n---\n\n"
-        
+
+        frontmatter = f"---\ntitle: {new_subtopic}\ndate: {datetime.datetime.now().isoformat()}\n---\n\n"
+
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(frontmatter + md_content)
         print(f"Saved generated note to: {file_path}")
-        
+
     except Exception as e:
         print(f"Gemini generation failed: {e}")
         sys.exit(1)
 
     # Convert Markdown to HTML with syntax highlighting and tables support
     html_content = markdown.markdown(md_content, extensions=['fenced_code', 'codehilite', 'tables'])
-    
+
     email_html = f"""
     <html>
     <head>
@@ -97,22 +124,8 @@ def generate_and_send_note():
     </html>
     """
 
-    # Setup the MIME
-    message = MIMEMultipart("alternative")
-    message["Subject"] = f"FAANG Deep Dive: {topic}"
-    message["From"] = SENDER_EMAIL
-    message["To"] = RECEIVER_EMAIL
-    message.attach(MIMEText(email_html, "html"))
+    send_email(f"FAANG Deep Dive: {topic}", email_html)
 
-    try:
-        print("Sending Email...")
-        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        server.sendmail(SENDER_EMAIL, RECEIVER_EMAIL, message.as_string())
-        server.quit()
-        print(f"Success! Sent deep dive note for {topic}")
-    except Exception as e:
-        print(f"Failed to send email. Error: {e}")
 
 if __name__ == "__main__":
     generate_and_send_note()
