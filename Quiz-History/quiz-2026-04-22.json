@@ -1,47 +1,48 @@
 {
-  "topic": "Apache Solr Queries",
+  "topic": "Memory Management & Garbage Collection Tuning",
+  "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are tasked with searching a large collection of historical documents using Apache Solr. The documents have fields such as title, author, and body. You want to find all documents written by 'shakespeare' that contain the word 'rome' in the title. How would you construct your Solr query?",
-      "question": "What is the correct Solr query syntax for this task?",
+      "scenario": "You are debugging a production issue where a Java-based web application using Spring Framework is experiencing frequent OutOfMemoryErrors. The application utilizes Spring's transaction management features and employs a mix of JDBC templates for database interactions. Upon inspecting the heap dumps, you notice a large number of retained objects, mostly of type java.sql.Connection, which are not being garbage collected. The relevant code snippet is: \n @Transactional \n public void performDatabaseOperation() { \n    Connection conn = DataSource.getConnection(); \n    // Perform operations... \n }",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) q=shakespeare AND rome",
-        "B) q=author:shakespeare AND title:rome",
-        "C) q=title:rome AND author:shakespeare",
-        "D) q=shakespeare OR rome"
+        "A) Missing close() calls on Connection objects",
+        "B) Excessive object creation due to incorrect transaction propagation",
+        "C) Inadequate configuration of JVM garbage collection parameters",
+        "D) Insufficient database connection pooling"
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) q=title:rome AND author:shakespeare",
-      "explanation": "This is correct because it uses field-specific queries to search for 'rome' in the title and 'shakespeare' in the author field. The other options do not correctly utilize field-specific queries or Boolean logic."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Missing close() calls on Connection objects",
+      "explanation": "The primary cause is the lack of close() calls on Connection objects. In the given scenario, the Connection objects are not being explicitly closed, leading to resource leaks. Even though the method is annotated with @Transactional, Spring does not automatically close the Connection. It is essential to manually close the Connection in a finally block to ensure it is released back to the pool, allowing for proper garbage collection and preventing OutOfMemoryErrors."
     },
     {
       "id": 2,
-      "scenario": "You are using Apache Solr to search a collection of products, and you want to find all products with prices between $100 and $500. You also want to filter the results to only include products from the 'electronics' category. How would you construct your Solr query?",
-      "question": "What is the correct Solr query syntax for this task?",
+      "scenario": "You are debugging a production issue where a multi-threaded Java application is encountering performance degradation due to increased garbage collection pauses. The application utilizes a concurrent queue for inter-thread communication. The relevant code snippet is: \n private static final Queue<Object> queue = new LinkedList<>(); \n public void processQueue() { \n    while (!queue.isEmpty()) { \n       Object obj = queue.poll(); \n       // Process the object... \n    } \n }",
+      "question": "What change can be made to reduce the garbage collection pauses?",
       "options": [
-        "A) q=price:[100 TO 500] AND category:electronics",
-        "B) q=price:[100 TO 500] AND fq=category:electronics",
-        "C) q=category:electronics AND fq=price:[100 TO 500]",
-        "D) q=price:[100 TO 500] OR category:electronics"
+        "A) Replace LinkedList with ArrayList",
+        "B) Use a concurrent queue implementation like ConcurrentHashMap",
+        "C) Increase the JVM's young generation size",
+        "D) Enable the G1 garbage collector"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) q=price:[100 TO 500] AND fq=category:electronics",
-      "explanation": "This is correct because it uses a range query to search for prices between $100 and $500, and a filter query to filter the results to only include products from the 'electronics' category. The filter query does not affect the relevance score and is highly cached, making it efficient for filtering large result sets."
+      "correct_answer_letter": "D",
+      "correct_answer_text": "D) Enable the G1 garbage collector",
+      "explanation": "Enabling the G1 garbage collector can help reduce garbage collection pauses. The G1 collector is designed to provide more predictable and lower pause times, making it suitable for applications with low-pause-time requirements. By switching to the G1 collector, the application can potentially experience reduced performance degradation due to garbage collection."
     },
     {
       "id": 3,
-      "scenario": "You are tasked with searching a large collection of documents using Apache Solr, and you want to find all documents that contain the phrase 'ancient rome' in the body. You also want to sort the results by relevance score in descending order and return only the top 10 results. How would you construct your Solr query?",
-      "question": "What is the correct Solr query syntax for this task?",
+      "scenario": "You are debugging a production issue where a Spring-based application using Spring Data JPA is experiencing memory leaks. The application has a service class annotated with @Service and @Transactional, and it uses an EntityManager to perform database operations. The relevant code snippet is: \n @Service \n @Transactional \n public class MyService { \n    @PersistenceContext \n    private EntityManager entityManager; \n    public void performDatabaseOperation() { \n       // Perform operations using entityManager... \n       entityManager.clear(); \n    } \n }",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) q=body:\"ancient rome\"&sort=score desc&rows=10",
-        "B) q=body:ancient AND body:rome&sort=score desc&rows=10",
-        "C) q=body:ancient OR body:rome&sort=score desc&rows=10",
-        "D) q=body:ancient rome&sort=score desc&rows=10"
+        "A) Incorrect usage of Spring's transaction management",
+        "B) Missing @Transactional annotation on the service method",
+        "C) Incorrectly configured.persistence.xml file",
+        "D) Incorrectly managed EntityManager lifecycle"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) q=body:\"ancient rome\"&sort=score desc&rows=10",
-      "explanation": "This is correct because it uses a phrase query to search for the exact phrase 'ancient rome' in the body field, and sorts the results by relevance score in descending order. The 'rows' parameter is used to return only the top 10 results. The other options do not correctly utilize phrase queries or sorting."
+      "correct_answer_letter": "D",
+      "correct_answer_text": "D) Incorrectly managed EntityManager lifecycle",
+      "explanation": "The primary cause of the issue is the incorrect management of the EntityManager lifecycle. The @PersistenceContext annotation is used to inject an EntityManager, but the clear() method is called explicitly. This can lead to issues because the EntityManager is managed by the Spring transaction management and should not be cleared manually. Instead, the transaction should be allowed to complete, and the EntityManager will be cleared automatically, preventing memory leaks."
     }
   ]
 }

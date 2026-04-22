@@ -1,8 +1,6 @@
 name: Send System Design Note
 
 on:
-  schedule:
-    - cron: '13 7 * * *' # 07:13 UTC ≈ 12:43 PM IST
   workflow_dispatch:
 
 jobs:

@@ -10,41 +10,55 @@ from utils import send_email, get_markdown_files, save_quiz_to_db, generate_cont
 
 load_dotenv(override=True)
 
+from smart_picker import pick_daily_topic
+
 def generate_quiz():
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    md_files = get_markdown_files(base_dir)
-    use_note = random.choice([True, False])
-
-    if use_note and md_files:
-        chosen_file = random.choice(md_files)
-        note_title = os.path.basename(chosen_file).replace('.md', '')
-        with open(chosen_file, 'r', encoding='utf-8') as f:
-            md_content = f.read()
-        prompt_topic = f"the following study note ({note_title})"
-        context_block = f"\nStudy Note Context:\n{md_content}\n"
-    else:
-        note_title = "General AI & ML (Surprise Topic!)"
-        prompt_topic = "a broad, advanced topic within Social Media Analytics, Artificial Intelligence, or Machine Learning"
-        context_block = ""
-
-    prompt = f"""
-    Act as a Senior AI/ML Interviewer. 
-    Generate 3 scenario-based Multiple Choice Questions based on {prompt_topic}. 
-    The questions must not be simple definitions; they must present a realistic engineering or data science scenario. 
-    {context_block}
     
+    # Get mode from command line (default to Java)
+    mode = sys.argv[1] if len(sys.argv) > 1 else "Java"
+    topic = pick_daily_topic(mode)
+    
+    print(f"Generating {mode} Quiz for topic: {topic}")
+
+    if "MCA" in mode:
+        # TCS iON Style MCA AI Exam Prompt
+        prompt = f"""
+        Act as a TCS iON Exam Designer for an MCA Artificial Intelligence course.
+        Generate 3 high-quality, scenario-based Multiple Choice Questions based on: "{topic}".
+        
+        TCS iON Style Guidelines:
+        - Every question must start with a "Real-world Industrial Problem Statement".
+        - Focus on algorithm selection, data constraints, and performance trade-offs.
+        - Options must be plausible (no obvious wrong answers).
+        - Include questions on handling skewed data, high-dimensional spaces, or real-time constraints.
+        """
+    else:
+        # Java Interview / Bug Hunting Prompt
+        prompt = f"""
+        Act as a Senior FAANG Interviewer.
+        Generate 3 scenario-based Multiple Choice Questions based on: "{topic}".
+        
+        Interview Guidelines:
+        - At least 1 question must be a "Bug Hunter" scenario (Provide a small Java/Spring snippet with a subtle flaw).
+        - Focus on JVM Internals, Spring Proxies, Transaction Management, and Concurrency.
+        - Scenario should be: "You are debugging a production issue where..."
+        """
+
+    prompt += f"""
     Return EXACTLY a JSON object with this structure, and absolutely no other text or markdown formatting:
     {{
-      "topic": "The general topic of the questions",
+      "topic": "{topic}",
+      "mode": "{mode}",
       "questions": [
         {{
           "id": 1,
-          "scenario": "A detailed scenario describing an engineering problem...",
-          "question": "What is the best approach to solve this?",
+          "scenario": "Detailed problem statement or code snippet...",
+          "question": "What is the primary cause of this issue?",
           "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
-          "correct_answer_letter": "C",
-          "correct_answer_text": "C) ...",
-          "explanation": "Detailed explanation of why this is correct and others are wrong."
+          "correct_answer_letter": "A",
+          "correct_answer_text": "A) ...",
+          "explanation": "Deep dive into why this is correct and the underlying mechanics (e.g., GC behavior, Proxy logic, or Algorithm math)."
         }}
       ]
     }}
@@ -66,8 +80,8 @@ def generate_quiz():
         print("Raw response:", quiz_json)
         sys.exit(1)
 
-    # Save the answers to latest_answers.json (for the answer email script)
-    state_file = os.path.join(base_dir, ".github", "latest_answers.json")
+    # Save the answers to latest_answers_{mode}.json (for the answer email script)
+    state_file = os.path.join(base_dir, ".github", f"latest_answers_{mode}.json")
     os.makedirs(os.path.dirname(state_file), exist_ok=True)
     with open(state_file, "w", encoding="utf-8") as f:
         json.dump(quiz_data, f, indent=2)
@@ -181,8 +195,8 @@ def generate_quiz():
     </head>
     <body>
         <div class="container">
-            <h1>Daily Tech Interview Quiz</h1>
-            <p class="subtitle">Topic: {quiz_data.get('topic', note_title)}</p>
+            <h1>{mode} Mastery Quiz</h1>
+            <p class="subtitle">Topic: {quiz_data.get('topic', topic)}</p>
             
             <p style="background: #eef2ff; color: #3730a3; padding: 15px; border-radius: 8px; font-size: 14px; margin-bottom: 30px;">
                 <strong>Hint:</strong> The detailed answers and explanations will arrive in exactly 30 minutes!
@@ -211,7 +225,7 @@ def generate_quiz():
     """
 
     send_email(
-        f"Action Required: Daily AI Quiz ({quiz_data.get('topic', note_title)})",
+        f"Action Required: {mode} Mastery Quiz ({quiz_data.get('topic', topic)})",
         html_content_start,
     )
 

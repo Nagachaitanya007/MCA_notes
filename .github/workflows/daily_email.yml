@@ -1,9 +1,6 @@
 name: Send Original Daily Note
 
 on:
-  schedule:
-    # TEMPORARY TEST: Runs at 06:03 UTC = 11:33 AM IST
-    - cron: '3 6 * * *'
   workflow_dispatch:
 
 jobs:

@@ -55,5 +55,15 @@
     "Prompt Engineering for Complex Logic Generation",
     "Integrating Gemini/LLM APIs into Java Apps",
     "Vector Databases & RAG (Retrieval Augmented Generation) basics"
+  ],
+  "MCA AI Exam (TCS iON Style)": [
+    "Machine Learning: Classification vs Regression Scenarios",
+    "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
+    "Natural Language Processing: Transformers, Attention, and Tokenization",
+    "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+    "AI Ethics, Bias, and Explainable AI (XAI)",
+    "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+    "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
+    "Clustering Scenarios: K-Means vs DBSCAN vs Hierarchical"
   ]
 }

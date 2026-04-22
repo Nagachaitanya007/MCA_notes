@@ -1,4 +1,4 @@
-name: Send Daily Answers
+name: Send MCA Quiz Answers
 
 on:
   workflow_dispatch:
@@ -25,4 +25,4 @@ jobs:
         env:
           GMAIL_EMAIL: ${{ secrets.GMAIL_EMAIL }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-        run: python send_answers.py "Java"
+        run: python send_answers.py "MCA"
