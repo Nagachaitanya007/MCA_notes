@@ -2,23 +2,14 @@ import os
 import sys
 import json
 import markdown
-from google import genai
+
 from dotenv import load_dotenv
 import datetime
 import re
 
-from utils import send_email, save_note_to_db
+from utils import send_email, save_note_to_db, generate_content_with_fallback
 
 load_dotenv(override=True)
-
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-
-if not GEMINI_API_KEY:
-    print("Error: GEMINI_API_KEY not found in environment variables.")
-    sys.exit(1)
-
-client = genai.Client(api_key=GEMINI_API_KEY)
-
 
 def generate_and_send_note():
     if len(sys.argv) < 2:
@@ -54,28 +45,10 @@ def generate_and_send_note():
     Pick a completely different subtopic within "{topic}".
     """
 
-    import time
-    max_retries = 3
-    md_content = ""
-    
-    for attempt in range(max_retries):
-        try:
-            print(f"Attempting generation (Attempt {attempt + 1}/{max_retries})...")
-            response = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
-            md_content = response.text
-            if md_content:
-                break
-        except Exception as e:
-            if "503" in str(e) and attempt < max_retries - 1:
-                print(f"Gemini is busy (503). Retrying in 10 seconds...")
-                time.sleep(10)
-                continue
-            else:
-                print(f"Gemini generation failed: {e}")
-                sys.exit(1)
+    md_content = generate_content_with_fallback(prompt)
     
     if not md_content:
-        print("Failed to generate content after multiple attempts.")
+        print("CRITICAL: All AI providers failed.")
         sys.exit(1)
 
     # Extract the subtopic from the H1 heading and save it

@@ -1,21 +1,12 @@
 import os
 import json
 import random
-from google import genai
+
 from dotenv import load_dotenv
 
-from utils import send_email, get_markdown_files, save_quiz_to_db
+from utils import send_email, get_markdown_files, save_quiz_to_db, generate_content_with_fallback
 
 load_dotenv(override=True)
-
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-
-if not GEMINI_API_KEY:
-    print("Error: GEMINI_API_KEY not found in environment variables.")
-    exit(1)
-
-client = genai.Client(api_key=GEMINI_API_KEY)
-
 
 def generate_quiz():
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -33,10 +24,6 @@ def generate_quiz():
         note_title = "General AI & ML (Surprise Topic!)"
         prompt_topic = "a broad, advanced topic within Social Media Analytics, Artificial Intelligence, or Machine Learning"
         context_block = ""
-
-    # Call Gemini
-    # Updated to use the new SDK call style
-    pass
 
     prompt = f"""
     Act as a Senior AI/ML Interviewer. 
@@ -61,32 +48,20 @@ def generate_quiz():
     }}
     """
 
-    import time
-    max_retries = 3
-    quiz_data = None
+    print("Calling AI for quiz generation...")
+    quiz_json = generate_content_with_fallback(prompt, is_json=True)
     
-    for attempt in range(max_retries):
-        try:
-            print(f"Attempting generation (Attempt {attempt + 1}/{max_retries})...")
-            response = client.models.generate_content(
-                model='gemini-flash-latest',
-                contents=prompt,
-                config={'response_mime_type': 'application/json'}
-            )
-            quiz_data = json.loads(response.text)
-            if quiz_data:
-                break
-        except Exception as e:
-            if "503" in str(e) and attempt < max_retries - 1:
-                print(f"Gemini is busy (503). Retrying in 10 seconds...")
-                time.sleep(10)
-                continue
-            else:
-                print(f"Gemini generation failed: {e}")
-                sys.exit(1)
-    
-    if not quiz_data:
-        print("Failed to generate quiz after multiple attempts.")
+    if not quiz_json:
+        print("CRITICAL: All AI providers failed.")
+        sys.exit(1)
+
+    try:
+        # Clean up any potential markdown formatting from the response
+        clean_json = re.sub(r'```json\s*|\s*```', '', quiz_json).strip()
+        quiz_data = json.loads(clean_json)
+    except Exception as e:
+        print(f"Failed to parse quiz JSON: {e}")
+        print("Raw response:", quiz_json)
         sys.exit(1)
 
     # Save the answers to latest_answers.json (for the answer email script)

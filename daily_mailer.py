@@ -6,83 +6,63 @@ from dotenv import load_dotenv
 import datetime
 import re
 
-from utils import send_email, get_markdown_files, save_note_to_db
+from utils import send_email, get_markdown_files, save_note_to_db, generate_content_with_fallback
 
 load_dotenv(override=True)
-
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-
-client = None
-if GEMINI_API_KEY:
-    client = genai.Client(api_key=GEMINI_API_KEY)
-
 
 def send_daily_note():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     md_files = get_markdown_files(base_dir)
 
-    import time
-    max_retries = 3
-    md_content = ""
-    for attempt in range(max_retries):
-        try:
-            print(f"Attempting generation (Attempt {attempt + 1}/{max_retries})...")
-            prompt = "You are an Expert FAANG Engineering Manager. Write a highly detailed, deeply technical study note on an advanced concept within Machine Learning, Artificial Intelligence, or Generative AI. It must be interview-focused. Include detailed code snippets and real-world examples. Format the entire response in clean Markdown, starting with an H1 heading for the topic."
-            response = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
-            md_content = response.text
-            if md_content:
-                break
-        except Exception as e:
-            if "503" in str(e) and attempt < max_retries - 1:
-                print(f"Gemini is busy (503). Retrying in 10 seconds...")
-                time.sleep(10)
-                continue
-            else:
-                print(f"Gemini generation failed: {e}. Falling back to local note.")
-                if md_files:
-                    # fallback logic continues...
-                    pass
-                raise e
+    prompt = "You are an Expert FAANG Engineering Manager. Write a highly detailed, deeply technical study note on an advanced concept within Machine Learning, Artificial Intelligence, or Generative AI. It must be interview-focused. Include detailed code snippets and real-world examples. Format the entire response in clean Markdown, starting with an H1 heading for the topic."
     
-    try:
-        title = "AI/GenAI Deep Dive (Generated)"
-
-        # Save generated note to file
-        generated_dir = os.path.join(base_dir, "Generated-Notes")
-        os.makedirs(generated_dir, exist_ok=True)
-
-        match = re.search(r'^#\s+(.*)', md_content, re.MULTILINE)
-        extracted_title = match.group(1) if match else "GenAI-Deep-Dive"
-        safe_topic = re.sub(r'[^a-zA-Z0-9]', '-', extracted_title).strip('-')
-        safe_topic = re.sub(r'-+', '-', safe_topic)[:30]
-
-        date_str = datetime.datetime.now().strftime("%Y-%m-%d")
-        filename = f"{date_str}-{safe_topic}.md"
-        file_path = os.path.join(generated_dir, filename)
-
-        frontmatter = f"---\ntitle: {extracted_title}\ndate: {datetime.datetime.now().isoformat()}\n---\n\n"
-
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(frontmatter + md_content)
-        print(f"Saved generated note to: {file_path}")
-
-        # --- SAVE TO DATABASE ---
-        save_note_to_db(
-            title=extracted_title,
-            content=md_content,
-            folder="Daily Note",
-            slug=f"{date_str}-{safe_topic}"
-        )
-
-    except Exception as e:
-        print(f"Gemini generation failed: {e}. Falling back to local note.")
+    print("Generating a new GenAI study note...")
+    md_content = generate_content_with_fallback(prompt)
+    
+    if not md_content:
+        print("CRITICAL: All AI providers failed. Falling back to local note.")
         if md_files:
             chosen_file = random.choice(md_files)
             title = os.path.basename(chosen_file).replace('.md', '')
             with open(chosen_file, 'r', encoding='utf-8') as f:
                 md_content = f.read()
+            # Wrap local content to proceed normally
+            extracted_title = title
         else:
+            print("No local notes found to fall back on. Exiting.")
             return
+    else:
+        # We have fresh AI content!
+        pass
+    
+    # Save generated note to file & database
+    generated_dir = os.path.join(base_dir, "Generated-Notes")
+    os.makedirs(generated_dir, exist_ok=True)
+
+    match = re.search(r'^#\s+(.*)', md_content, re.MULTILINE)
+    extracted_title = match.group(1) if match else "GenAI-Deep-Dive"
+    safe_topic = re.sub(r'[^a-zA-Z0-9]', '-', extracted_title).strip('-')
+    safe_topic = re.sub(r'-+', '-', safe_topic)[:30]
+
+    date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+    filename = f"{date_str}-{safe_topic}.md"
+    file_path = os.path.join(generated_dir, filename)
+
+    frontmatter = f"---\ntitle: {extracted_title}\ndate: {datetime.datetime.now().isoformat()}\n---\n\n"
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(frontmatter + md_content)
+    print(f"Saved note to: {file_path}")
+
+    # --- SAVE TO DATABASE ---
+    save_note_to_db(
+        title=extracted_title,
+        content=md_content,
+        folder="Daily Note",
+        slug=f"{date_str}-{safe_topic}"
+    )
+    
+    title = extracted_title
 
     # Convert Markdown to HTML
     html_content = markdown.markdown(md_content)

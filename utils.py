@@ -9,8 +9,78 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 from supabase import create_client, Client
+from google import genai
+from groq import Groq
+import time
+import json
 
 load_dotenv(override=True)
+
+# Clients initialized lazily
+_gemini_client = None
+_groq_client = None
+
+def get_gemini_client():
+    global _gemini_client
+    if _gemini_client is None:
+        key = os.environ.get("GEMINI_API_KEY")
+        if key: _gemini_client = genai.Client(api_key=key)
+    return _gemini_client
+
+def get_groq_client():
+    global _groq_client
+    if _groq_client is None:
+        key = os.environ.get("GROQ_API_KEY")
+        if key: _groq_client = Groq(api_key=key)
+    return _groq_client
+
+def generate_content_with_fallback(prompt: str, is_json: bool = False) -> str:
+    """
+    Tries to generate content using a prioritized list of providers and models.
+    Order: Gemini 2.0 Flash -> Gemini 2.0 Flash Lite -> Gemini Flash Latest -> Groq Llama 3.3
+    """
+    # 1. Try Gemini Models
+    gemini = get_gemini_client()
+    if gemini:
+        gemini_models = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-flash-latest']
+        for model in gemini_models:
+            for attempt in range(2):
+                try:
+                    print(f"Trying Gemini ({model}, attempt {attempt+1})...")
+                    config = {'response_mime_type': 'application/json'} if is_json else None
+                    response = gemini.models.generate_content(model=model, contents=prompt, config=config)
+                    if response.text:
+                        print(f"Success with Gemini ({model})!")
+                        return response.text
+                except Exception as e:
+                    if "503" in str(e) or "429" in str(e):
+                        print(f"Gemini {model} busy/limit reached. Waiting 5s...")
+                        time.sleep(5)
+                    else:
+                        print(f"Gemini {model} error: {e}")
+                        break # Try next model
+    
+    # 2. Fallback to Groq (The Shield)
+    groq = get_groq_client()
+    if groq:
+        try:
+            print("All Gemini options exhausted. Switching to Groq (Llama-3.3-70b)...")
+            model = "llama-3.3-70b-versatile"
+            response_format = {"type": "json_object"} if is_json else None
+            
+            chat_completion = groq.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
+                model=model,
+                response_format=response_format
+            )
+            content = chat_completion.choices[0].message.content
+            if content:
+                print(f"Success with Groq ({model})!")
+                return content
+        except Exception as e:
+            print(f"Groq failed as well: {e}")
+
+    return ""
 
 
 def get_supabase_client() -> Client:
