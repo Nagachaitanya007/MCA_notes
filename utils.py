@@ -117,15 +117,18 @@ def save_quiz_to_db(topic: str, questions: list):
     supabase = get_supabase_client()
     if not supabase: return
     
+    import datetime
     try:
         data = {
             "topic": topic,
-            "questions": questions
+            "questions": questions,
+            "quiz_date": datetime.datetime.now().strftime("%Y-%m-%d")
         }
-        supabase.table("quizzes").insert(data).execute()
+        response = supabase.table("quizzes").insert(data).execute()
         print(f"Success! Quiz on '{topic}' saved to Supabase.")
     except Exception as e:
-        print(f"Failed to save quiz to Supabase: {e}")
+        print(f"CRITICAL DATABASE ERROR: Failed to save quiz to Supabase.")
+        print(f"Error Details: {e}")
 
 
 def get_email_config():

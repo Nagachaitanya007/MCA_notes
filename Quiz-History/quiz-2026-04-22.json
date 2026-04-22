@@ -1,0 +1,47 @@
+{
+  "topic": "Apache Solr Queries",
+  "questions": [
+    {
+      "id": 1,
+      "scenario": "You are tasked with searching a large collection of historical documents using Apache Solr. The documents have fields such as title, author, and body. You want to find all documents written by 'shakespeare' that contain the word 'rome' in the title. How would you construct your Solr query?",
+      "question": "What is the correct Solr query syntax for this task?",
+      "options": [
+        "A) q=shakespeare AND rome",
+        "B) q=author:shakespeare AND title:rome",
+        "C) q=title:rome AND author:shakespeare",
+        "D) q=shakespeare OR rome"
+      ],
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) q=title:rome AND author:shakespeare",
+      "explanation": "This is correct because it uses field-specific queries to search for 'rome' in the title and 'shakespeare' in the author field. The other options do not correctly utilize field-specific queries or Boolean logic."
+    },
+    {
+      "id": 2,
+      "scenario": "You are using Apache Solr to search a collection of products, and you want to find all products with prices between $100 and $500. You also want to filter the results to only include products from the 'electronics' category. How would you construct your Solr query?",
+      "question": "What is the correct Solr query syntax for this task?",
+      "options": [
+        "A) q=price:[100 TO 500] AND category:electronics",
+        "B) q=price:[100 TO 500] AND fq=category:electronics",
+        "C) q=category:electronics AND fq=price:[100 TO 500]",
+        "D) q=price:[100 TO 500] OR category:electronics"
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) q=price:[100 TO 500] AND fq=category:electronics",
+      "explanation": "This is correct because it uses a range query to search for prices between $100 and $500, and a filter query to filter the results to only include products from the 'electronics' category. The filter query does not affect the relevance score and is highly cached, making it efficient for filtering large result sets."
+    },
+    {
+      "id": 3,
+      "scenario": "You are tasked with searching a large collection of documents using Apache Solr, and you want to find all documents that contain the phrase 'ancient rome' in the body. You also want to sort the results by relevance score in descending order and return only the top 10 results. How would you construct your Solr query?",
+      "question": "What is the correct Solr query syntax for this task?",
+      "options": [
+        "A) q=body:\"ancient rome\"&sort=score desc&rows=10",
+        "B) q=body:ancient AND body:rome&sort=score desc&rows=10",
+        "C) q=body:ancient OR body:rome&sort=score desc&rows=10",
+        "D) q=body:ancient rome&sort=score desc&rows=10"
+      ],
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) q=body:\"ancient rome\"&sort=score desc&rows=10",
+      "explanation": "This is correct because it uses a phrase query to search for the exact phrase 'ancient rome' in the body field, and sorts the results by relevance score in descending order. The 'rows' parameter is used to return only the top 10 results. The other options do not correctly utilize phrase queries or sorting."
+    }
+  ]
+}
