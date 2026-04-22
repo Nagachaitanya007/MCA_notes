@@ -66,46 +66,42 @@ def generate_and_send_note():
         print("Failed to generate content after multiple attempts.")
         sys.exit(1)
 
-        # Extract the subtopic from the H1 heading and save it
-        h1_match = re.search(r'^#\s+(.*)', md_content, re.MULTILINE)
-        new_subtopic = h1_match.group(1).strip() if h1_match else "Unknown"
-        
-        if topic not in covered:
-            covered[topic] = []
-        covered[topic].append(new_subtopic)
-        
-        os.makedirs(os.path.dirname(tracker_file), exist_ok=True)
-        with open(tracker_file, "w", encoding="utf-8") as f:
-            json.dump(covered, f, indent=2)
-        print(f"Topic tracker updated: '{new_subtopic}' added under '{topic}'")
+    # Extract the subtopic from the H1 heading and save it
+    h1_match = re.search(r'^#\s+(.*)', md_content, re.MULTILINE)
+    new_subtopic = h1_match.group(1).strip() if h1_match else "Unknown"
+    
+    if topic not in covered:
+        covered[topic] = []
+    covered[topic].append(new_subtopic)
+    
+    os.makedirs(os.path.dirname(tracker_file), exist_ok=True)
+    with open(tracker_file, "w", encoding="utf-8") as f:
+        json.dump(covered, f, indent=2)
+    print(f"Topic tracker updated: '{new_subtopic}' added under '{topic}'")
 
-        # Save generated note to file
-        generated_dir = os.path.join(base_dir, "Generated-Notes")
-        os.makedirs(generated_dir, exist_ok=True)
+    # Save generated note to file
+    generated_dir = os.path.join(base_dir, "Generated-Notes")
+    os.makedirs(generated_dir, exist_ok=True)
 
-        safe_topic = re.sub(r'[^a-zA-Z0-9]', '-', topic).strip('-')
-        safe_topic = re.sub(r'-+', '-', safe_topic)[:30]
-        date_str = datetime.datetime.now().strftime("%Y-%m-%d")
-        filename = f"{date_str}-{safe_topic}.md"
-        file_path = os.path.join(generated_dir, filename)
+    safe_topic = re.sub(r'[^a-zA-Z0-9]', '-', topic).strip('-')
+    safe_topic = re.sub(r'-+', '-', safe_topic)[:30]
+    date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+    filename = f"{date_str}-{safe_topic}.md"
+    file_path = os.path.join(generated_dir, filename)
 
-        frontmatter = f"---\ntitle: {new_subtopic}\ndate: {datetime.datetime.now().isoformat()}\n---\n\n"
+    frontmatter = f"---\ntitle: {new_subtopic}\ndate: {datetime.datetime.now().isoformat()}\n---\n\n"
 
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(frontmatter + md_content)
-        print(f"Saved generated note to: {file_path}")
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(frontmatter + md_content)
+    print(f"Saved generated note to: {file_path}")
 
-        # --- SAVE TO DATABASE ---
-        save_note_to_db(
-            title=new_subtopic,
-            content=md_content,
-            folder=topic,
-            slug=f"{date_str}-{safe_topic}"
-        )
-
-    except Exception as e:
-        print(f"Gemini generation failed: {e}")
-        sys.exit(1)
+    # --- SAVE TO DATABASE ---
+    save_note_to_db(
+        title=new_subtopic,
+        content=md_content,
+        folder=topic,
+        slug=f"{date_str}-{safe_topic}"
+    )
 
     # Convert Markdown to HTML with syntax highlighting and tables support
     html_content = markdown.markdown(md_content, extensions=['fenced_code', 'codehilite', 'tables'])
