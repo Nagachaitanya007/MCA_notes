@@ -19,23 +19,22 @@ NoteForge operates as a self-sustaining ecosystem with zero manual intervention 
 graph TD
     subgraph "Automation Engine (GitHub Actions)"
         A[Cron Trigger] --> B[Python Scripts]
-        B --> C{Gemini 1.5 Flash API}
-        C -->|Generate Note| D[Markdown Storage]
-        C -->|Generate Quiz| E[JSON History]
-        D --> F[Git Auto-Commit]
+        B --> C{Gemini AI API}
+        C -->|Generate Note| D[Supabase DB & Git]
+        C -->|Generate Quiz| E[Supabase DB & Git]
+        D --> F[Git Auto-Push]
         E --> F
     end
 
     subgraph "Delivery Pipeline"
-        F --> G[Gmail SMTP Service]
-        F --> H[Render Webhook]
+        D --> G[Gmail SMTP Service]
         G -->|Daily Email| I[User Inbox]
     end
 
-    subgraph "Web Interface (Next.js 15)"
-        H --> J[NoteForge Web App]
-        J -->|Read Files| D
-        J -->|Read History| E
+    subgraph "Web Interface (Next.js)"
+        J[NoteForge Web App]
+        J -->|Read DB First| D
+        J -->|Fallback to FS| E
         J -->|Display| K[Interactive UI]
     end
 ```
@@ -63,11 +62,11 @@ graph TD
 
 | Category | Technology |
 | :--- | :--- |
-| **Frontend** | Next.js 15 (App Router), Tailwind CSS 4, TypeScript |
-| **Backend** | Python 3.13, Node.js |
-| **AI Model** | Google Gemini 1.5 Flash (Generative AI) |
+| **Frontend** | Next.js (App Router), Tailwind CSS, TypeScript |
+| **Database** | **Supabase (PostgreSQL)** |
+| **AI Model** | **Google Gemini 2.0/2.5 Flash** |
 | **CI/CD & Automation** | GitHub Actions (Cron Jobs) |
-| **Deployment** | Render (Auto-rebuild via Webhooks) |
+| **Deployment** | Render (Web Service) |
 | **Communication** | Gmail SMTP API |
 
 ---
