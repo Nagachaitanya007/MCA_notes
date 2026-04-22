@@ -13,5 +13,8 @@
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections"
+  ],
+  "JVM Internals (Memory Model, G1/ZGC, Class Loading)": [
+    "JVM Internals: The Lifecycle of a Java Object"
   ]
 }
