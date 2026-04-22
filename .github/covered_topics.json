@@ -1,5 +1,8 @@
 {
   "Quantum Computing": [
     "Variational Quantum Eigensolver (VQE): Hybrid Quantum-Classical Architectures"
+  ],
+  "Java, Spring Boot, Microservices, and Cloud Native Development": [
+    "Mastering Distributed Transactions: The Saga Pattern & Transactional Outbox"
   ]
 }

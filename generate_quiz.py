@@ -78,8 +78,8 @@ def generate_quiz():
                 break
         except Exception as e:
             if "503" in str(e) and attempt < max_retries - 1:
-                print(f"Gemini is busy (503). Retrying in 5 seconds...")
-                time.sleep(5)
+                print(f"Gemini is busy (503). Retrying in 10 seconds...")
+                time.sleep(10)
                 continue
             else:
                 print(f"Gemini generation failed: {e}")

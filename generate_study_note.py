@@ -42,6 +42,18 @@ def generate_and_send_note():
     previously_covered = covered.get(topic, [])
     exclusion_list = ", ".join(previously_covered[-30:]) if previously_covered else "None yet"
 
+    prompt = f"""
+    You are an Expert FAANG Engineering Manager and Technical Writer. 
+    Write a highly detailed, deeply technical study note on an advanced concept within this topic: "{topic}". 
+    It must be interview-focused and designed for a Senior Engineer. 
+    Include detailed code snippets and real-world system architecture examples where applicable. 
+    Format the entire response in clean Markdown, starting with an H1 heading for the specific concept you chose.
+    
+    IMPORTANT: Do NOT cover any of these subtopics, as they have already been covered:
+    [{exclusion_list}]
+    Pick a completely different subtopic within "{topic}".
+    """
+
     import time
     max_retries = 3
     md_content = ""
@@ -55,8 +67,8 @@ def generate_and_send_note():
                 break
         except Exception as e:
             if "503" in str(e) and attempt < max_retries - 1:
-                print(f"Gemini is busy (503). Retrying in 5 seconds...")
-                time.sleep(5)
+                print(f"Gemini is busy (503). Retrying in 10 seconds...")
+                time.sleep(10)
                 continue
             else:
                 print(f"Gemini generation failed: {e}")
