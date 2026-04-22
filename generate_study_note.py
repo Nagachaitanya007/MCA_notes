@@ -42,20 +42,29 @@ def generate_and_send_note():
     previously_covered = covered.get(topic, [])
     exclusion_list = ", ".join(previously_covered[-30:]) if previously_covered else "None yet"
 
-    try:
-        prompt = f"""
-        You are an Expert FAANG Engineering Manager and Technical Writer. 
-        Write a highly detailed, deeply technical study note on an advanced concept within this topic: "{topic}". 
-        It must be interview-focused and designed for a Senior Engineer. 
-        Include detailed code snippets and real-world system architecture examples where applicable. 
-        Format the entire response in clean Markdown, starting with an H1 heading for the specific concept you chose.
-        
-        IMPORTANT: Do NOT cover any of these subtopics, as they have already been covered:
-        [{exclusion_list}]
-        Pick a completely different subtopic within "{topic}".
-        """
-        response = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
-        md_content = response.text
+    import time
+    max_retries = 3
+    md_content = ""
+    
+    for attempt in range(max_retries):
+        try:
+            print(f"Attempting generation (Attempt {attempt + 1}/{max_retries})...")
+            response = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
+            md_content = response.text
+            if md_content:
+                break
+        except Exception as e:
+            if "503" in str(e) and attempt < max_retries - 1:
+                print(f"Gemini is busy (503). Retrying in 5 seconds...")
+                time.sleep(5)
+                continue
+            else:
+                print(f"Gemini generation failed: {e}")
+                sys.exit(1)
+    
+    if not md_content:
+        print("Failed to generate content after multiple attempts.")
+        sys.exit(1)
 
         # Extract the subtopic from the H1 heading and save it
         h1_match = re.search(r'^#\s+(.*)', md_content, re.MULTILINE)

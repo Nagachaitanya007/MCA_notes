@@ -21,12 +21,30 @@ def send_daily_note():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     md_files = get_markdown_files(base_dir)
 
-    # Always generate a fresh AI note (no more coin-flip)
-    print("Generating a new GenAI study note...")
+    import time
+    max_retries = 3
+    md_content = ""
+    for attempt in range(max_retries):
+        try:
+            print(f"Attempting generation (Attempt {attempt + 1}/{max_retries})...")
+            prompt = "You are an Expert FAANG Engineering Manager. Write a highly detailed, deeply technical study note on an advanced concept within Machine Learning, Artificial Intelligence, or Generative AI. It must be interview-focused. Include detailed code snippets and real-world examples. Format the entire response in clean Markdown, starting with an H1 heading for the topic."
+            response = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
+            md_content = response.text
+            if md_content:
+                break
+        except Exception as e:
+            if "503" in str(e) and attempt < max_retries - 1:
+                print(f"Gemini is busy (503). Retrying in 5 seconds...")
+                time.sleep(5)
+                continue
+            else:
+                print(f"Gemini generation failed: {e}. Falling back to local note.")
+                if md_files:
+                    # fallback logic continues...
+                    pass
+                raise e
+    
     try:
-        prompt = "You are an Expert FAANG Engineering Manager. Write a highly detailed, deeply technical study note on an advanced concept within Machine Learning, Artificial Intelligence, or Generative AI. It must be interview-focused. Include detailed code snippets and real-world examples. Format the entire response in clean Markdown, starting with an H1 heading for the topic."
-        response = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
-        md_content = response.text
         title = "AI/GenAI Deep Dive (Generated)"
 
         # Save generated note to file

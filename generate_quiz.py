@@ -61,14 +61,33 @@ def generate_quiz():
     }}
     """
 
-    print("Calling Gemini API...")
-    response = client.models.generate_content(
-        model='gemini-flash-latest',
-        contents=prompt,
-        config={'response_mime_type': 'application/json'}
-    )
-
-    quiz_data = json.loads(response.text)
+    import time
+    max_retries = 3
+    quiz_data = None
+    
+    for attempt in range(max_retries):
+        try:
+            print(f"Attempting generation (Attempt {attempt + 1}/{max_retries})...")
+            response = client.models.generate_content(
+                model='gemini-flash-latest',
+                contents=prompt,
+                config={'response_mime_type': 'application/json'}
+            )
+            quiz_data = json.loads(response.text)
+            if quiz_data:
+                break
+        except Exception as e:
+            if "503" in str(e) and attempt < max_retries - 1:
+                print(f"Gemini is busy (503). Retrying in 5 seconds...")
+                time.sleep(5)
+                continue
+            else:
+                print(f"Gemini generation failed: {e}")
+                sys.exit(1)
+    
+    if not quiz_data:
+        print("Failed to generate quiz after multiple attempts.")
+        sys.exit(1)
 
     # Save the answers to latest_answers.json (for the answer email script)
     state_file = os.path.join(base_dir, ".github", "latest_answers.json")
