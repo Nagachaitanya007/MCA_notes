@@ -18,7 +18,7 @@ interface QuizData {
   questions: QuizQuestion[];
 }
 
-export default function QuizCard({ quiz }: { quiz: QuizData }) {
+export default function QuizCard({ quiz, startNumber = 1 }: { quiz: QuizData; startNumber?: number }) {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [revealed, setRevealed] = useState<Record<number, boolean>>({});
 
@@ -32,53 +32,59 @@ export default function QuizCard({ quiz }: { quiz: QuizData }) {
   };
 
   return (
-    <div className="bg-gray-900/50 border border-gray-800/60 rounded-xl overflow-hidden">
+    <div className="bg-gray-900/50 border border-gray-800/60 rounded-xl overflow-hidden shadow-xl shadow-indigo-500/5">
       {/* Quiz Header */}
-      <div className="px-4 sm:px-6 py-4 border-b border-gray-800/60 flex justify-between items-center bg-gray-900/30">
+      <div className="px-4 sm:px-6 py-5 border-b border-gray-800/60 flex justify-between items-center bg-gray-900/30">
         <div>
-          <h3 className="text-sm sm:text-base font-semibold text-white truncate max-w-[200px] sm:max-w-none">{quiz.topic}</h3>
-          <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
+          <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">{quiz.topic}</h3>
+          <p className="text-[10px] sm:text-xs text-indigo-400/70 font-medium uppercase tracking-widest mt-1">
             {new Date(quiz.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
           </p>
         </div>
-        <span className="text-[10px] sm:text-xs text-gray-600 font-medium">{quiz.questions.length} Qs</span>
+        <div className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full">
+          <span className="text-[10px] sm:text-xs text-indigo-400 font-semibold">{quiz.questions.length} Questions</span>
+        </div>
       </div>
 
       {/* Questions */}
       <div className="divide-y divide-gray-800/40">
-        {quiz.questions.map((q) => {
+        {quiz.questions.map((q, idx) => {
           const isRevealed = revealed[q.id];
           const userAnswer = selectedAnswers[q.id];
           const isCorrect = userAnswer === q.correct_answer_letter;
+          const displayId = startNumber + idx;
 
           return (
-            <div key={q.id} className="px-4 sm:px-6 py-5">
+            <div key={q.id} className="px-4 sm:px-6 py-8">
               {/* Scenario */}
-              <p className="text-xs sm:text-sm text-gray-500 italic mb-3 leading-relaxed">{q.scenario}</p>
+              <div className="bg-gray-900/30 border-l-2 border-indigo-500/30 p-4 rounded-r-lg mb-6">
+                <p className="text-xs sm:text-sm text-gray-400 italic leading-relaxed">{q.scenario}</p>
+              </div>
 
               {/* Question */}
-              <p className="text-sm sm:text-base font-medium text-gray-200 mb-4 leading-snug">
-                {q.id}. {q.question}
+              <p className="text-sm sm:text-base font-bold text-gray-100 mb-6 leading-snug flex items-start">
+                <span className="text-indigo-500 mr-3">Q{displayId}.</span>
+                {q.question}
               </p>
 
               {/* Options */}
-              <div className="space-y-2 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
                 {q.options.map((opt) => {
                   const letter = opt.charAt(0);
                   const isSelected = userAnswer === letter;
                   const isCorrectOption = q.correct_answer_letter === letter;
 
-                  let optionStyle = 'bg-gray-800/30 border-gray-800/50 text-gray-400 hover:border-gray-700 cursor-pointer';
+                  let optionStyle = 'bg-gray-800/30 border-gray-800/50 text-gray-400 hover:border-indigo-500/50 cursor-pointer';
                   if (isRevealed) {
                     if (isCorrectOption) {
-                      optionStyle = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400';
+                      optionStyle = 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400 ring-1 ring-emerald-500/20';
                     } else if (isSelected && !isCorrect) {
-                      optionStyle = 'bg-red-500/10 border-red-500/30 text-red-400';
+                      optionStyle = 'bg-red-500/10 border-red-500/40 text-red-400 ring-1 ring-red-500/20';
                     } else {
-                      optionStyle = 'bg-gray-800/20 border-gray-800/20 text-gray-600';
+                      optionStyle = 'bg-gray-900/40 border-gray-900 text-gray-600 opacity-50';
                     }
                   } else if (isSelected) {
-                    optionStyle = 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-sm shadow-indigo-500/10';
+                    optionStyle = 'bg-indigo-500/10 border-indigo-500/50 text-indigo-300 ring-1 ring-indigo-500/30 shadow-md shadow-indigo-500/10';
                   }
 
                   return (
@@ -86,7 +92,7 @@ export default function QuizCard({ quiz }: { quiz: QuizData }) {
                       key={opt}
                       onClick={() => selectAnswer(q.id, letter)}
                       disabled={isRevealed}
-                      className={`w-full text-left px-4 py-2.5 rounded-lg border text-xs sm:text-sm transition-all duration-200 ${optionStyle}`}
+                      className={`w-full text-left px-5 py-3 rounded-xl border text-xs sm:text-sm transition-all duration-300 ${optionStyle}`}
                     >
                       {opt}
                     </button>
@@ -99,16 +105,26 @@ export default function QuizCard({ quiz }: { quiz: QuizData }) {
                 <button
                   onClick={() => revealAnswer(q.id)}
                   disabled={!userAnswer}
-                  className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 disabled:text-gray-700 disabled:cursor-not-allowed transition-colors"
+                  className="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-800 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-indigo-600/20 disabled:shadow-none disabled:text-gray-500 cursor-pointer disabled:cursor-not-allowed"
                 >
-                  {userAnswer ? 'Reveal Answer →' : 'Select an option first'}
+                  {userAnswer ? 'Check Answer →' : 'Select an option to continue'}
                 </button>
               ) : (
-                <div className={`mt-3 p-3 rounded-lg text-xs sm:text-sm ${isCorrect ? 'bg-emerald-500/5 border border-emerald-500/20' : 'bg-red-500/5 border border-red-500/20'}`}>
-                  <p className={`font-semibold mb-1 ${isCorrect ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {isCorrect ? '✓ Correct!' : `✗ Incorrect — Answer: ${q.correct_answer_text}`}
-                  </p>
-                  <p className="text-gray-400 text-[11px] sm:text-xs leading-relaxed">{q.explanation}</p>
+                <div className={`mt-4 p-5 rounded-xl border-2 ${isCorrect ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className={`text-lg ${isCorrect ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {isCorrect ? '✓' : '✗'}
+                    </span>
+                    <p className={`font-bold text-sm sm:text-base ${isCorrect ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {isCorrect ? 'Perfectly Correct!' : `Not quite — The answer is ${q.correct_answer_text}`}
+                    </p>
+                  </div>
+                  <div className="bg-black/20 p-4 rounded-lg">
+                    <p className="text-gray-300 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-medium">
+                      <span className="text-indigo-400 font-bold block mb-1 uppercase text-[10px] tracking-wider">Expert Deep Dive:</span>
+                      {q.explanation}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

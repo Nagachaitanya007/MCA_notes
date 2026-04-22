@@ -27,10 +27,24 @@ export default async function QuizzesPage() {
 
         {/* Quiz List */}
         {quizzes.length > 0 ? (
-          <div className="space-y-6">
-            {quizzes.map((quiz) => (
-              <QuizCard key={quiz.date} quiz={quiz} />
-            ))}
+          <div className="space-y-10">
+            {(() => {
+              let globalIndexOffset = 0;
+              // Reverse the quizzes array for display (newest first)
+              // but we need to calculate offsets based on chronological order to keep IDs stable
+              // Actually, simpler: just use a running total
+              const sortedQuizzes = [...quizzes].sort((a, b) => (a.date > b.date ? 1 : -1));
+              const quizWithOffsets = sortedQuizzes.map(q => {
+                const currentOffset = globalIndexOffset;
+                globalIndexOffset += q.questions.length;
+                return { ...q, offset: currentOffset };
+              });
+              
+              // Now display newest first
+              return quizWithOffsets.reverse().map((quiz) => (
+                <QuizCard key={quiz.date} quiz={quiz} startNumber={quiz.offset + 1} />
+              ));
+            })()}
           </div>
         ) : (
           <div className="text-center py-20 bg-gray-900/50 border border-gray-800/60 rounded-xl">

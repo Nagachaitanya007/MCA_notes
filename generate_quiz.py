@@ -41,6 +41,7 @@ def generate_quiz():
         
         Interview Guidelines:
         - At least 1 question must be a "Bug Hunter" scenario (Provide a small Java/Spring snippet with a subtle flaw).
+        - Use Markdown backticks (e.g. `List<String>`) for ALL code snippets and class names.
         - Focus on JVM Internals, Spring Proxies, Transaction Management, and Concurrency.
         - Scenario should be: "You are debugging a production issue where..."
         """
@@ -203,12 +204,20 @@ def generate_quiz():
             </p>
     """
 
+    import markdown
     for q in quiz_data['questions']:
-        options_html = "".join([f"<li>{opt}</li>" for opt in q['options']])
+        # Convert scenario markdown to HTML (safely handles < and > in code)
+        html_scenario = markdown.markdown(q['scenario'], extensions=['fenced_code', 'tables'])
+        
+        # Still escape question and options for safety
+        import html
+        safe_question = html.escape(q['question'])
+        options_html = "".join([f"<li>{html.escape(opt)}</li>" for opt in q['options']])
+        
         html_content_start += f"""
             <div class="question-card">
-                <div class="scenario">{q['scenario']}</div>
-                <div class="question">{q['id']}. {q['question']}</div>
+                <div class="scenario">{html_scenario}</div>
+                <div class="question">{q['id']}. {safe_question}</div>
                 <ul class="options">
                     {options_html}
                 </ul>

@@ -111,13 +111,20 @@ def send_answers():
     """
 
     for q in quiz_data['questions']:
+        # Convert explanation markdown to HTML
+        html_explanation = markdown.markdown(q['explanation'], extensions=['fenced_code', 'tables'])
+        
+        # Escape question and answer for safety
+        safe_question = html.escape(q['question'])
+        safe_answer = html.escape(q['correct_answer_text'])
+
         html_content += f"""
             <div class="answer-card">
-                <div class="question">{q['id']}. {q['question']}</div>
-                <div class="correct-box">✅ Correct Answer: {q['correct_answer_text']}</div>
+                <div class="question">{q['id']}. {safe_question}</div>
+                <div class="correct-box">✅ Correct Answer: {safe_answer}</div>
                 <div class="explanation">
                     <strong>Deep Dive Explanation:</strong><br>
-                    {q['explanation']}
+                    {html_explanation}
                 </div>
             </div>
         """
