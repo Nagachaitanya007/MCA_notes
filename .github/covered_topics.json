@@ -4,5 +4,14 @@
   ],
   "Java, Spring Boot, Microservices, and Cloud Native Development": [
     "Mastering Distributed Transactions: The Saga Pattern & Transactional Outbox"
+  ],
+  "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)": [
+    "\ud83d\ude80 Java Concurrency & Multithreading: Virtual Threads & CompletableFuture"
+  ],
+  "Exception Handling Strategies in Distributed Systems": [
+    "Unknown"
+  ],
+  "Advanced Collections Framework & Custom Implementations": [
+    "The LRU Cache: Mastering Custom Hybrid Collections"
   ]
 }

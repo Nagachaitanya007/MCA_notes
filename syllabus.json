@@ -1,0 +1,59 @@
+{
+  "Java & Core": [
+    "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
+    "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
+    "Advanced Collections Framework & Custom Implementations",
+    "Exception Handling Strategies in Distributed Systems",
+    "Memory Management & Garbage Collection Tuning"
+  ],
+  "Spring Boot & API": [
+    "Spring IoC & Bean Lifecycle (Internal Proxy Logic)",
+    "AOP Proxies & Custom Annotations",
+    "Transaction Propagation & Isolation Levels",
+    "OAuth2.0, JWT & Spring Security Internal Filters",
+    "API Security (Rate Limiting, SQL Injection, CSRF)",
+    "Swagger/OpenAPI Documentation Best Practices"
+  ],
+  "Messaging & Distributed Systems": [
+    "Apache Kafka Internals (Partitions, Rebalancing, Offsets)",
+    "Kafka Producer/Consumer Tuning & Exactly-Once Semantics",
+    "Event-Driven Design Patterns (SAGA, CQRS, Event Sourcing)",
+    "AWS SQS vs SNS vs Kafka: Trade-offs",
+    "Dead Letter Queues (DLQ) & Error Handling Strategies"
+  ],
+  "Cloud & Infrastructure": [
+    "Docker Internals & Image Optimization",
+    "CI/CD Pipelines (GitHub Actions vs Jenkins) with Security Scanning",
+    "AWS S3 & DynamoDB Data Modeling (Single Table Design)",
+    "Monitoring & Observability (Grafana, Kibana, Prometheus)",
+    "IAM Policies & Principle of Least Privilege"
+  ],
+  "Databases": [
+    "PostgreSQL Indexing & Query Optimization",
+    "SQL vs NoSQL: Choosing for Scalability",
+    "Redis Caching Strategies (Cache-aside, Write-through)",
+    "Distributed Locking with Redis/Zookeeper"
+  ],
+  "Testing & Quality": [
+    "JUnit 5 & Mockito Advanced Testing Techniques",
+    "Integration Testing with TestContainers",
+    "Static Code Analysis with SonarQube",
+    "Automated UI Testing with Playwright/Cypress"
+  ],
+  "System Design & Case Studies": [
+    "Design a Rate Limiter (Token Bucket vs Leaky Bucket)",
+    "Design a Distributed ID Generator (Snowflake ID)",
+    "Design a URL Shortener (Key Generation Service, Sharding)",
+    "Design a Notification System (Kafka + SQS + Webhooks)",
+    "Design a Real-time Chat System (WebSockets, Redis Pub/Sub)",
+    "Design a Scalable File Storage System (S3 Internals, CDN)",
+    "Design a Distributed Cache (Consistent Hashing, LRU)",
+    "The CAP Theorem: Choosing between AP and CP in Distributed Systems",
+    "Database Sharding & Replication Strategies"
+  ],
+  "AI & Innovation": [
+    "Prompt Engineering for Complex Logic Generation",
+    "Integrating Gemini/LLM APIs into Java Apps",
+    "Vector Databases & RAG (Retrieval Augmented Generation) basics"
+  ]
+}

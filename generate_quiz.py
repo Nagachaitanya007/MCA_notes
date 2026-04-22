@@ -88,33 +88,108 @@ def generate_quiz():
     print(f"Saved answers to {state_file} and archived to {history_file}")
 
     # Build the HTML Email
-    html_content = f"""
+    html_content_start = f"""
     <html>
     <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f9fafb; padding: 20px; }}
-            .container {{ max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 8px; border: 1px solid #e5e7eb; }}
-            h1 {{ color: #4f46e5; font-size: 24px; margin-bottom: 5px; }}
-            p.subtitle {{ color: #6b7280; font-size: 14px; margin-bottom: 30px; border-bottom: 1px solid #e5e7eb; padding-bottom: 20px; }}
-            .question-card {{ background: #f3f4f6; padding: 20px; border-radius: 6px; margin-bottom: 20px; }}
-            .scenario {{ font-style: italic; color: #374151; margin-bottom: 15px; }}
-            .question {{ font-weight: bold; margin-bottom: 15px; font-size: 16px; }}
-            .options {{ list-style-type: none; padding: 0; }}
-            .options li {{ background: #ffffff; padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 4px; margin-bottom: 8px; font-size: 14px; }}
-            .footer {{ margin-top: 30px; font-size: 12px; color: #9ca3af; text-align: center; }}
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono&display=swap');
+            
+            body {{ 
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+                line-height: 1.7; 
+                color: #1a202c; 
+                background-color: #f7fafc; 
+                margin: 0; 
+                padding: 0;
+            }}
+            .container {{ 
+                max-width: 600px; 
+                margin: 20px auto; 
+                background: #ffffff; 
+                padding: 30px 20px; 
+                border-radius: 12px; 
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            }}
+            h1 {{ 
+                color: #4f46e5; 
+                font-size: 24px; 
+                font-weight: 700; 
+                margin-bottom: 5px;
+            }}
+            p.subtitle {{ 
+                color: #718096; 
+                font-size: 14px; 
+                margin-bottom: 30px; 
+                border-bottom: 1px solid #edf2f7; 
+                padding-bottom: 20px; 
+            }}
+            .question-card {{ 
+                background: #f8fafc; 
+                padding: 25px; 
+                border-radius: 12px; 
+                margin-bottom: 25px; 
+                border: 1px solid #e2e8f0;
+            }}
+            .scenario {{ 
+                font-style: italic; 
+                color: #4a5568; 
+                margin-bottom: 20px; 
+                font-size: 15px;
+                line-height: 1.6;
+                background: #ffffff;
+                padding: 15px;
+                border-radius: 8px;
+                border-left: 4px solid #4f46e5;
+            }}
+            .question {{ 
+                font-weight: 700; 
+                margin-bottom: 20px; 
+                font-size: 17px; 
+                color: #2d3748;
+            }}
+            .options {{ 
+                list-style-type: none; 
+                padding: 0; 
+            }}
+            .options li {{ 
+                background: #ffffff; 
+                padding: 12px 18px; 
+                border: 1px solid #e2e8f0; 
+                border-radius: 8px; 
+                margin-bottom: 10px; 
+                font-size: 15px; 
+                color: #4a5568;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            }}
+            .footer {{ 
+                margin-top: 40px; 
+                font-size: 12px; 
+                color: #a0aec0; 
+                text-align: center; 
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }}
+            
+            @media (max-width: 600px) {{
+                .container {{ margin: 0; border-radius: 0; padding: 25px 15px; }}
+                .question-card {{ padding: 20px; }}
+            }}
         </style>
     </head>
     <body>
         <div class="container">
-            <h1>Daily AI/ML Interview Prep</h1>
+            <h1>Daily Tech Interview Quiz</h1>
             <p class="subtitle">Topic: {quiz_data.get('topic', note_title)}</p>
             
-            <p><strong>Heads up:</strong> The detailed answers and explanations will be sent to your inbox in exactly 30 minutes! Take your time to think through these scenarios.</p>
+            <p style="background: #eef2ff; color: #3730a3; padding: 15px; border-radius: 8px; font-size: 14px; margin-bottom: 30px;">
+                <strong>Hint:</strong> The detailed answers and explanations will arrive in exactly 30 minutes!
+            </p>
     """
 
     for q in quiz_data['questions']:
         options_html = "".join([f"<li>{opt}</li>" for opt in q['options']])
-        html_content += f"""
+        html_content_start += f"""
             <div class="question-card">
                 <div class="scenario">{q['scenario']}</div>
                 <div class="question">{q['id']}. {q['question']}</div>
@@ -124,9 +199,9 @@ def generate_quiz():
             </div>
         """
 
-    html_content += """
+    html_content_start += """
             <div class="footer">
-                Automated by GitHub Actions | Gemini-2.5-Flash
+                NoteForge Technical Mastery | Automated Quiz Engine
             </div>
         </div>
     </body>
@@ -135,7 +210,7 @@ def generate_quiz():
 
     send_email(
         f"Action Required: Daily AI Quiz ({quiz_data.get('topic', note_title)})",
-        html_content,
+        html_content_start,
     )
 
 

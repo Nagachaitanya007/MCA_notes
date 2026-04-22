@@ -36,7 +36,9 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        run: python daily_mailer.py
+        run: |
+          TOPIC=$(python smart_picker.py "AI")
+          python daily_mailer.py "$TOPIC"
 
       - name: Commit and Push Generated Note
         run: |

@@ -1,7 +1,6 @@
 import os
 import random
 import markdown
-from google import genai
 from dotenv import load_dotenv
 import datetime
 import re
@@ -10,13 +9,27 @@ from utils import send_email, get_markdown_files, save_note_to_db, generate_cont
 
 load_dotenv(override=True)
 
+import sys
+
 def send_daily_note():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     md_files = get_markdown_files(base_dir)
 
-    prompt = "You are an Expert FAANG Engineering Manager. Write a highly detailed, deeply technical study note on an advanced concept within Machine Learning, Artificial Intelligence, or Generative AI. It must be interview-focused. Include detailed code snippets and real-world examples. Format the entire response in clean Markdown, starting with an H1 heading for the topic."
+    topic = sys.argv[1] if len(sys.argv) > 1 else "Advanced AI & Generative AI"
+
+    prompt = f"""
+    You are an Expert FAANG Interviewer and Senior Staff Engineer.
+    Write a definitive, deeply technical interview study note on this topic: "{topic}".
     
-    print("Generating a new GenAI study note...")
+    Structure:
+    1. 🧱 The Core Concept (Basics Refresh)
+    2. ⚙️ Under the Hood (Internal Mechanics & Architecture)
+    3. ⚠️ The Interview Warzone (Scenario-based questions, Probing patterns, and the Perfect Response)
+    
+    Focus on real-world application and trade-offs. Format in clean Markdown.
+    """
+    
+    print(f"Generating AI study note for topic: {topic}...")
     md_content = generate_content_with_fallback(prompt)
     
     if not md_content:
@@ -71,22 +84,83 @@ def send_daily_note():
     email_html = f"""
     <html>
     <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-            h1 {{ color: #4f46e5; }}
-            h2 {{ color: #3730a3; }}
-            code {{ background-color: #f3f4f6; padding: 2px 4px; border-radius: 4px; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-            .footer {{ margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 10px; }}
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono&display=swap');
+            
+            body {{ 
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+                line-height: 1.7; 
+                color: #1a202c; 
+                background-color: #f7fafc; 
+                margin: 0; 
+                padding: 0;
+            }}
+            .container {{ 
+                max-width: 650px; 
+                margin: 20px auto; 
+                background: #ffffff; 
+                padding: 30px 20px; 
+                border-radius: 12px; 
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            }}
+            h1 {{ 
+                color: #2d3748; 
+                font-size: 24px; 
+                font-weight: 700; 
+                letter-spacing: -0.02em;
+                border-left: 4px solid #4f46e5;
+                padding-left: 15px;
+                margin-bottom: 25px;
+            }}
+            h2 {{ color: #4a5568; font-size: 20px; margin-top: 35px; }}
+            
+            /* Code Block Mastery */
+            pre {{ 
+                background-color: #1a202c; 
+                color: #e2e8f0; 
+                padding: 20px; 
+                border-radius: 8px; 
+                overflow-x: auto; 
+                font-family: 'JetBrains Mono', 'Courier New', monospace; 
+                font-size: 14px;
+                line-height: 1.5;
+                margin: 20px 0;
+                border: 1px solid #2d3748;
+            }}
+            code {{ 
+                font-family: 'JetBrains Mono', monospace; 
+                background-color: #edf2f7; 
+                padding: 3px 6px; 
+                border-radius: 4px; 
+                color: #e53e3e; 
+                font-size: 0.9em;
+            }}
+            
+            .footer {{ 
+                margin-top: 50px; 
+                font-size: 12px; 
+                color: #a0aec0; 
+                text-align: center; 
+                border-top: 1px solid #edf2f7; 
+                padding-top: 25px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }}
+            
+            @media (max-width: 600px) {{
+                .container {{ margin: 0; border-radius: 0; padding: 20px 15px; }}
+                h1 {{ font-size: 22px; }}
+                pre {{ font-size: 13px; padding: 15px; }}
+            }}
         </style>
     </head>
     <body>
         <div class="container">
-            <p>Here is your daily study revision note!</p>
-            <hr>
+            <p style="color: #4f46e5; font-weight: 600; margin-bottom: 10px;">Daily Revision Note</p>
             {html_content}
             <div class="footer">
-                Automated Daily Mailer | Sent from your local machine.
+                NoteForge Technical Mastery | Automated Daily Revision
             </div>
         </div>
     </body>
