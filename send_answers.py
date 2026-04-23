@@ -1,5 +1,6 @@
 import os
 import json
+import html
 from dotenv import load_dotenv
 
 import markdown
