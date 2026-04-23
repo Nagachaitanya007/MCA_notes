@@ -12,12 +12,12 @@ interface NoteData {
 
 export default function NotesList({ notes }: { notes: NoteData[] }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFolder, setActiveFolder] = useState<string | null>(null);
+  const [activeTrack, setActiveTrack] = useState<string | null>(null);
 
-  // Get unique folders
-  const folders = useMemo(() => {
-    const folderSet = new Set(notes.map((n) => n.folder || 'Root'));
-    return Array.from(folderSet).sort();
+  // Get unique tracks
+  const tracks = useMemo(() => {
+    const trackSet = new Set(notes.map((n) => n.category || 'General'));
+    return Array.from(trackSet).sort();
   }, [notes]);
 
   // Filter notes
@@ -26,12 +26,12 @@ export default function NotesList({ notes }: { notes: NoteData[] }) {
       const matchesSearch =
         searchQuery === '' ||
         note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        note.folder.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFolder =
-        activeFolder === null || (note.folder || 'Root') === activeFolder;
-      return matchesSearch && matchesFolder;
+        note.category.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesTrack =
+        activeTrack === null || note.category === activeTrack;
+      return matchesSearch && matchesTrack;
     });
-  }, [notes, searchQuery, activeFolder]);
+  }, [notes, searchQuery, activeTrack]);
 
   return (
     <div>
@@ -51,29 +51,29 @@ export default function NotesList({ notes }: { notes: NoteData[] }) {
         />
       </div>
 
-      {/* Folder Filter Pills - Scrollable on mobile */}
+      {/* Track Filter Pills - Scrollable on mobile */}
       <div className="flex overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:overflow-visible sm:pb-0 sm:flex-wrap gap-2 mb-8 no-scrollbar">
         <button
-          onClick={() => setActiveFolder(null)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${activeFolder === null
+          onClick={() => setActiveTrack(null)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${activeTrack === null
               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
               : 'bg-gray-800/60 text-gray-400 hover:bg-gray-800 hover:text-gray-200'
             }`}
         >
           All ({notes.length})
         </button>
-        {folders.map((folder) => {
-          const count = notes.filter((n) => (n.folder || 'Root') === folder).length;
+        {tracks.map((track) => {
+          const count = notes.filter((n) => n.category === track).length;
           return (
             <button
-              key={folder}
-              onClick={() => setActiveFolder(activeFolder === folder ? null : folder)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${activeFolder === folder
+              key={track}
+              onClick={() => setActiveTrack(activeTrack === track ? null : track)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${activeTrack === track
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
                   : 'bg-gray-800/60 text-gray-400 hover:bg-gray-800 hover:text-gray-200'
                 }`}
             >
-              {folder} ({count})
+              {track} ({count})
             </button>
           );
         })}
@@ -93,12 +93,12 @@ export default function NotesList({ notes }: { notes: NoteData[] }) {
                   {note.title}
                 </h2>
                 <div className="flex items-center gap-3 mt-2 sm:mt-2.5">
-                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-gray-500">
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm2 0v8h12V8h-5.828l-2-2H4z" clipRule="evenodd" />
-                    </svg>
-                    {note.folder || 'Root'}
-                  </span>
+                    <span className="px-1.5 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-[10px] text-indigo-400 font-bold uppercase tracking-tighter">
+                      {note.category}
+                    </span>
+                    <span className="text-[10px] text-gray-600 truncate max-w-[150px]">
+                      {note.folder || 'Root'}
+                    </span>
                 </div>
               </div>
               <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:gap-1.5">

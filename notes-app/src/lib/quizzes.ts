@@ -34,6 +34,7 @@ export interface QuizData {
   date: string; // extracted from filename
   topic: string;
   questions: QuizQuestion[];
+  mode: string;
 }
 
 export async function getAllQuizzes(): Promise<QuizData[]> {
@@ -52,6 +53,7 @@ export async function getAllQuizzes(): Promise<QuizData[]> {
           date: quiz.quiz_date,
           topic: quiz.topic,
           questions: quiz.questions,
+          mode: quiz.mode || 'Java',
         });
       });
     }
@@ -74,10 +76,27 @@ export async function getAllQuizzes(): Promise<QuizData[]> {
         const dateMatch = file.match(/quiz-(\d{4}-\d{2}-\d{2})/);
         const date = dateMatch ? dateMatch[1] : file;
 
+        // Absolute Mode Enforcement
+        let mode = data.mode;
+        const textToScan = (data.topic || '').toLowerCase();
+        
+        if (!mode || mode === 'General' || mode === 'MCA') {
+          if (textToScan.includes('solr') || textToScan.includes('nlp') || textToScan.includes('quantum') || textToScan.includes('scenario') || textToScan.includes('mca')) {
+            mode = 'AI';
+          } else if (textToScan.includes('architecture') || textToScan.includes('system design') || textToScan.includes('distributed')) {
+            mode = 'System Design';
+          } else if (textToScan.includes('java') || textToScan.includes('jvm') || textToScan.includes('spring')) {
+            mode = 'Java';
+          } else {
+            mode = 'AI'; // Default to AI for scenario-based quizzes
+          }
+        }
+
         return {
           date,
           topic: data.topic || 'General',
           questions: data.questions || [],
+          mode,
         };
       } catch (e) {
         console.error(`Error reading local quiz: ${file}`, e);

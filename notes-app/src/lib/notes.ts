@@ -29,6 +29,7 @@ export interface NoteData {
   title: string;
   date: string;
   folder: string;
+  category: string;
   readingTime: number;
   wordCount: number;
   headings: { text: string; level: number; slug: string }[];
@@ -112,6 +113,7 @@ export async function getSortedNotesData(): Promise<NoteData[]> {
           title: note.title,
           date: note.created_at,
           folder: note.folder || 'Database',
+          category: note.category || 'General',
           readingTime: 5,
           wordCount: 0,
           headings: [],
@@ -137,11 +139,28 @@ export async function getSortedNotesData(): Promise<NoteData[]> {
       
       const { readingTime, wordCount } = calculateReadingTime(fileContents);
 
+      // Strict Track Detection (Stealth Categorization)
+      let category = matterResult.data.category;
+      const textToScan = `${title} ${folder} ${path.basename(filePath)}`.toLowerCase();
+
+      if (!category || category === 'General') {
+        if (textToScan.includes('solr') || textToScan.includes('nlp') || textToScan.includes('ai') || textToScan.includes('analysis') || folder.includes('Social-Media')) {
+          category = 'AI';
+        } else if (textToScan.includes('java') || textToScan.includes('jvm') || textToScan.includes('spring') || folder.includes('java')) {
+          category = 'Java';
+        } else if (textToScan.includes('architecture') || textToScan.includes('design') || textToScan.includes('system')) {
+          category = 'System Design';
+        } else {
+          category = folder.split('/')[0] || 'General';
+        }
+      }
+
       return {
         id,
         title,
         date: typeof date === 'string' ? date : date.toISOString(),
         folder: folder === '.' ? 'Root' : folder,
+        category,
         readingTime,
         wordCount,
         headings: extractHeadings(fileContents),

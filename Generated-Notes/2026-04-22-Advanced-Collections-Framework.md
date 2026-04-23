@@ -1,5 +1,5 @@
 ---
-title: The LRU Cache: Mastering Custom Hybrid Collections
+title: "The LRU Cache: Mastering Custom Hybrid Collections"
 date: 2026-04-22T22:30:14.754801
 ---
 

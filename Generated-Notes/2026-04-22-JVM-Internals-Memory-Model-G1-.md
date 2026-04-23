@@ -1,5 +1,5 @@
 ---
-title: JVM Internals: The Lifecycle of a Java Object
+title: "JVM Internals: The Lifecycle of a Java Object"
 date: 2026-04-22T17:48:31.855856
 ---
 

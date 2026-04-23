@@ -1,5 +1,5 @@
 ---
-title: Variational Quantum Eigensolver (VQE): Hybrid Quantum-Classical Architectures
+title: "Variational Quantum Eigensolver (VQE): Hybrid Quantum-Classical Architectures"
 date: 2026-04-20T15:58:21.901919
 ---
 
