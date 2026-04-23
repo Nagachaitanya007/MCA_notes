@@ -16,5 +16,8 @@
   ],
   "JVM Internals (Memory Model, G1/ZGC, Class Loading)": [
     "JVM Internals: The Lifecycle of a Java Object"
+  ],
+  "Design a Real-time Chat System (WebSockets, Redis Pub/Sub)": [
+    "Scalable Real-time Chat: WebSockets & Redis Pub/Sub"
   ]
 }
