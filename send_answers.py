@@ -2,6 +2,7 @@ import os
 import json
 from dotenv import load_dotenv
 
+import markdown
 from utils import send_email
 
 load_dotenv(override=True)
