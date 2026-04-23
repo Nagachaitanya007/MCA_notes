@@ -8,6 +8,7 @@ interface NoteData {
   title: string;
   date: string;
   folder: string;
+  category: string;
 }
 
 export default function NotesList({ notes }: { notes: NoteData[] }) {
