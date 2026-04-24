@@ -19,5 +19,8 @@
   ],
   "Design a Real-time Chat System (WebSockets, Redis Pub/Sub)": [
     "Scalable Real-time Chat: WebSockets & Redis Pub/Sub"
+  ],
+  "Memory Management & Garbage Collection Tuning": [
+    "Java Memory Management & Garbage Collection Tuning"
   ]
 }
