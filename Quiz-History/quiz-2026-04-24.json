@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
-  "mode": "Java",
+  "topic": "Machine Learning: Classification vs Regression Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a developer has implemented a custom cache using Spring and `List` structures. The snippet below is intended to ensure that every update to the list is isolated in its own database transaction to prevent data loss. However, metrics show that the `REQUIRES_NEW` transaction is never actually created, and the audit logs are missing entries when errors occur. \n\njava\n@Service\npublic class DataAggregator {\n    private final List<String> buffer = Collections.synchronizedList(new ArrayList<>());\n\n    @Transactional\n    public void processData(String item) {\n        // Business logic\n        saveToBuffer(item);\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void saveToBuffer(String item) {\n        buffer.add(item);\n        // Potential DB audit logging here\n    }\n}\n",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "Real-world Industrial Problem Statement: A company that produces electric vehicles wants to predict the battery life of its cars based on various factors such as temperature, charging cycles, and battery type. The dataset contains 10000 samples, with 10 features and a target variable that represents the battery life in months.",
+      "question": "Which machine learning approach is most suitable for this problem?",
       "options": [
-        "A) The `Collections.synchronizedList` is interfering with the Spring Transaction Interceptor's ability to lock the resource.",
-        "B) Spring's default AOP mechanism uses CGLIB/JDK dynamic proxies, which cannot intercept internal method calls within the same class.",
-        "C) `Propagation.REQUIRES_NEW` cannot be used on methods that modify `List` objects as they are not thread-safe in a transactional context.",
-        "D) The `ArrayList` is not managed by the Spring Context, causing the proxy to ignore the `saveToBuffer` method."
+        "A) Classification: since the target variable is discrete and represents categories of battery life",
+        "B) Regression: since the target variable is continuous and represents the actual battery life in months",
+        "C) Clustering: since the goal is to group similar samples based on their features",
+        "D) Dimensionality Reduction: since the dataset has a large number of features"
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Spring's default AOP mechanism uses CGLIB/JDK dynamic proxies, which cannot intercept internal method calls within the same class.",
-      "explanation": "In Spring, `@Transactional` is implemented using AOP proxies. When `processData` is called, the proxy intercepts the call and starts a transaction. However, when `processData` calls `this.saveToBuffer(item)`, it is a direct method call on the target object, not the proxy. Consequently, the transaction interceptor for `saveToBuffer` is bypassed, and the `REQUIRES_NEW` instruction is ignored. To fix this, one must move the method to a different bean or use self-injection with `@Lazy`."
+      "correct_answer_text": "B) Regression: since the target variable is continuous and represents the actual battery life in months",
+      "explanation": "In this scenario, regression is the most suitable approach because the target variable (battery life) is continuous, and the goal is to predict a specific value. Regression algorithms, such as linear regression or random forest regression, can learn the relationship between the features and the target variable, allowing for accurate predictions of battery life."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a high-throughput trading system is experiencing intermittent latency spikes and eventually an `OutOfMemoryError: Java heap space`. The system uses a custom cache based on `WeakHashMap<Key, LargeObject>` to automatically clear entries when memory is low. Upon profiling, you notice that while the `Key` objects are no longer referenced anywhere else in the application, the `LargeObject` values are never being garbage collected.",
-      "question": "Why is the `WeakHashMap` failing to release the memory occupied by the `LargeObject` values?",
+      "scenario": "Real-world Industrial Problem Statement: A healthcare company wants to develop a system that can diagnose diseases based on symptoms and medical history. The dataset contains 5000 samples, with 50 features and a target variable that represents the disease type (e.g., diabetes, cancer, etc.). However, the dataset is imbalanced, with 90% of the samples belonging to one class.",
+      "question": "What is the primary challenge in this problem, and how can it be addressed?",
       "options": [
-        "A) `WeakHashMap` requires the `LargeObject` to be wrapped in a `SoftReference` to be eligible for collection in the Old Gen.",
-        "B) The `LargeObject` contains a strong reference back to its corresponding `Key`, preventing the key from being weakly reachable.",
-        "C) The JVM's G1 Collector ignores `WeakHashMap` entries during the marking phase to prioritize throughput.",
-        "D) `WeakHashMap` only clears entries when the `get()` method is called, and these entries were never accessed again."
+        "A) High-dimensional space: can be addressed using dimensionality reduction techniques such as PCA or t-SNE",
+        "B) Skewed data: can be addressed using techniques such as oversampling the minority class or using class weights",
+        "C) Real-time constraints: can be addressed using parallel processing or distributed computing",
+        "D) Lack of data: can be addressed using data augmentation or transfer learning"
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The LargeObject contains a strong reference back to its corresponding Key, preventing the key from being weakly reachable.",
-      "explanation": "In a `WeakHashMap`, the key is held by a `WeakReference`. However, if the value (`LargeObject`) contains a strong reference to the key, the key becomes strongly reachable again through the value. Since the map itself holds a strong reference to the value, the cycle ensures that the key is never garbage collected, which in turn means the entry is never removed from the map. This is a classic memory leak pattern in custom cache implementations using `WeakHashMap`."
+      "correct_answer_text": "B) Skewed data: can be addressed using techniques such as oversampling the minority class or using class weights",
+      "explanation": "In this scenario, the primary challenge is the imbalanced dataset, which can lead to biased models that perform well on the majority class but poorly on the minority class. Techniques such as oversampling the minority class, undersampling the majority class, or using class weights can help address this issue and improve the model's performance on the minority class."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a multi-threaded application uses a `ConcurrentHashMap` to store user session data. During peak load, threads are frequently hanging on a `computeIfAbsent` call. Thread dumps reveal that multiple threads are in a `BLOCKED` or `RUNNABLE` state within the `ConcurrentHashMap.computeIfAbsent` method, and some threads are seemingly deadlocked despite no explicit locks being used in the application code.",
-      "question": "Which of the following scenarios is the most likely cause of this behavior in `ConcurrentHashMap`?",
+      "scenario": "Real-world Industrial Problem Statement: A financial company wants to develop a system that can predict stock prices in real-time based on historical data and market trends. The dataset contains 1 million samples, with 100 features and a target variable that represents the stock price. The system needs to make predictions within 1 second.",
+      "question": "What is the primary challenge in this problem, and how can it be addressed?",
       "options": [
-        "A) The mapping function passed to `computeIfAbsent` attempts to modify the same map, potentially causing a recursive update deadlock.",
-        "B) The load factor of the `ConcurrentHashMap` was set too high, causing excessive collisions and forced serialization of all read operations.",
-        "C) Two threads are trying to compute values for different keys that happen to map to the same hash bucket, causing a global lock on the segment.",
-        "D) The `ConcurrentHashMap` was initialized with a small `concurrencyLevel`, leading to saturation of the underlying `ReentrantLock` array."
+        "A) High-dimensional space: can be addressed using dimensionality reduction techniques such as PCA or t-SNE",
+        "B) Skewed data: can be addressed using techniques such as oversampling the minority class or using class weights",
+        "C) Real-time constraints: can be addressed using parallel processing, distributed computing, or using optimized algorithms such as gradient boosting",
+        "D) Lack of data: can be addressed using data augmentation or transfer learning"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The mapping function passed to computeIfAbsent attempts to modify the same map, potentially causing a recursive update deadlock.",
-      "explanation": "In `ConcurrentHashMap`, the `computeIfAbsent` method performs a computation while holding a lock on the specific hash bucket (bin). If the mapping function itself attempts to modify the map (e.g., adding another key or modifying the same key), it can lead to a deadlock or a `IllegalStateException` because the thread is attempting to acquire a lock it already holds or is interfering with the bin's structure while it's being updated. This is a known limitation of the atomic compute methods in `ConcurrentHashMap`."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Real-time constraints: can be addressed using parallel processing, distributed computing, or using optimized algorithms such as gradient boosting",
+      "explanation": "In this scenario, the primary challenge is the real-time constraint, which requires the system to make predictions within 1 second. Techniques such as parallel processing, distributed computing, or using optimized algorithms such as gradient boosting can help address this issue and improve the system's performance in terms of speed and accuracy."
     }
   ]
 }

@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "A global logistics firm aims to optimize fuel consumption by predicting the exact liters of fuel required for long-haul flights based on real-time weather patterns, payload weight, and engine health telemetry. The system must deliver updates every 10 seconds to the cockpit. Initial testing with a Deep Ensemble Regressor shows high accuracy but consistently exceeds the 200ms latency threshold on the aircraft's edge computing hardware.",
-      "question": "Which strategy would best balance the need for high-precision continuous output with the strict real-time operational constraints of the edge device?",
+      "scenario": "Real-world Industrial Problem Statement: A company that produces electric vehicles wants to predict the battery life of its cars based on various factors such as temperature, charging cycles, and battery type. The dataset contains 10000 samples, with 10 features and a target variable that represents the battery life in months.",
+      "question": "Which machine learning approach is most suitable for this problem?",
       "options": [
-        "A) Switch to a K-Nearest Neighbors (KNN) Regressor with a large K-value to smooth out predictions.",
-        "B) Implement a Polynomial Regression model with L1 Regularization (Lasso) to prune non-essential features and minimize inference time.",
-        "C) Transform the problem into a Multi-class Classification task by binning fuel amounts into 1-liter increments.",
-        "D) Increase the depth of the existing Ensemble Regressor but reduce the precision of input floating-point numbers."
+        "A) Classification: since the target variable is discrete and represents categories of battery life",
+        "B) Regression: since the target variable is continuous and represents the actual battery life in months",
+        "C) Clustering: since the goal is to group similar samples based on their features",
+        "D) Dimensionality Reduction: since the dataset has a large number of features"
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Implement a Polynomial Regression model with L1 Regularization (Lasso) to prune non-essential features and minimize inference time.",
-      "explanation": "In industrial edge computing, latency is often tied to model complexity and feature count. L1 Regularization (Lasso) performs intrinsic feature selection by shrinking coefficients of less important variables to zero. This reduces the computational overhead during inference compared to complex ensembles or KNN (which is computationally expensive at runtime due to distance calculations), while maintaining the continuous nature required for fuel prediction."
+      "correct_answer_text": "B) Regression: since the target variable is continuous and represents the actual battery life in months",
+      "explanation": "In this scenario, regression is the most suitable approach because the target variable (battery life) is continuous, and the goal is to predict a specific value. Regression algorithms, such as linear regression or random forest regression, can learn the relationship between the features and the target variable, allowing for accurate predictions of battery life."
     },
     {
       "id": 2,
-      "scenario": "A cybersecurity startup is building a system to identify 'Zero-day' network intrusions. In their dataset of 1 million packets, only 50 represent actual attacks. A Support Vector Machine (SVM) with an RBF kernel was trained, yielding a 99.995% accuracy rate. However, during the pilot phase, the model failed to identify any actual intrusions, labeling every packet as 'Safe'.",
-      "question": "What is the primary cause of this failure, and which metric should be prioritized to rectify it?",
+      "scenario": "Real-world Industrial Problem Statement: A healthcare company wants to develop a system that can diagnose diseases based on symptoms and medical history. The dataset contains 5000 samples, with 50 features and a target variable that represents the disease type (e.g., diabetes, cancer, etc.). However, the dataset is imbalanced, with 90% of the samples belonging to one class.",
+      "question": "What is the primary challenge in this problem, and how can it be addressed?",
       "options": [
-        "A) Overfitting due to high-dimensional space; prioritize the R-Squared metric.",
-        "B) Underfitting because the RBF kernel is too simple; prioritize Mean Squared Error.",
-        "C) Class Imbalance causing the model to converge on the majority class; prioritize Recall and the Precision-Recall (PR) AUC.",
-        "D) Data Leakage from the training set; prioritize the use of a larger Confusion Matrix."
+        "A) High-dimensional space: can be addressed using dimensionality reduction techniques such as PCA or t-SNE",
+        "B) Skewed data: can be addressed using techniques such as oversampling the minority class or using class weights",
+        "C) Real-time constraints: can be addressed using parallel processing or distributed computing",
+        "D) Lack of data: can be addressed using data augmentation or transfer learning"
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Class Imbalance causing the model to converge on the majority class; prioritize Recall and the Precision-Recall (PR) AUC.",
-      "explanation": "In classification scenarios with extreme skewness (50 vs 999,950), Accuracy is a misleading metric because a model can achieve near-perfect accuracy by simply predicting the majority class. This is a classic 'Accuracy Paradox'. To solve this, the focus must shift to Recall (to ensure attacks are caught) and PR-AUC, which is more robust for imbalanced datasets than the standard ROC-AUC."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Skewed data: can be addressed using techniques such as oversampling the minority class or using class weights",
+      "explanation": "In this scenario, the primary challenge is the imbalanced dataset, which can lead to biased models that perform well on the majority class but poorly on the minority class. Techniques such as oversampling the minority class, undersampling the majority class, or using class weights can help address this issue and improve the model's performance on the minority class."
     },
     {
       "id": 3,
-      "scenario": "A FinTech platform utilizes Gradient Boosted Decision Trees (GBDT) to predict property values for mortgage approvals. The dataset contains several high-cardinality categorical features, including 'Zip Code' (over 5,000 unique values) and 'Sub-locality'. The current model is experiencing significant performance degradation and overfitting when these features are expanded using One-Hot Encoding.",
-      "question": "Given that property value is a continuous variable, what is the most efficient way to handle these high-cardinality features within a GBDT framework?",
+      "scenario": "Real-world Industrial Problem Statement: A financial company wants to develop a system that can predict stock prices in real-time based on historical data and market trends. The dataset contains 1 million samples, with 100 features and a target variable that represents the stock price. The system needs to make predictions within 1 second.",
+      "question": "What is the primary challenge in this problem, and how can it be addressed?",
       "options": [
-        "A) Use Target Encoding to replace each category with the mean property value for that category, while implementing smoothing to prevent leakage.",
-        "B) Apply Principal Component Analysis (PCA) to the One-Hot Encoded sparse matrix to reduce dimensionality.",
-        "C) Use Label Encoding to assign a random integer to each Zip Code to maintain the single-column format.",
-        "D) Discard the Zip Code feature entirely to avoid the 'Curse of Dimensionality' and rely on latitude/longitude coordinates only."
+        "A) High-dimensional space: can be addressed using dimensionality reduction techniques such as PCA or t-SNE",
+        "B) Skewed data: can be addressed using techniques such as oversampling the minority class or using class weights",
+        "C) Real-time constraints: can be addressed using parallel processing, distributed computing, or using optimized algorithms such as gradient boosting",
+        "D) Lack of data: can be addressed using data augmentation or transfer learning"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Use Target Encoding to replace each category with the mean property value for that category, while implementing smoothing to prevent leakage.",
-      "explanation": "For high-cardinality features in regression, One-Hot Encoding creates massive, sparse datasets that slow down GBDTs and lead to overfitting. Target Encoding (or Mean Encoding) maps the categorical values to the mean of the target variable, capturing the relationship between location and price directly in a single dimension. Smoothing is essential to prevent the model from 'memorizing' target values for categories with very few samples."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Real-time constraints: can be addressed using parallel processing, distributed computing, or using optimized algorithms such as gradient boosting",
+      "explanation": "In this scenario, the primary challenge is the real-time constraint, which requires the system to make predictions within 1 second. Techniques such as parallel processing, distributed computing, or using optimized algorithms such as gradient boosting can help address this issue and improve the system's performance in terms of speed and accuracy."
     }
   ]
 }
