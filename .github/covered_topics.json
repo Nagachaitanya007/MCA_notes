@@ -26,5 +26,8 @@
   ],
   "Design a URL Shortener (Key Generation Service, Sharding)": [
     "URL Shortener: Key Generation Service (KGS) & Sharding"
+  ],
+  "The CAP Theorem: Choosing between AP and CP in Distributed Systems": [
+    "The CAP Theorem: Choosing Between AP and CP in Distributed Systems"
   ]
 }
