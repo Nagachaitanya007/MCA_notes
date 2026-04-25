@@ -9,7 +9,8 @@
     "\ud83d\ude80 Java Concurrency & Multithreading: Virtual Threads & CompletableFuture"
   ],
   "Exception Handling Strategies in Distributed Systems": [
-    "Unknown"
+    "Unknown",
+    "Resilient Retries: Exponential Backoff and Jitter"
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections"
