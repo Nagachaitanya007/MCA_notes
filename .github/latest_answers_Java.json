@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue in a Spring Boot application. A `Task` entity uses a `HashSet` to manage unique assignments. You observe that after calling `repository.save()`, a call to `set.contains(task)` returns `false`, even though the object was just added to the set. \n\njava\n@Entity\npublic class Task {\n    @Id @GeneratedValue\n    private Long id;\n    private String title;\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(id);\n    }\n\n    @Override\n    public boolean equals(Object o) {\n        if (this == o) return true;\n        if (!(o instanceof Task)) return false;\n        Task task = (Task) o;\n        return Objects.equals(id, task.id);\n    }\n}\n\n@Service\npublic class TaskManager {\n    @Transactional\n    public void processTask(Set<Task> taskSet, Task newTask) {\n        taskSet.add(newTask);\n        repository.save(newTask); // Database generates ID here\n        if (!taskSet.contains(newTask)) {\n            throw new RuntimeException(\"Task lost in set!\");\n        }\n    }\n}\n",
-      "question": "What is the primary cause of this 'Bug Hunter' scenario?",
+      "scenario": "You are debugging a production issue where a custom `LruCache` component is causing a `java.lang.OutOfMemoryError: Metaspace`. The cache uses a custom `LinkedHashMap` implementation to store metadata, where the key is the `ClassLoader` of a dynamically loaded plugin and the value is a map of configuration objects. The snippet is: \n\n`@Component` \n`public class PluginMetadataCache {` \n`  private final Map<ClassLoader, Map<String, Object>> cache = Collections.synchronizedMap(new LinkedHashMap<ClassLoader, Map<String, Object>>(16, 0.75f, true));` \n`  public void store(ClassLoader cl, String key, Object val) {` \n`    cache.computeIfAbsent(cl, k -> new HashMap<>()).put(key, val);` \n`  }` \n`}`",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) Spring's `@Transactional` proxy wraps the `Set` in a `LazyInitializationException` trigger.",
-        "B) The `hashCode` of the `Task` object changed after it was added to the `HashSet`, making it unreachable in its original bucket.",
-        "C) The `repository.save()` method returns a different proxy instance than the one added to the set.",
-        "D) `HashSet` is not thread-safe and the `TransactionManager` is accessing it from a different thread."
+        "A) The `LinkedHashMap` access-order flag (true) causes excessive object creation for every get() request.",
+        "B) The `ClassLoader` is used as a key in a strong-reference `Map`, preventing the `ClassLoader` and all its loaded classes from being garbage collected.",
+        "C) `Collections.synchronizedMap` does not provide thread-safety for the inner `HashMap` returned by `computeIfAbsent`.",
+        "D) The `Metaspace` error is caused by the `HashMap` reaching its max capacity and triggering an infinite rehash."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The hashCode of the Task object changed after it was added to the HashSet, making it unreachable in its original bucket.",
-      "explanation": "In `HashSet`, the bucket location is determined by the `hashCode()` at the time of the `add()` operation. Since the `Task` entity's `hashCode` is based on the `id`, and the `id` is `null` before `repository.save()` is called, the object is stored in the bucket corresponding to `Objects.hash(null)`. Once `save()` is invoked, the JPA provider (like Hibernate) populates the `id`. Subsequent calls to `contains()` or `remove()` calculate a new `hashCode` based on the new `id`, looking in a different bucket and failing to find the object. This is a classic JPA/Collection pitfall."
+      "correct_answer_text": "B) The ClassLoader is used as a key in a strong-reference Map, preventing the ClassLoader and all its loaded classes from being garbage collected.",
+      "explanation": "In the JVM, a `ClassLoader` cannot be garbage collected as long as there is a strong reference to it. Since the `Map` holds a strong reference to the `ClassLoader` as a key, none of the classes loaded by that plugin can be unloaded from the Metaspace, even after the plugin is 'stopped' elsewhere. A `WeakHashMap` or a specialized reference-based collection should be used instead."
     },
     {
       "id": 2,
-      "scenario": "You are implementing a high-concurrency caching layer using a custom implementation of `ConcurrentHashMap`. You need to ensure that a complex computation for a key is performed exactly once. You are using the following code:\n\njava\npublic V getCachedValue(K key) {\n    return map.computeIfAbsent(key, k -> {\n        if (k.toString().startsWith(\"REF_\")) {\n            return map.get(\"DEFAULT\"); // Potential recursive access\n        }\n        return heavyComputation(k);\n    });\n}\n\nDuring a load test on Java 8/11, the application hangs indefinitely with multiple threads in a `RUNNABLE` state.",
-      "question": "What JVM/Collection internal behavior is causing this hang?",
+      "scenario": "You are debugging a production issue in a Spring Boot application where updates to an `ArrayList` containing `Order` entities are not being persisted to the database. The service method is marked `@Transactional`, but calls a helper method within the same class: \n\n`@Service` \n`public class OrderService {` \n`  @Transactional` \n`  public void processBatch(List<Order> orders) {` \n`    applyUpdates(orders);` \n`  }` \n`  public void applyUpdates(List<Order> orders) {` \n`    orders.forEach(o -> o.setStatus(\"PROCESSED\"));` \n`  }` \n`}`",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) A deadlock occurs because `computeIfAbsent` holds a lock on the segment/bin while the mapping function attempts another read/write on the same map.",
-        "B) The JVM's `ForkJoinPool` common pool is exhausted because `computeIfAbsent` is non-blocking.",
-        "C) The `ConcurrentHashMap` resize operation is triggered and enters an infinite loop due to memory visibility issues.",
-        "D) The `heavyComputation` is throwing a `StackOverflowError` that is swallowed by the Spring Proxy."
+        "A) The `ArrayList` is not a thread-safe collection, causing a visibility issue between the service and the database driver.",
+        "B) Spring's `@Transactional` only supports `Set` collections for dirty checking, not `List` implementations.",
+        "C) The `applyUpdates` method is called via 'self-invocation', bypassing the Spring Proxy and the transactional interceptor.",
+        "D) The `List` is passed by value rather than reference in Java, so the original objects are never modified."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) A deadlock occurs because computeIfAbsent holds a lock on the segment/bin while the mapping function attempts another read/write on the same map.",
-      "explanation": "In `ConcurrentHashMap`, `computeIfAbsent` performs a synchronized block on the specific bin (node) for the key being computed. If the mapping function (the lambda) attempts to access or modify the same `ConcurrentHashMap` (especially if it hashes to the same bin or triggers a resize), it can lead to a recursive update deadlock or an `IllegalStateException` in newer JVM versions. This is because the internal implementation is not designed to be re-entrant for the same map instance during a computation block."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) The applyUpdates method is called via 'self-invocation', bypassing the Spring Proxy and the transactional interceptor.",
+      "explanation": "Spring's transaction management is based on AOP proxies. When a method within the same class calls another method (self-invocation), it calls the method on the 'this' reference rather than the proxy. In this specific scenario, while `processBatch` is transactional, if the logic were shifted or if `applyUpdates` required its own specific transaction settings (like `REQUIRES_NEW`), the proxy wouldn't intercept it. More importantly, if the transaction was intended to be started at the `applyUpdates` level but it was called from a non-transactional method in the same class, the transaction would never start."
     },
     {
       "id": 3,
-      "scenario": "A production microservice is experiencing 'java.lang.OutOfMemoryError: Metaspace'. You discover that a custom collection implementation is used to store `ThreadLocal` variables for monitoring. These variables are intended to be cleaned up when a web request finishes. The service uses an embedded Tomcat and Spring's `RequestContextListener`.",
-      "question": "How does the interaction between `ThreadLocal` and the JVM ClassLoader usually lead to this specific memory leak?",
+      "scenario": "You are debugging a production issue in a high-concurrency microservice where threads frequently hang when accessing a custom `ConcurrentHashMap` used for tracking request idempotency. Thread dumps show several threads in a `BLOCKED` state at `ConcurrentHashMap.computeIfAbsent`. The mapping function is implemented as follows: \n\n`idempotencyMap.computeIfAbsent(requestId, key -> {` \n`    if (isRetry(key)) {` \n`        return idempotencyMap.get(key);` \n`    }` \n`    return performHeavyLogic(key);` \n`});`",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) The `ThreadLocal` values are stored in the `PermGen` space, which has been deprecated since Java 8.",
-        "B) The `Thread` objects in the Tomcat thread pool persist; if they hold a `ThreadLocal` value that references a class from the webapp ClassLoader, that ClassLoader cannot be GC'ed.",
-        "C) `ThreadLocalMap` uses `SoftReferences` which are only cleared when the JVM is at 99% heap usage, leading to Metaspace overflow first.",
-        "D) Spring's `@RequestScope` beans are not compatible with `CustomCollections` and prevent the `ThreadLocal` from being cleared."
+        "A) The `mappingFunction` performs a recursive update/access on the same `ConcurrentHashMap` instance, which can lead to a Deadlock or `IllegalStateException` depending on the JVM version.",
+        "B) `ConcurrentHashMap` does not support `null` values, and `performHeavyLogic` is returning `null`.",
+        "C) The hash collisions on the `requestId` have turned the internal bucket into a Red-Black Tree, which doesn't support `computeIfAbsent`.",
+        "D) Multiple threads are calling `computeIfAbsent` on different keys, causing a global lock on the map's internal `Segment` array."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The Thread objects in the Tomcat thread pool persist; if they hold a ThreadLocal value that references a class from the webapp ClassLoader, that ClassLoader cannot be GC'ed.",
-      "explanation": "Threads in a pool (like Tomcat's) are long-lived. If a `ThreadLocal` is not explicitly removed, the `Thread` maintains a strong reference to the value. If that value's class was loaded by the web application's `ParallelWebappClassLoader`, the entire ClassLoader (and all its loaded classes in Metaspace) cannot be garbage collected even after the application is undeployed or restarted, as the path to the GC Root persists through the thread's `ThreadLocalMap`."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The mappingFunction performs a recursive update/access on the same ConcurrentHashMap instance, which can lead to a Deadlock or IllegalStateException depending on the JVM version.",
+      "explanation": "The `computeIfAbsent` method in `ConcurrentHashMap` computes the value while holding a lock on the specific bin (bucket). If the mapping function attempts to modify or even potentially access the same map (especially the same key or a key in the same bin), it can lead to a deadlock. In Java 8, this often resulted in an infinite loop/hang; in later versions, it may throw an `IllegalStateException` or deadlock if the recursive call targets the same hash bin."
     }
   ]
 }
