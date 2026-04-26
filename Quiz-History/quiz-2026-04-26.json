@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-performance Spring Boot service is experiencing intermittent `IllegalStateException` or infinite loops. The team recently implemented a custom cache using `ConcurrentHashMap`. Below is the code snippet used to populate the cache:\n\njava\npublic Value getValue(String key) {\n    return cache.computeIfAbsent(key, k -> {\n        if (k.startsWith(\"nested\")) {\n            return cache.computeIfAbsent(\"fallback\", f -> new Value(\"default\"));\n        }\n        return fetchFromDB(k);\n    });\n}\n",
-      "question": "What is the primary cause of the performance degradation or potential hang in this implementation?",
+      "scenario": "You are debugging a production issue where a high-throughput Spring Boot application is experiencing intermittent `NullPointerException` and data corruption in a shared request context. You find a `CustomRequestContext` class used within a `OncePerRequestFilter` to track processing metadata. The implementation is as follows: \n\n`public class CustomRequestContext {` \n`  private static final ThreadLocal<Map<String, Object>> metadata = ThreadLocal.withInitial(HashMap::new);` \n`  public static void addMetadata(String key, Object value) {` \n`    metadata.get().put(key, value);` \n`  }` \n`  public static Object getMetadata(String key) {` \n`    return metadata.get().get(key);` \n`  }` \n`}` \n\nApplications are deployed on an embedded Tomcat server with a fixed thread pool.",
+      "question": "Which of the following describes the most likely 'Bug Hunter' flaw and its consequence in this scenario?",
       "options": [
-        "A) The `computeIfAbsent` method uses a segment-level lock that leads to a deadlock when performing recursive updates on the same map.",
-        "B) Spring's `@Cacheable` proxy is interfering with the `ConcurrentHashMap` atomic operations, causing a race condition.",
-        "C) The `ConcurrentHashMap` default load factor is too low, causing excessive rehash operations during the nested call.",
-        "D) Recursive calls to `computeIfAbsent` on the same `ConcurrentHashMap` can lead to a `Deadlock` or `IllegalStateException` if the keys map to the same bin/bucket."
+        "A) The use of `HashMap` inside `ThreadLocal` is not thread-safe and causes race conditions during `put()` calls.",
+        "B) The failure to call `metadata.remove()` at the end of the request leads to data 'bleeding' across different user requests due to thread reuse in the Tomcat pool.",
+        "C) `ThreadLocal.withInitial(HashMap::new)` creates a single shared `HashMap` instance across all threads, causing visibility issues.",
+        "D) The `static` modifier on the `ThreadLocal` variable causes the `Map` to be moved to the Metaspace, leading to an `OutOfMemoryError`."
       ],
-      "correct_answer_letter": "D",
-      "correct_answer_text": "D) Recursive calls to `computeIfAbsent` on the same `ConcurrentHashMap` can lead to a `Deadlock` or `IllegalStateException` if the keys map to the same bin/bucket.",
-      "explanation": "In `ConcurrentHashMap`, the `computeIfAbsent` method is designed to be atomic. It performs a reservation on a specific bin (bucket) during computation. If the mapping function itself attempts to modify the map (recursive call) and the new key hashes to the same bin, it results in a deadlock (in Java 8) or an `IllegalStateException` (in later versions). This is a classic concurrency pitfall when using functional updates within thread-safe collections."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The failure to call `metadata.remove()` at the end of the request leads to data 'bleeding' across different user requests due to thread reuse in the Tomcat pool.",
+      "explanation": "In Spring Boot environments using thread pools (like Tomcat), threads are reused for multiple requests. If a `ThreadLocal` is not explicitly cleared using `.remove()`, the data associated with a thread from a previous request persists. This results in 'cross-pollination' where User B might see metadata belonging to User A. While `HashMap` itself is not thread-safe, it is contained within a `ThreadLocal` which ensures only one thread accesses that specific instance at a time, making A incorrect. C is incorrect as `withInitial` provides a new instance per thread."
     },
     {
       "id": 2,
-      "scenario": "You are investigating a memory leak in a Spring-managed application. A custom LRU (Least Recently Used) cache was implemented by extending `LinkedHashMap`. The cache is declared as a bean and used inside a `@Transactional` service:\n\njava\npublic class CustomCache<K, V> extends LinkedHashMap<K, V> {\n    private final int capacity;\n    public CustomCache(int capacity) {\n        super(capacity, 0.75f, true);\n        this.capacity = capacity;\n    }\n    @Override\n    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {\n        return size() > capacity;\n      }\n}\n\nDespite the `removeEldestEntry` logic, heap dumps show the map growing indefinitely and holding onto `Entity` objects even after the transaction ends.",
-      "question": "Why is the LRU cache failing to limit memory usage or causing a leak in this context?",
+      "scenario": "You are implementing a custom high-performance cache using `ConcurrentHashMap`. To ensure atomicity and prevent 'Cache Stampede' (multiple threads computing the same expensive value), you use the `computeIfAbsent` method. However, you notice that when the mapping function performs a long-running write to another key within the same `ConcurrentHashMap`, the system occasionally deadlocks or experiences severe contention.",
+      "question": "What is the underlying JVM internal reason for this behavior in `ConcurrentHashMap`?",
       "options": [
-        "A) `LinkedHashMap` is not thread-safe; concurrent access from multiple requests is corrupting the internal doubly-linked list, bypassing the `size()` check.",
-        "B) The Spring Proxy wraps the `CustomCache`, and the `removeEldestEntry` method is not being invoked because it is a protected method.",
-        "C) The `Entity` objects are managed by the `EntityManager`, and the cache keeps strong references that prevent GC even if the entry is removed.",
-        "D) The `accessOrder` parameter in the constructor is set to `true`, which creates a cyclic reference with the JVM's `Finalizer` queue."
+        "A) `ConcurrentHashMap` locks the entire segment during the execution of the `computeIfAbsent` mapping function.",
+        "B) The mapping function is executed inside a synchronized block on the destination bin (bucket) head, and recursive updates to the same map can lead to deadlocks.",
+        "C) `computeIfAbsent` uses a Global Lock in Java 11+, reverting the performance to that of `Hashtable`.",
+        "D) The `ForkJoinPool.commonPool()` used by `ConcurrentHashMap` internally has a limited size, causing worker starvation."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) `LinkedHashMap` is not thread-safe; concurrent access from multiple requests is corrupting the internal doubly-linked list, bypassing the `size()` check.",
-      "explanation": "While the logic for `removeEldestEntry` is correct for a single-threaded environment, `LinkedHashMap` is not thread-safe. In a high-concurrency environment (like a Spring Service), multiple threads calling `put` or `get` (which modifies order when `accessOrder` is true) can corrupt the pointers in the underlying doubly-linked list. This can lead to the `size()` method returning incorrect values or the `remove` logic being bypassed entirely, causing the map to grow beyond its capacity."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The mapping function is executed inside a synchronized block on the destination bin (bucket) head, and recursive updates to the same map can lead to deadlocks.",
+      "explanation": "In `ConcurrentHashMap`, the `computeIfAbsent` mapping function is performed while holding a lock on the specific bin (bucket) where the entry resides. If the mapping function attempts to modify the map (especially keys that might map to the same bin), it can lead to a deadlock. This is why the documentation explicitly warns that the computation should be short and should not attempt to update other mappings within the same map."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a `List` of processed items is inconsistent after a method call. The code uses Spring's declarative transaction management:\n\njava\n@Service\npublic class ProcessingService {\n    @Transactional\n    public void processAll(List<String> items) {\n        List<String> processed = new ArrayList<>();\n        items.forEach(item -> this.internalProcess(item, processed));\n        // After this, 'processed' is unexpectedly empty or incomplete\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void internalProcess(String item, List<String> list) {\n        list.add(item.toUpperCase());\n    }\n}\n",
-      "question": "What is the primary reason the `processed` list is not behaving as expected?",
+      "scenario": "You are designing a custom `WeakCache` implementation to store large metadata objects. You use `WeakHashMap<Long, Metadata>` to ensure that when the `Long` ID is no longer referenced elsewhere, the metadata is eligible for Garbage Collection. During a heap dump analysis, you find that even though the IDs are no longer in use, the `Metadata` objects are never collected, eventually causing a `java.lang.OutOfMemoryError: Java heap space`.",
+      "question": "What is the most likely structural flaw in your custom collection implementation?",
       "options": [
-        "A) The `ArrayList` is not thread-safe and the `forEach` loop is running in parallel by default.",
-        "B) The `internalProcess` call is a 'self-invocation' on the Spring bean, meaning it bypasses the proxy and the `REQUIRES_NEW` transaction logic.",
-        "C) The `List` is passed by value in Java, so the `ArrayList` inside `processAll` is never actually modified.",
-        "D) Spring's Transaction Manager rolls back the list state when the nested transaction finishes."
+        "A) `WeakHashMap` only clears entries when the `System.gc()` is called explicitly by the application code.",
+        "B) The `Metadata` object (Value) contains a hard reference back to the `Long` ID (Key), creating a circular reference that prevents GC.",
+        "C) The `Long` IDs are being stored in a `String.intern()` pool, keeping them strongly reachable.",
+        "D) `WeakHashMap` uses `SoftReferences` internally, which only clear under extreme memory pressure."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `internalProcess` call is a 'self-invocation' on the Spring bean, meaning it bypasses the proxy and the `REQUIRES_NEW` transaction logic.",
-      "explanation": "Spring AOP uses proxies to intercept method calls and apply `@Transactional` logic. When `processAll` calls `this.internalProcess`, it is a direct method call on the object instance, not the proxy. Consequently, the `Propagation.REQUIRES_NEW` instruction is ignored. While the list modification should still work (as it's a reference), the scenario highlights a common proxy-related misunderstanding. If `internalProcess` relied on the transaction to persist data or sync the collection state with a DB, that isolation would fail."
+      "correct_answer_text": "B) The Metadata object (Value) contains a hard reference back to the Long ID (Key), creating a circular reference that prevents GC.",
+      "explanation": "In `WeakHashMap`, the key is held via a `WeakReference`, but the value is held via a strong reference. If the value contains a strong reference back to the key, the key effectively becomes strongly reachable through the value. This prevents the `WeakReference` from ever being cleared by the GC, defeating the purpose of using `WeakHashMap` and leading to a memory leak."
     }
   ]
 }
