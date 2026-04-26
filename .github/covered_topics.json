@@ -16,7 +16,8 @@
     "The LRU Cache: Mastering Custom Hybrid Collections"
   ],
   "JVM Internals (Memory Model, G1/ZGC, Class Loading)": [
-    "JVM Internals: The Lifecycle of a Java Object"
+    "JVM Internals: The Lifecycle of a Java Object",
+    "JVM Architecture: The Engine, The Warehouse, and The Janitors"
   ],
   "Design a Real-time Chat System (WebSockets, Redis Pub/Sub)": [
     "Scalable Real-time Chat: WebSockets & Redis Pub/Sub"
