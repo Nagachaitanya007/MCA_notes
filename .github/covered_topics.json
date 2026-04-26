@@ -30,5 +30,8 @@
   ],
   "The CAP Theorem: Choosing between AP and CP in Distributed Systems": [
     "The CAP Theorem: Choosing Between AP and CP in Distributed Systems"
+  ],
+  "Design a Scalable File Storage System (S3 Internals, CDN)": [
+    "Distributed Object Storage & Global Delivery Architecture"
   ]
 }
