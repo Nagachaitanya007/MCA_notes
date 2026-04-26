@@ -1,48 +1,48 @@
 {
-  "topic": "Machine Learning: Classification vs Regression Scenarios",
+  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "Real-world Industrial Problem Statement: A company that produces electric vehicles wants to predict the battery life of its cars based on various factors such as temperature, charging cycles, and battery type. The dataset contains 10000 samples, with 10 features and a target variable that represents the battery life in months.",
-      "question": "Which machine learning approach is most suitable for this problem?",
+      "scenario": "A global pharmaceutical company is integrating disparate clinical trial datasets using a shared Ontology containing over 100,000 classes. During real-time semantic search, the reasoning engine, utilizing Tableau-based algorithms for Description Logic (DL), fails to meet the sub-200ms latency requirement when calculating transitive closures across deeply nested hierarchies in a high-concurrency environment.",
+      "question": "Given the strict real-time constraint and the high dimensionality of medical concepts, which architectural trade-off is most appropriate to optimize performance?",
       "options": [
-        "A) Classification: since the target variable is discrete and represents categories of battery life",
-        "B) Regression: since the target variable is continuous and represents the actual battery life in months",
-        "C) Clustering: since the goal is to group similar samples based on their features",
-        "D) Dimensionality Reduction: since the dataset has a large number of features"
+        "A) Transition from OWL 2 DL to OWL 2 EL profile to leverage polynomial-time reasoning for large taxonomies.",
+        "B) Implement a Brute-force Search algorithm to bypass the reasoning engine's consistency checks.",
+        "C) Use First-Order Logic (FOL) resolution to replace the Description Logic reasoner for higher expressivity.",
+        "D) Increase the Java Heap Size (Xmx) to prevent Garbage Collection pauses during the tableau expansion."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Regression: since the target variable is continuous and represents the actual battery life in months",
-      "explanation": "In this scenario, regression is the most suitable approach because the target variable (battery life) is continuous, and the goal is to predict a specific value. Regression algorithms, such as linear regression or random forest regression, can learn the relationship between the features and the target variable, allowing for accurate predictions of battery life."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Transition from OWL 2 DL to OWL 2 EL profile to leverage polynomial-time reasoning for large taxonomies.",
+      "explanation": "OWL 2 EL is specifically designed for large-scale ontologies with complex hierarchies (like SNOMED CT). It restricts expressivity to ensure that basic reasoning tasks, such as classification and subsumption, can be performed in polynomial time. Tableau-based DL reasoners for OWL 2 DL have NExpTime complexity, which leads to exponential state-space explosion under high-concurrency or deep hierarchies."
     },
     {
       "id": 2,
-      "scenario": "Real-world Industrial Problem Statement: A healthcare company wants to develop a system that can diagnose diseases based on symptoms and medical history. The dataset contains 5000 samples, with 50 features and a target variable that represents the disease type (e.g., diabetes, cancer, etc.). However, the dataset is imbalanced, with 90% of the samples belonging to one class.",
-      "question": "What is the primary challenge in this problem, and how can it be addressed?",
+      "scenario": "An autonomous drone fleet uses a Logic-based verification system to ensure safety protocols are met in dynamic environments. The system utilizes First-Order Logic (FOL) to represent entity relationships. However, as the number of tracked obstacles increases, the Resolution-based theorem prover experiences 'State-Space Explosion,' leading to delayed avoidance maneuvers that exceed the drone's 50ms decision window.",
+      "question": "Which modification to the knowledge representation schema would most effectively reduce computational complexity while maintaining the ability to infer necessary safety actions?",
       "options": [
-        "A) High-dimensional space: can be addressed using dimensionality reduction techniques such as PCA or t-SNE",
-        "B) Skewed data: can be addressed using techniques such as oversampling the minority class or using class weights",
-        "C) Real-time constraints: can be addressed using parallel processing or distributed computing",
-        "D) Lack of data: can be addressed using data augmentation or transfer learning"
+        "A) Implementing Skolemization to remove all existential quantifiers from the FOL predicates.",
+        "B) Restricting the knowledge base to Horn Clauses and utilizing Forward Chaining with SLD resolution.",
+        "C) Switching to a Closed World Assumption (CWA) to treat all unknown obstacles as safe zones.",
+        "D) Mapping the FOL predicates to a high-dimensional Semantic Net with unlimited spreading activation."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Skewed data: can be addressed using techniques such as oversampling the minority class or using class weights",
-      "explanation": "In this scenario, the primary challenge is the imbalanced dataset, which can lead to biased models that perform well on the majority class but poorly on the minority class. Techniques such as oversampling the minority class, undersampling the majority class, or using class weights can help address this issue and improve the model's performance on the minority class."
+      "correct_answer_text": "B) Restricting the knowledge base to Horn Clauses and utilizing Forward Chaining with SLD resolution.",
+      "explanation": "Horn Clauses are a subset of FOL where each clause has at most one positive literal. This restriction allows for much more efficient inference (often linear in terms of the size of the KB) through Forward or Backward chaining. Full FOL resolution is semi-decidable and computationally expensive, making it unsuitable for the strict 50ms real-time constraints of autonomous systems."
     },
     {
       "id": 3,
-      "scenario": "Real-world Industrial Problem Statement: A financial company wants to develop a system that can predict stock prices in real-time based on historical data and market trends. The dataset contains 1 million samples, with 100 features and a target variable that represents the stock price. The system needs to make predictions within 1 second.",
-      "question": "What is the primary challenge in this problem, and how can it be addressed?",
+      "scenario": "A cybersecurity firm uses a Semantic Net to represent network traffic patterns and detect advanced persistent threats. The network contains 'hub' nodes (e.g., central authentication servers) that have a disproportionately high degree of centrality (skewed data). When performing path-finding to identify lateral movement, the search algorithms suffer from exponential branching at these hub nodes, causing system timeouts.",
+      "question": "In this high-dimensional semantic space with significant data skew, which technique should be implemented to ensure efficient path traversal?",
       "options": [
-        "A) High-dimensional space: can be addressed using dimensionality reduction techniques such as PCA or t-SNE",
-        "B) Skewed data: can be addressed using techniques such as oversampling the minority class or using class weights",
-        "C) Real-time constraints: can be addressed using parallel processing, distributed computing, or using optimized algorithms such as gradient boosting",
-        "D) Lack of data: can be addressed using data augmentation or transfer learning"
+        "A) Converting the Semantic Net into a Propositional Logic framework to simplify relationship types.",
+        "B) Implementing Spreading Activation with a defined decay factor and 'firing' threshold to limit node expansion.",
+        "C) Utilizing an Uninformed Breadth-First Search (BFS) to ensure all paths are explored simultaneously.",
+        "D) Flattening the hierarchy by removing all 'Is-A' relationships to reduce the node count."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Real-time constraints: can be addressed using parallel processing, distributed computing, or using optimized algorithms such as gradient boosting",
-      "explanation": "In this scenario, the primary challenge is the real-time constraint, which requires the system to make predictions within 1 second. Techniques such as parallel processing, distributed computing, or using optimized algorithms such as gradient boosting can help address this issue and improve the system's performance in terms of speed and accuracy."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Implementing Spreading Activation with a defined decay factor and 'firing' threshold to limit node expansion.",
+      "explanation": "In Semantic Nets with hub nodes (power-law distribution), standard search algorithms fail due to high branching factors. Spreading Activation with decay mimics neural processes, where 'energy' dissipates as it moves further from the source. This naturally prunes less relevant paths and prevents 'hub' nodes from triggering an infinite or overwhelming number of subsequent activations, thus managing the computational overhead in skewed datasets."
     }
   ]
 }
