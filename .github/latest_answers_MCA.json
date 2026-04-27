@@ -1,48 +1,48 @@
 {
-  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
+  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A global pharmaceutical company is integrating disparate clinical trial datasets using a shared Ontology containing over 100,000 classes. During real-time semantic search, the reasoning engine, utilizing Tableau-based algorithms for Description Logic (DL), fails to meet the sub-200ms latency requirement when calculating transitive closures across deeply nested hierarchies in a high-concurrency environment.",
-      "question": "Given the strict real-time constraint and the high dimensionality of medical concepts, which architectural trade-off is most appropriate to optimize performance?",
+      "scenario": "A semiconductor manufacturing unit deploys a CNN-based vision system to detect hairline cracks in silicon wafers. The dataset consists of 50,000 images, but only 150 images represent the 'defective' class. During initial testing, the model achieves 99.7% accuracy but fails to identify nearly 70% of the actual defective wafers in the production line. The system must be deployed on an edge device with a 15ms latency constraint per image.",
+      "question": "Which combination of strategies would best address both the performance bottleneck on skewed data and the real-time operational constraints?",
       "options": [
-        "A) Transition from OWL 2 DL to OWL 2 EL profile to leverage polynomial-time reasoning for large taxonomies.",
-        "B) Implement a Brute-force Search algorithm to bypass the reasoning engine's consistency checks.",
-        "C) Use First-Order Logic (FOL) resolution to replace the Description Logic reasoner for higher expressivity.",
-        "D) Increase the Java Heap Size (Xmx) to prevent Garbage Collection pauses during the tableau expansion."
+        "A) Increase the depth of the network using ResNet-152 and apply SMOTE for oversampling.",
+        "B) Switch to a MobileNetV3 architecture, use Weighted Cross-Entropy loss, and apply post-training quantization.",
+        "C) Implement a Vision Transformer (ViT) to capture global dependencies and use standard Data Augmentation.",
+        "D) Utilize an ensemble of five DenseNet-201 models and optimize using the Adam optimizer with a high learning rate."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Transition from OWL 2 DL to OWL 2 EL profile to leverage polynomial-time reasoning for large taxonomies.",
-      "explanation": "OWL 2 EL is specifically designed for large-scale ontologies with complex hierarchies (like SNOMED CT). It restricts expressivity to ensure that basic reasoning tasks, such as classification and subsumption, can be performed in polynomial time. Tableau-based DL reasoners for OWL 2 DL have NExpTime complexity, which leads to exponential state-space explosion under high-concurrency or deep hierarchies."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Switch to a MobileNetV3 architecture, use Weighted Cross-Entropy loss, and apply post-training quantization.",
+      "explanation": "In an industrial scenario with high class imbalance, accuracy is a misleading metric; Weighted Cross-Entropy forces the model to penalize misclassifications of the minority (defective) class more heavily. MobileNetV3 is specifically designed for edge devices with low latency requirements. Post-training quantization further reduces the model size and inference time without significant loss in precision, unlike deeper models like ResNet-152 or ensembles which would violate the 15ms latency constraint."
     },
     {
       "id": 2,
-      "scenario": "An autonomous drone fleet uses a Logic-based verification system to ensure safety protocols are met in dynamic environments. The system utilizes First-Order Logic (FOL) to represent entity relationships. However, as the number of tracked obstacles increases, the Resolution-based theorem prover experiences 'State-Space Explosion,' leading to delayed avoidance maneuvers that exceed the drone's 50ms decision window.",
-      "question": "Which modification to the knowledge representation schema would most effectively reduce computational complexity while maintaining the ability to infer necessary safety actions?",
+      "scenario": "A logistics company uses a standard Recurrent Neural Network (RNN) to predict fuel consumption patterns based on sensor telemetry data collected every second over 12-hour shifts. The engineering team observes two specific issues: first, the model's 'memory' fails to correlate morning driving behavior with evening fuel levels; second, the weights frequently update to 'NaN' values during the backpropagation process through time (BPTT).",
+      "question": "What is the most likely cause of these issues and the recommended architectural change?",
       "options": [
-        "A) Implementing Skolemization to remove all existential quantifiers from the FOL predicates.",
-        "B) Restricting the knowledge base to Horn Clauses and utilizing Forward Chaining with SLD resolution.",
-        "C) Switching to a Closed World Assumption (CWA) to treat all unknown obstacles as safe zones.",
-        "D) Mapping the FOL predicates to a high-dimensional Semantic Net with unlimited spreading activation."
+        "A) Vanishing gradients and lack of non-linear activation; switch to a standard MLP with ReLU.",
+        "B) Overfitting due to high-dimensional input; apply Dropout and L2 regularization to the RNN layers.",
+        "C) Vanishing/Exploding gradients; replace the RNN with an LSTM or GRU and implement Gradient Clipping.",
+        "D) Data redundancy in the sequence; use a 1D-CNN with a small kernel size to reduce the sequence length."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Restricting the knowledge base to Horn Clauses and utilizing Forward Chaining with SLD resolution.",
-      "explanation": "Horn Clauses are a subset of FOL where each clause has at most one positive literal. This restriction allows for much more efficient inference (often linear in terms of the size of the KB) through Forward or Backward chaining. Full FOL resolution is semi-decidable and computationally expensive, making it unsuitable for the strict 50ms real-time constraints of autonomous systems."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Vanishing/Exploding gradients; replace the RNN with an LSTM or GRU and implement Gradient Clipping.",
+      "explanation": "Standard RNNs struggle with long-term dependencies due to the vanishing gradient problem, where the gradient signal decays exponentially as it travels back in time, explaining why the model forgets morning data. The 'NaN' values indicate the exploding gradient problem. LSTMs and GRUs use gating mechanisms (input, forget, and output gates) to maintain a constant error flow. Gradient Clipping is a standard industrial practice to cap the maximum value of gradients, preventing numerical instability (NaNs) during training."
     },
     {
       "id": 3,
-      "scenario": "A cybersecurity firm uses a Semantic Net to represent network traffic patterns and detect advanced persistent threats. The network contains 'hub' nodes (e.g., central authentication servers) that have a disproportionately high degree of centrality (skewed data). When performing path-finding to identify lateral movement, the search algorithms suffer from exponential branching at these hub nodes, causing system timeouts.",
-      "question": "In this high-dimensional semantic space with significant data skew, which technique should be implemented to ensure efficient path traversal?",
+      "scenario": "A security firm is developing an AI system for 'Action Recognition' to detect suspicious behavior in low-light CCTV footage. The input consists of temporal sequences of video frames. A 3D-CNN was initially proposed, but the high dimensionality of the spatial-temporal volume is leading to excessive VRAM usage on the deployment servers and very slow convergence during training.",
+      "question": "Which architectural optimization would most effectively reduce the computational complexity while still capturing the necessary spatial and temporal features?",
       "options": [
-        "A) Converting the Semantic Net into a Propositional Logic framework to simplify relationship types.",
-        "B) Implementing Spreading Activation with a defined decay factor and 'firing' threshold to limit node expansion.",
-        "C) Utilizing an Uninformed Breadth-First Search (BFS) to ensure all paths are explored simultaneously.",
-        "D) Flattening the hierarchy by removing all 'Is-A' relationships to reduce the node count."
+        "A) Flatten each frame into a 1D vector and feed it into a bidirectional RNN.",
+        "B) Use a (2+1)D Convolutional approach to factorize the 3D kernels into separate spatial and temporal filters.",
+        "C) Increase the stride and pooling size in a standard 3D-CNN to reduce the feature map resolution.",
+        "D) Replace the CNN with a Large Language Model (LLM) adapted for image token sequences."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Implementing Spreading Activation with a defined decay factor and 'firing' threshold to limit node expansion.",
-      "explanation": "In Semantic Nets with hub nodes (power-law distribution), standard search algorithms fail due to high branching factors. Spreading Activation with decay mimics neural processes, where 'energy' dissipates as it moves further from the source. This naturally prunes less relevant paths and prevents 'hub' nodes from triggering an infinite or overwhelming number of subsequent activations, thus managing the computational overhead in skewed datasets."
+      "correct_answer_text": "B) Use a (2+1)D Convolutional approach to factorize the 3D kernels into separate spatial and temporal filters.",
+      "explanation": "A (2+1)D convolution factorizes a 3D convolution into a 2D spatial convolution followed by a 1D temporal convolution. This significantly reduces the number of parameters and computational cost compared to full 3D convolutions (which are O(n^3)). It also introduces more non-linearities (since an activation function can be placed between the spatial and temporal steps), which often improves learning capacity without the memory overhead that causes VRAM issues in standard 3D-CNNs."
     }
   ]
 }

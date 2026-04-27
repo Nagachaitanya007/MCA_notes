@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
-  "mode": "Java",
+  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue in a Spring Boot application. A service method is marked with `@Transactional`. Inside this method, a `CompletableFuture.runAsync()` is used to perform a secondary database write to an `AuditLog` table. \n\njava\n@Service\npublic class TradeService {\n    @Autowired private TradeRepository tradeRepo;\n    @Autowired private AuditRepository auditRepo;\n\n    @Transactional\n    public void executeTrade(Trade trade) {\n        tradeRepo.save(trade); // Primary record\n        CompletableFuture.runAsync(() -> {\n            // Logic to log the trade\n            auditRepo.save(new AuditLog(trade.getId(), \"SUCCESS\"));\n        });\n    }\n}\n\nUsers report that while trades are saved, `AuditLog` entries are missing or throwing `TransactionRequiredException` intermittently.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A semiconductor manufacturing unit deploys a CNN-based vision system to detect hairline cracks in silicon wafers. The dataset consists of 50,000 images, but only 150 images represent the 'defective' class. During initial testing, the model achieves 99.7% accuracy but fails to identify nearly 70% of the actual defective wafers in the production line. The system must be deployed on an edge device with a 15ms latency constraint per image.",
+      "question": "Which combination of strategies would best address both the performance bottleneck on skewed data and the real-time operational constraints?",
       "options": [
-        "A) The `CompletableFuture` default executor (`ForkJoinPool.commonPool()`) is not compatible with Spring's `@Transactional` proxy.",
-        "B) Spring's `TransactionManager` uses `ThreadLocal` to store the connection; the async thread does not inherit the transaction context from the parent thread.",
-        "C) The `trade.getId()` call inside the lambda causes a `LazyInitializationException` because the Hibernate session is closed.",
-        "D) `CompletableFuture` runs in a virtual thread by default in Spring Boot 3.x, which does not support JDBC transactions."
+        "A) Increase the depth of the network using ResNet-152 and apply SMOTE for oversampling.",
+        "B) Switch to a MobileNetV3 architecture, use Weighted Cross-Entropy loss, and apply post-training quantization.",
+        "C) Implement a Vision Transformer (ViT) to capture global dependencies and use standard Data Augmentation.",
+        "D) Utilize an ensemble of five DenseNet-201 models and optimize using the Adam optimizer with a high learning rate."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Spring's `TransactionManager` uses `ThreadLocal` to store the connection; the async thread does not inherit the transaction context from the parent thread.",
-      "explanation": "In Spring, the `@Transactional` context is bound to a specific thread using `ThreadLocal`. When `CompletableFuture.runAsync` is called without a custom executor, it executes the task in a different thread from the `ForkJoinPool.commonPool()`. This new thread lacks the `Transaction` metadata and the database connection associated with the parent thread's transaction. Consequently, the `auditRepo.save()` call either runs without a transaction (violating integrity) or fails if the repository requires an active transaction. To fix this, one must use a `TaskExecutor` that supports context propagation or manage the transaction explicitly within the async block."
+      "correct_answer_text": "B) Switch to a MobileNetV3 architecture, use Weighted Cross-Entropy loss, and apply post-training quantization.",
+      "explanation": "In an industrial scenario with high class imbalance, accuracy is a misleading metric; Weighted Cross-Entropy forces the model to penalize misclassifications of the minority (defective) class more heavily. MobileNetV3 is specifically designed for edge devices with low latency requirements. Post-training quantization further reduces the model size and inference time without significant loss in precision, unlike deeper models like ResNet-152 or ensembles which would violate the 15ms latency constraint."
     },
     {
       "id": 2,
-      "scenario": "You are migrating a legacy high-throughput gateway to Java 21 to utilize Virtual Threads. The application relies heavily on a third-party library that uses `synchronized` blocks around blocking I/O calls (e.g., legacy database drivers). After the migration, you observe that despite having thousands of `VirtualThread` instances, the underlying `Carrier Threads` are fully utilized, and the application throughput is lower than when using a standard `FixedThreadPool`.",
-      "question": "What JVM phenomenon is causing this performance degradation?",
+      "scenario": "A logistics company uses a standard Recurrent Neural Network (RNN) to predict fuel consumption patterns based on sensor telemetry data collected every second over 12-hour shifts. The engineering team observes two specific issues: first, the model's 'memory' fails to correlate morning driving behavior with evening fuel levels; second, the weights frequently update to 'NaN' values during the backpropagation process through time (BPTT).",
+      "question": "What is the most likely cause of these issues and the recommended architectural change?",
       "options": [
-        "A) Thread Starvation caused by the `ForkJoinPool` scheduler prioritizing platform threads over virtual threads.",
-        "B) Context Switching Overhead; the JVM is overwhelmed by the metadata management of thousands of virtual threads.",
-        "C) Pinning; the virtual thread cannot be unmounted from the carrier thread because it is executing a `synchronized` block.",
-        "D) Heap Fragmentation; the stack chunks of virtual threads are not being collected by the G1 Garbage Collector efficiently."
+        "A) Vanishing gradients and lack of non-linear activation; switch to a standard MLP with ReLU.",
+        "B) Overfitting due to high-dimensional input; apply Dropout and L2 regularization to the RNN layers.",
+        "C) Vanishing/Exploding gradients; replace the RNN with an LSTM or GRU and implement Gradient Clipping.",
+        "D) Data redundancy in the sequence; use a 1D-CNN with a small kernel size to reduce the sequence length."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) Pinning; the virtual thread cannot be unmounted from the carrier thread because it is executing a `synchronized` block.",
-      "explanation": "Virtual threads are designed to be 'unmounted' from their carrier thread (a platform thread) during blocking operations. However, currently, the JVM cannot unmount a virtual thread if it is inside a `synchronized` block or calling a native method. This is known as 'pinning'. If the blocking I/O takes place inside a `synchronized` block, the carrier thread is also blocked, negating the benefits of virtual threads. The solution is to replace `synchronized` with `ReentrantLock`, which allows the virtual thread to unmount properly during I/O."
+      "correct_answer_text": "C) Vanishing/Exploding gradients; replace the RNN with an LSTM or GRU and implement Gradient Clipping.",
+      "explanation": "Standard RNNs struggle with long-term dependencies due to the vanishing gradient problem, where the gradient signal decays exponentially as it travels back in time, explaining why the model forgets morning data. The 'NaN' values indicate the exploding gradient problem. LSTMs and GRUs use gating mechanisms (input, forget, and output gates) to maintain a constant error flow. Gradient Clipping is a standard industrial practice to cap the maximum value of gradients, preventing numerical instability (NaNs) during training."
     },
     {
       "id": 3,
-      "scenario": "You are reviewing a system where multiple `CompletableFuture` chains are used to aggregate data from 5 different microservices. You notice that during periods of high latency from one specific downstream service, the entire application becomes unresponsive, even for endpoints that do not depend on the slow service. \n\njava\npublic CompletableFuture<Data> fetchData() {\n    return CompletableFuture.supplyAsync(() -> restClient.get(\"/slow-service\"))\n            .thenCombine(CompletableFuture.supplyAsync(() -> restClient.get(\"/fast-service\")), \n            (slow, fast) -> combine(slow, fast));\n}\n",
-      "question": "Which architectural flaw is most likely causing the global unresponsiveness?",
+      "scenario": "A security firm is developing an AI system for 'Action Recognition' to detect suspicious behavior in low-light CCTV footage. The input consists of temporal sequences of video frames. A 3D-CNN was initially proposed, but the high dimensionality of the spatial-temporal volume is leading to excessive VRAM usage on the deployment servers and very slow convergence during training.",
+      "question": "Which architectural optimization would most effectively reduce the computational complexity while still capturing the necessary spatial and temporal features?",
       "options": [
-        "A) The `thenCombine` operator is synchronous and blocks the calling thread until both futures complete.",
-        "B) Use of the default `ForkJoinPool.commonPool()` causes 'Noisy Neighbor' exhaustion, where slow I/O tasks saturate threads needed by unrelated tasks.",
-        "C) The JVM's `MaxInlineLevel` is reached, preventing the JIT compiler from optimizing the async lambda expressions.",
-        "D) Missing `obtrudeException` calls on the futures, leading to memory leaks in the `CompletableFuture` stack."
+        "A) Flatten each frame into a 1D vector and feed it into a bidirectional RNN.",
+        "B) Use a (2+1)D Convolutional approach to factorize the 3D kernels into separate spatial and temporal filters.",
+        "C) Increase the stride and pooling size in a standard 3D-CNN to reduce the feature map resolution.",
+        "D) Replace the CNN with a Large Language Model (LLM) adapted for image token sequences."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Use of the default `ForkJoinPool.commonPool()` causes 'Noisy Neighbor' exhaustion, where slow I/O tasks saturate threads needed by unrelated tasks.",
-      "explanation": "By default, `CompletableFuture.supplyAsync` uses the `ForkJoinPool.commonPool()`, which is shared across the entire JVM and sized based on the number of available processors. When one service becomes slow, the common pool threads become occupied waiting for I/O (blocking). Since this pool is shared, unrelated parts of the application that also rely on `CompletableFuture` or parallel streams are starved of threads, leading to a total system collapse. High-scale systems should always provide a dedicated `Executor` (e.g., a `ThreadPoolExecutor` or `VirtualThreadPerTaskExecutor`) to isolate I/O-bound tasks."
+      "correct_answer_text": "B) Use a (2+1)D Convolutional approach to factorize the 3D kernels into separate spatial and temporal filters.",
+      "explanation": "A (2+1)D convolution factorizes a 3D convolution into a 2D spatial convolution followed by a 1D temporal convolution. This significantly reduces the number of parameters and computational cost compared to full 3D convolutions (which are O(n^3)). It also introduces more non-linearities (since an activation function can be placed between the spatial and temporal steps), which often improves learning capacity without the memory overhead that causes VRAM issues in standard 3D-CNNs."
     }
   ]
 }
