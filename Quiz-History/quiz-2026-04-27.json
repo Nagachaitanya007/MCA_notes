@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
+  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue in a high-concurrency microservice. A developer implemented a recursive cache-loading mechanism using `ConcurrentHashMap` to handle hierarchical data. Below is the simplified code snippet: \n\njava\npublic class HierarchicalCache {\n    private final Map<String, String> cache = new ConcurrentHashMap<>();\n\n    public String getEntry(String key) {\n        return cache.computeIfAbsent(key, k -> {\n            if (k.contains(\":child\")) {\n                return getEntry(k.split(\":\")[0]); // Recursive call\n            }\n            return \"Value_\" + k;\n        });\n    }\n}\n\nDuring peak load, the service threads intermittently hang without throwing an `Exception` (on Java 8) or throw an `IllegalStateException` (on Java 9+).",
+      "scenario": "You are debugging a production issue in a Spring Boot application. A service method is marked with `@Transactional`. Inside this method, a `CompletableFuture.runAsync()` is used to perform a secondary database write to an `AuditLog` table. \n\njava\n@Service\npublic class TradeService {\n    @Autowired private TradeRepository tradeRepo;\n    @Autowired private AuditRepository auditRepo;\n\n    @Transactional\n    public void executeTrade(Trade trade) {\n        tradeRepo.save(trade); // Primary record\n        CompletableFuture.runAsync(() -> {\n            // Logic to log the trade\n            auditRepo.save(new AuditLog(trade.getId(), \"SUCCESS\"));\n        });\n    }\n}\n\nUsers report that while trades are saved, `AuditLog` entries are missing or throwing `TransactionRequiredException` intermittently.",
       "question": "What is the primary cause of this issue?",
       "options": [
-        "A) The `ConcurrentHashMap` internal segment lock is held during the mapping function, and recursive calls to the same map cause a deadlock or violation of re-entrancy constraints.",
-        "B) The `computeIfAbsent` method is not thread-safe when used with lambda expressions, causing a race condition in the `Node` tree.",
-        "C) The recursion causes a `StackOverflowError` which is being swallowed by a parent `Spring Proxy` catch-all block.",
-        "D) The `ConcurrentHashMap` requires an explicit `synchronized` block when modifying keys that hash to the same bucket."
+        "A) The `CompletableFuture` default executor (`ForkJoinPool.commonPool()`) is not compatible with Spring's `@Transactional` proxy.",
+        "B) Spring's `TransactionManager` uses `ThreadLocal` to store the connection; the async thread does not inherit the transaction context from the parent thread.",
+        "C) The `trade.getId()` call inside the lambda causes a `LazyInitializationException` because the Hibernate session is closed.",
+        "D) `CompletableFuture` runs in a virtual thread by default in Spring Boot 3.x, which does not support JDBC transactions."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The `ConcurrentHashMap` internal segment lock is held during the mapping function, and recursive calls to the same map cause a deadlock or violation of re-entrancy constraints.",
-      "explanation": "In `ConcurrentHashMap`, the `computeIfAbsent` operation is performed atomically per bin. If the mapping function attempts to modify or compute another entry that maps to the same bin (or in some versions, any entry in the map), it can lead to a deadlock as the thread attempts to acquire a lock it already holds or waits for a computation that is blocked by itself. In Java 9+, the implementation was updated to detect some of these recursive updates and throw an `IllegalStateException` instead of hanging indefinitely."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Spring's `TransactionManager` uses `ThreadLocal` to store the connection; the async thread does not inherit the transaction context from the parent thread.",
+      "explanation": "In Spring, the `@Transactional` context is bound to a specific thread using `ThreadLocal`. When `CompletableFuture.runAsync` is called without a custom executor, it executes the task in a different thread from the `ForkJoinPool.commonPool()`. This new thread lacks the `Transaction` metadata and the database connection associated with the parent thread's transaction. Consequently, the `auditRepo.save()` call either runs without a transaction (violating integrity) or fails if the repository requires an active transaction. To fix this, one must use a `TaskExecutor` that supports context propagation or manage the transaction explicitly within the async block."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a `@Service` bean maintains a `private Set<Long> processedIds = new HashSet<>()` to track deduplication within a single request context. The service method is marked as `@Transactional(propagation = Propagation.REQUIRED)`. You observe that when a database constraint violation occurs and the transaction rollbacks, the `processedIds` set still contains the IDs from the failed attempt, causing subsequent retries or logic in the same JVM session to behave incorrectly.",
-      "question": "Why does the `HashSet` state persist despite the Spring transaction rollback?",
+      "scenario": "You are migrating a legacy high-throughput gateway to Java 21 to utilize Virtual Threads. The application relies heavily on a third-party library that uses `synchronized` blocks around blocking I/O calls (e.g., legacy database drivers). After the migration, you observe that despite having thousands of `VirtualThread` instances, the underlying `Carrier Threads` are fully utilized, and the application throughput is lower than when using a standard `FixedThreadPool`.",
+      "question": "What JVM phenomenon is causing this performance degradation?",
       "options": [
-        "A) Spring's `TransactionManager` only manages `ThreadLocal` variables and does not intercept collection mutations.",
-        "B) The `CGLIB` proxy only intercepts calls to `public` methods and cannot roll back private field state changes in the target object.",
-        "C) Spring Transaction management is scoped to Resource Managers (like JDBC/JPA); heap-resident collections are not transaction-aware and do not participate in rollbacks.",
-        "D) The `HashSet` implementation is not thread-safe, and the `TransactionInterceptor` cannot synchronize its state with the database undo log."
+        "A) Thread Starvation caused by the `ForkJoinPool` scheduler prioritizing platform threads over virtual threads.",
+        "B) Context Switching Overhead; the JVM is overwhelmed by the metadata management of thousands of virtual threads.",
+        "C) Pinning; the virtual thread cannot be unmounted from the carrier thread because it is executing a `synchronized` block.",
+        "D) Heap Fragmentation; the stack chunks of virtual threads are not being collected by the G1 Garbage Collector efficiently."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) Spring Transaction management is scoped to Resource Managers (like JDBC/JPA); heap-resident collections are not transaction-aware and do not participate in rollbacks.",
-      "explanation": "Spring's `@Transactional` mechanism coordinates transactions for external resources like Databases or Message Brokers. It does not provide 'Software Transactional Memory' (STM) for standard Java `Collections`. Changes made to a `HashSet` or `ArrayList` reside in the JVM Heap and are independent of the `PlatformTransactionManager`'s ability to rollback database state. To fix this, one should use request-scoped beans or clear the collection in a `TransactionSynchronization` callback."
+      "correct_answer_text": "C) Pinning; the virtual thread cannot be unmounted from the carrier thread because it is executing a `synchronized` block.",
+      "explanation": "Virtual threads are designed to be 'unmounted' from their carrier thread (a platform thread) during blocking operations. However, currently, the JVM cannot unmount a virtual thread if it is inside a `synchronized` block or calling a native method. This is known as 'pinning'. If the blocking I/O takes place inside a `synchronized` block, the carrier thread is also blocked, negating the benefits of virtual threads. The solution is to replace `synchronized` with `ReentrantLock`, which allows the virtual thread to unmount properly during I/O."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a memory leak in a custom cache implementation that uses `WeakHashMap<UserSession, byte[]>`. Profiling shows that thousands of `UserSession` objects remain in the heap even after the user logs out and all external references to the `UserSession` are cleared. You discover the `byte[]` value in the map contains a serialized object that inadvertently holds a strong reference back to the `UserSession` key.",
-      "question": "Why does the `WeakHashMap` fail to reclaim the memory in this scenario?",
+      "scenario": "You are reviewing a system where multiple `CompletableFuture` chains are used to aggregate data from 5 different microservices. You notice that during periods of high latency from one specific downstream service, the entire application becomes unresponsive, even for endpoints that do not depend on the slow service. \n\njava\npublic CompletableFuture<Data> fetchData() {\n    return CompletableFuture.supplyAsync(() -> restClient.get(\"/slow-service\"))\n            .thenCombine(CompletableFuture.supplyAsync(() -> restClient.get(\"/fast-service\")), \n            (slow, fast) -> combine(slow, fast));\n}\n",
+      "question": "Which architectural flaw is most likely causing the global unresponsiveness?",
       "options": [
-        "A) The `WeakHashMap` uses `SoftReference` internally, which requires high memory pressure to trigger GC.",
-        "B) The value in a `WeakHashMap` holds a strong reference to the key, creating a reference cycle that prevents the key from becoming weakly reachable.",
-        "C) The `JVM Internals` prevent `WeakReference` clearing if the object is larger than 1MB.",
-        "D) `WeakHashMap` keys are only cleared when the `size()` method is invoked, and the application was not calling it."
+        "A) The `thenCombine` operator is synchronous and blocks the calling thread until both futures complete.",
+        "B) Use of the default `ForkJoinPool.commonPool()` causes 'Noisy Neighbor' exhaustion, where slow I/O tasks saturate threads needed by unrelated tasks.",
+        "C) The JVM's `MaxInlineLevel` is reached, preventing the JIT compiler from optimizing the async lambda expressions.",
+        "D) Missing `obtrudeException` calls on the futures, leading to memory leaks in the `CompletableFuture` stack."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The value in a `WeakHashMap` holds a strong reference to the key, creating a reference cycle that prevents the key from becoming weakly reachable.",
-      "explanation": "In `WeakHashMap`, the key is stored as a `WeakReference`. However, the value is stored as a strong reference. If the value object contains a field that references the key, that key is now 'strongly reachable' via the value-to-key path. Since the `Entry` object itself is strongly referenced by the internal table of `WeakHashMap`, the cycle prevents the GC from ever clearing the `WeakReference` of the key, leading to a permanent memory leak."
+      "correct_answer_text": "B) Use of the default `ForkJoinPool.commonPool()` causes 'Noisy Neighbor' exhaustion, where slow I/O tasks saturate threads needed by unrelated tasks.",
+      "explanation": "By default, `CompletableFuture.supplyAsync` uses the `ForkJoinPool.commonPool()`, which is shared across the entire JVM and sized based on the number of available processors. When one service becomes slow, the common pool threads become occupied waiting for I/O (blocking). Since this pool is shared, unrelated parts of the application that also rely on `CompletableFuture` or parallel streams are starved of threads, leading to a total system collapse. High-scale systems should always provide a dedicated `Executor` (e.g., a `ThreadPoolExecutor` or `VirtualThreadPerTaskExecutor`) to isolate I/O-bound tasks."
     }
   ]
 }
