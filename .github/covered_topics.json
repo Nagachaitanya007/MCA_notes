@@ -34,5 +34,8 @@
   ],
   "Design a Scalable File Storage System (S3 Internals, CDN)": [
     "Distributed Object Storage & Global Delivery Architecture"
+  ],
+  "Database Sharding & Replication Strategies": [
+    "Horizontal Sharding: Scaling Out Your Data"
   ]
 }
