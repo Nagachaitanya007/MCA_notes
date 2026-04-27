@@ -23,7 +23,8 @@
     "Scalable Real-time Chat: WebSockets & Redis Pub/Sub"
   ],
   "Memory Management & Garbage Collection Tuning": [
-    "Java Memory Management & Garbage Collection Tuning"
+    "Java Memory Management & Garbage Collection Tuning",
+    "Generational Garbage Collection & The \"Stop-The-World\" Problem"
   ],
   "Design a URL Shortener (Key Generation Service, Sharding)": [
     "URL Shortener: Key Generation Service (KGS) & Sharding"
