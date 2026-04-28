@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput microservice uses `ConcurrentHashMap.computeIfAbsent` to populate a local cache. During a heavy load spike, you observe several threads stalled with a `State: RUNNABLE` but making no progress, consuming 100% CPU on those cores. The stack trace indicates they are stuck within the `computeIfAbsent` call of the `ConcurrentHashMap` instance.",
-      "question": "What is the most likely cause of this behavior in a JVM environment (specifically Java 8-11)?",
+      "scenario": "You are debugging a production issue where a high-throughput caching service is throwing a `ConcurrentModificationException`. The service uses a custom implementation: `public class MetadataCache<K, V> { private final Map<K, V> internalMap = Collections.synchronizedMap(new LinkedHashMap<>(100, 0.75f, true)); public V getEntry(K key) { return internalMap.get(key); } public void iterateCache() { internalMap.forEach((k, v) -> process(v)); } }`. Even though the map is wrapped in `Collections.synchronizedMap`, the exception occurs during the `iterateCache()` call when `getEntry()` is called concurrently.",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) A deadlock occurs because the mapping function attempts to modify the same `ConcurrentHashMap` instance recursively.",
-        "B) The `ConcurrentHashMap` hit a hash collision that triggered an infinite loop in the tree-bin balancing logic.",
-        "C) The mapping function is performing a blocking I/O operation, leading to thread starvation in the ForkJoinPool.",
-        "D) Multiple threads are competing for the same bucket lock, and the spin-lock implementation is failing to back off."
+        "A) `Collections.synchronizedMap` does not synchronize the `forEach` method internally.",
+        "B) The `accessOrder` flag in `LinkedHashMap` causes structural modifications during read operations, which are not thread-safe during iteration.",
+        "C) The JVM JIT compiler reorders the instructions, bypassing the monitor lock of the synchronized wrapper.",
+        "D) `LinkedHashMap` requires a custom `ReentrantLock` for the `forEach` method when used with `accessOrder=true`."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) A deadlock occurs because the mapping function attempts to modify the same `ConcurrentHashMap` instance recursively.",
-      "explanation": "In Java 8 through early versions of Java 11, `ConcurrentHashMap.computeIfAbsent` is not reentrant. If the mapping function provided to `computeIfAbsent` attempts to modify the same map (especially if the secondary key hashes to the same internal partition/bin), it can cause a permanent live-lock or recursive dead-lock because the bin is locked by the thread executing the mapping function. This manifests as 100% CPU usage as the thread enters a busy-wait or cyclic dependency state within the internal `ReservationNode` logic."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The accessOrder flag in LinkedHashMap causes structural modifications during read operations, which are not thread-safe during iteration.",
+      "explanation": "When `accessOrder` is set to `true` in a `LinkedHashMap`, a `get()` operation performs a structural modification by moving the accessed node to the end of the list. While `Collections.synchronizedMap` synchronizes the `get()` call itself, the iterator (or `forEach` loop) on the map is not atomic with respect to other operations. The iterator fails-fast because the internal `modCount` of the `LinkedHashMap` is incremented during the 'read' operation, violating the contract if another thread is iterating."
     },
     {
       "id": 2,
-      "scenario": "Bug Hunter: You are reviewing the following code snippet designed to deduplicate JPA entities in a transactional service. Even though a `HashSet` is used, duplicates of the same `Product` entity (with the same ID) are appearing in the resulting `Set` after several database updates.\n\njava\n@Service\npublic class InventoryManager {\n    private final Set<Product> uniqueProducts = new HashSet<>();\n\n    @Transactional\n    public void processUpdate(Long productId) {\n        Product product = repository.getById(productId); \n        // Product entity uses @GeneratedValue ID and standard field-based equals/hashCode\n        uniqueProducts.add(product);\n    }\n}\n",
-      "question": "Why does the `HashSet` fail to maintain uniqueness in this Spring-managed transactional context?",
+      "scenario": "You are debugging a production issue where a Spring-managed service is failing to persist data into a `HashSet` that is part of a JPA entity. The code looks like this: \n\n`@Service public class OrderService { @Transactional public void updateOrder(Long id) { Order order = repo.findById(id).get(); processItems(order.getItems()); } @Transactional(propagation = Propagation.REQUIRES_NEW) public void processItems(Set<Item> items) { items.add(new Item(\"New\")); } }` \n\nYou notice that the `Item` is never persisted to the database and the second transaction is never started.",
+      "question": "Why is the `@Transactional` annotation on `processItems` being ignored?",
       "options": [
-        "A) Spring Proxies wrap the `Product` entity, and `HashSet` cannot compare Proxy objects to actual entities.",
-        "B) The `HashSet` is a member variable, and Hibernate's Dirty Checking mechanism replaces it with a `PersistentSet`.",
-        "C) The `hashCode` of the entity changes when the ID is generated or when the JPA Proxy is initialized, breaking the `HashSet` contract.",
-        "D) The `@Transactional` boundary causes the `HashSet` to be serialized and deserialized, losing object references."
+        "A) Spring Transaction Management does not support `Set` implementations within proxied methods.",
+        "B) The method `processItems` is called via `this`, bypassing the Spring AOP Proxy and thus the transactional interceptor.",
+        "C) `Propagation.REQUIRES_NEW` is not compatible with standard `Collections` framework interfaces.",
+        "D) The `HashSet` is not a thread-safe collection and prevents the proxy from locking the object."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The `hashCode` of the entity changes when the ID is generated or when the JPA Proxy is initialized, breaking the `HashSet` contract.",
-      "explanation": "This is a classic JPA issue. If an entity uses its database ID in its `equals` and `hashCode` methods, and that ID is null before persistence but populated later, the object's hash code changes. When `HashSet` stores an object, it places it in a bucket based on the `hashCode` at that moment. If the ID changes (or if the object was a Proxy whose ID was lazy-loaded), the `HashSet` will look in the wrong bucket for subsequent `contains` or `add` checks, allowing duplicates. Best practice is to use a business key or a UUID that remains constant throughout the object's lifecycle."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The method processItems is called via this, bypassing the Spring AOP Proxy and thus the transactional interceptor.",
+      "explanation": "Spring uses CGLIB or JDK Dynamic Proxies to implement `@Transactional`. Proxy-based AOP only intercepts 'external' method calls. When `updateOrder` calls `processItems` within the same class, it is a local method call on the `this` reference, not the proxy. Consequently, the transaction interceptor is never invoked, and the `Propagation.REQUIRES_NEW` setting is ignored. To fix this, the method should be moved to a separate bean or the current bean should be self-injected."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a custom implementation of a `WeakValueHashMap` (a map where values are wrapped in `WeakReference`) is leaking memory. Despite the keys being removed and the values being eligible for Garbage Collection, the `ReferenceQueue` processing thread is not reclaiming the memory as expected.",
-      "question": "What is the most likely cause of this custom collection's memory leak?",
+      "scenario": "You are debugging a production issue where a custom `WeakHashMap`-based cache is causing a severe Memory Leak (Old Gen exhaustion). The implementation is: `private Map<UserSession, SessionMetadata> cache = new WeakHashMap<>();`. The `SessionMetadata` object contains a field: `private UserSession sessionRef;` which points back to the key used in the map.",
+      "question": "Why is the `WeakHashMap` failing to reclaim memory?",
       "options": [
-        "A) The value objects within the `WeakReference` have a strong reference back to the key objects stored in the map.",
-        "B) The `WeakReference` objects themselves are not being removed from the map after the GC clears the referent.",
-        "C) The map uses `System.gc()` calls which are being ignored by the `-XX:+DisableExplicitGC` JVM flag.",
-        "D) The `ReferenceQueue` is only polled when the `get()` method is called, but the map is write-only in this scenario."
+        "A) `WeakHashMap` only clears keys if the value is also a `WeakReference`.",
+        "B) The value in the map holds a strong reference back to the key, preventing the key from being weakly reachable.",
+        "C) The JVM's G1 Collector ignores `WeakHashMap` entries during minor GC cycles.",
+        "D) The `WeakHashMap` must be manually flushed using `System.gc()` to clear the `ReferenceQueue`."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The value objects within the `WeakReference` have a strong reference back to the key objects stored in the map.",
-      "explanation": "In a `WeakValueHashMap`, if the value (the referent) contains a strong reference back to the key, the key can never be garbage collected. Since the key is strongly held by the internal Map structure (e.g., in the `Entry` object), and the key holds the value via the internal logic, a circular dependency is created where the 'Weak' link is bypassed by a strong link back to the root (the Map itself). This prevents the `WeakReference` from ever being cleared by the GC, leading to a memory leak."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The value in the map holds a strong reference back to the key, preventing the key from being weakly reachable.",
+      "explanation": "In a `WeakHashMap`, the key is stored as a `WeakReference`. However, the value is stored as a strong reference. If the value contains a strong reference to the key, the key remains 'strongly reachable' and will not be reclaimed by the Garbage Collector. Since the key is never collected, the entry is never removed from the map, leading to a memory leak. To fix this, the value should not point back to the key, or should use a `WeakReference` itself to point back to the key."
     }
   ]
 }
