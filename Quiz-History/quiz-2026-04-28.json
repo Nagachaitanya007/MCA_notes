@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
-  "mode": "Java",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput caching service is throwing a `ConcurrentModificationException`. The service uses a custom implementation: `public class MetadataCache<K, V> { private final Map<K, V> internalMap = Collections.synchronizedMap(new LinkedHashMap<>(100, 0.75f, true)); public V getEntry(K key) { return internalMap.get(key); } public void iterateCache() { internalMap.forEach((k, v) -> process(v)); } }`. Even though the map is wrapped in `Collections.synchronizedMap`, the exception occurs during the `iterateCache()` call when `getEntry()` is called concurrently.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A smart-grid energy provider collects per-minute power consumption data from 50,000 smart meters. Due to intermittent network packet loss in urban canyons, approximately 8% of the data points are Missing At Random (MAR). The downstream application is a real-time Recurrent Neural Network (RNN) designed for short-term load forecasting where temporal continuity is critical, and inference latency must be under 200ms.",
+      "question": "Which imputation strategy offers the best trade-off between preserving temporal dependencies and meeting strict real-time processing constraints?",
       "options": [
-        "A) `Collections.synchronizedMap` does not synchronize the `forEach` method internally.",
-        "B) The `accessOrder` flag in `LinkedHashMap` causes structural modifications during read operations, which are not thread-safe during iteration.",
-        "C) The JVM JIT compiler reorders the instructions, bypassing the monitor lock of the synchronized wrapper.",
-        "D) `LinkedHashMap` requires a custom `ReentrantLock` for the `forEach` method when used with `accessOrder=true`."
+        "A) K-Nearest Neighbors (KNN) Imputation using the 10 closest geographical meters.",
+        "B) Multiple Imputation by Chained Equations (MICE) using predictive mean matching.",
+        "C) Last Observation Carried Forward (LOCF) supplemented with a decaying moving average.",
+        "D) Global Mean Imputation based on the historical monthly average of each meter."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The accessOrder flag in LinkedHashMap causes structural modifications during read operations, which are not thread-safe during iteration.",
-      "explanation": "When `accessOrder` is set to `true` in a `LinkedHashMap`, a `get()` operation performs a structural modification by moving the accessed node to the end of the list. While `Collections.synchronizedMap` synchronizes the `get()` call itself, the iterator (or `forEach` loop) on the map is not atomic with respect to other operations. The iterator fails-fast because the internal `modCount` of the `LinkedHashMap` is incremented during the 'read' operation, violating the contract if another thread is iterating."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Last Observation Carried Forward (LOCF) supplemented with a decaying moving average.",
+      "explanation": "In time-series forecasting for IoT/Smart Grids, temporal local correlation is high. LOCF is computationally O(1), making it ideal for the 200ms real-time constraint. Unlike MICE or KNN, which require iterative passes or distance calculations over large datasets (O(n log n) or O(n^2)), LOCF preserves the most recent state. The decaying moving average helps mitigate the bias introduced if the 'missingness' lasts for several cycles, maintaining the trend signal without the overhead of complex modeling."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a Spring-managed service is failing to persist data into a `HashSet` that is part of a JPA entity. The code looks like this: \n\n`@Service public class OrderService { @Transactional public void updateOrder(Long id) { Order order = repo.findById(id).get(); processItems(order.getItems()); } @Transactional(propagation = Propagation.REQUIRES_NEW) public void processItems(Set<Item> items) { items.add(new Item(\"New\")); } }` \n\nYou notice that the `Item` is never persisted to the database and the second transaction is never started.",
-      "question": "Why is the `@Transactional` annotation on `processItems` being ignored?",
+      "scenario": "A global logistics firm uses a high-capacity regression model to predict 'Delivery Lead Time'. The feature 'Shipment Weight' is highly right-skewed (log-normal distribution) with extreme outliers representing specialized industrial equipment. When applying standard Z-score normalization, the model's Mean Absolute Error (MAE) increases because the outliers compress the majority of the data into a very narrow range near zero.",
+      "question": "Which preprocessing technique should be applied to 'Shipment Weight' to improve model convergence while retaining the predictive signal of the heavy-tail outliers?",
       "options": [
-        "A) Spring Transaction Management does not support `Set` implementations within proxied methods.",
-        "B) The method `processItems` is called via `this`, bypassing the Spring AOP Proxy and thus the transactional interceptor.",
-        "C) `Propagation.REQUIRES_NEW` is not compatible with standard `Collections` framework interfaces.",
-        "D) The `HashSet` is not a thread-safe collection and prevents the proxy from locking the object."
+        "A) Hard-clipping (Winsorization) at the 95th percentile to remove outlier influence.",
+        "B) Logarithmic Transformation followed by Standard Scaling.",
+        "C) Min-Max Scaling to squeeze all values into the [0, 1] range.",
+        "D) Deleting all records where the Z-score exceeds 3.0."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The method processItems is called via this, bypassing the Spring AOP Proxy and thus the transactional interceptor.",
-      "explanation": "Spring uses CGLIB or JDK Dynamic Proxies to implement `@Transactional`. Proxy-based AOP only intercepts 'external' method calls. When `updateOrder` calls `processItems` within the same class, it is a local method call on the `this` reference, not the proxy. Consequently, the transaction interceptor is never invoked, and the `Propagation.REQUIRES_NEW` setting is ignored. To fix this, the method should be moved to a separate bean or the current bean should be self-injected."
+      "correct_answer_text": "B) Logarithmic Transformation followed by Standard Scaling.",
+      "explanation": "Skewed data, particularly log-normal distributions common in physical measurements, disproportionately affects gradient-based optimizers. A Log Transformation (log(x+1)) maps the exponential scale to a linear scale, effectively 'pulling in' outliers and spreading out the dense lower-value region. Subsequent Standard Scaling ensures the feature has a mean of 0 and variance of 1, which stabilizes the weight updates in the neural network or regression model. Clipping or deleting (A and D) would result in the loss of critical information regarding heavy shipments which are often the most expensive to predict incorrectly."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a custom `WeakHashMap`-based cache is causing a severe Memory Leak (Old Gen exhaustion). The implementation is: `private Map<UserSession, SessionMetadata> cache = new WeakHashMap<>();`. The `SessionMetadata` object contains a field: `private UserSession sessionRef;` which points back to the key used in the map.",
-      "question": "Why is the `WeakHashMap` failing to reclaim memory?",
+      "scenario": "A FinTech startup is building a credit scoring engine using Support Vector Machines (SVM). The dataset contains a 'Number of Credit Inquiries' feature which is zero-inflated (most values are 0) and highly skewed. Additionally, some features contain negative values due to account balance adjustments. The team needs a power transformation to stabilize variance and minimize the impact of skewness before feeding the data into the SVM's RBF kernel.",
+      "question": "Given the presence of zero-inflated data and negative values, which transformation is most mathematically appropriate for this preprocessing pipeline?",
       "options": [
-        "A) `WeakHashMap` only clears keys if the value is also a `WeakReference`.",
-        "B) The value in the map holds a strong reference back to the key, preventing the key from being weakly reachable.",
-        "C) The JVM's G1 Collector ignores `WeakHashMap` entries during minor GC cycles.",
-        "D) The `WeakHashMap` must be manually flushed using `System.gc()` to clear the `ReferenceQueue`."
+        "A) Box-Cox Transformation.",
+        "B) Unit Vector Normalization (L2 Norm).",
+        "C) Yeo-Johnson Transformation.",
+        "D) Simple Square Root Transformation."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The value in the map holds a strong reference back to the key, preventing the key from being weakly reachable.",
-      "explanation": "In a `WeakHashMap`, the key is stored as a `WeakReference`. However, the value is stored as a strong reference. If the value contains a strong reference to the key, the key remains 'strongly reachable' and will not be reclaimed by the Garbage Collector. Since the key is never collected, the entry is never removed from the map, leading to a memory leak. To fix this, the value should not point back to the key, or should use a `WeakReference` itself to point back to the key."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Yeo-Johnson Transformation.",
+      "explanation": "The Box-Cox transformation requires strictly positive data (x > 0). In this scenario, the presence of zero-inflated data (zeros) and negative balance adjustments makes Box-Cox inapplicable without arbitrary shifting. The Yeo-Johnson transformation is an extension of Box-Cox that handles zero and negative values while minimizing skewness and making the distribution more Gaussian-like. This is crucial for SVMs with RBF kernels, as they assume that features are scaled and centered, and they perform poorly when the feature variance is driven by a few extreme skewed points."
     }
   ]
 }

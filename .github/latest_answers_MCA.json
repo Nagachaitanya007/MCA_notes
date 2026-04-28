@@ -1,48 +1,48 @@
 {
-  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A semiconductor manufacturing unit deploys a CNN-based vision system to detect hairline cracks in silicon wafers. The dataset consists of 50,000 images, but only 150 images represent the 'defective' class. During initial testing, the model achieves 99.7% accuracy but fails to identify nearly 70% of the actual defective wafers in the production line. The system must be deployed on an edge device with a 15ms latency constraint per image.",
-      "question": "Which combination of strategies would best address both the performance bottleneck on skewed data and the real-time operational constraints?",
+      "scenario": "A smart-grid energy provider collects per-minute power consumption data from 50,000 smart meters. Due to intermittent network packet loss in urban canyons, approximately 8% of the data points are Missing At Random (MAR). The downstream application is a real-time Recurrent Neural Network (RNN) designed for short-term load forecasting where temporal continuity is critical, and inference latency must be under 200ms.",
+      "question": "Which imputation strategy offers the best trade-off between preserving temporal dependencies and meeting strict real-time processing constraints?",
       "options": [
-        "A) Increase the depth of the network using ResNet-152 and apply SMOTE for oversampling.",
-        "B) Switch to a MobileNetV3 architecture, use Weighted Cross-Entropy loss, and apply post-training quantization.",
-        "C) Implement a Vision Transformer (ViT) to capture global dependencies and use standard Data Augmentation.",
-        "D) Utilize an ensemble of five DenseNet-201 models and optimize using the Adam optimizer with a high learning rate."
+        "A) K-Nearest Neighbors (KNN) Imputation using the 10 closest geographical meters.",
+        "B) Multiple Imputation by Chained Equations (MICE) using predictive mean matching.",
+        "C) Last Observation Carried Forward (LOCF) supplemented with a decaying moving average.",
+        "D) Global Mean Imputation based on the historical monthly average of each meter."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Switch to a MobileNetV3 architecture, use Weighted Cross-Entropy loss, and apply post-training quantization.",
-      "explanation": "In an industrial scenario with high class imbalance, accuracy is a misleading metric; Weighted Cross-Entropy forces the model to penalize misclassifications of the minority (defective) class more heavily. MobileNetV3 is specifically designed for edge devices with low latency requirements. Post-training quantization further reduces the model size and inference time without significant loss in precision, unlike deeper models like ResNet-152 or ensembles which would violate the 15ms latency constraint."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Last Observation Carried Forward (LOCF) supplemented with a decaying moving average.",
+      "explanation": "In time-series forecasting for IoT/Smart Grids, temporal local correlation is high. LOCF is computationally O(1), making it ideal for the 200ms real-time constraint. Unlike MICE or KNN, which require iterative passes or distance calculations over large datasets (O(n log n) or O(n^2)), LOCF preserves the most recent state. The decaying moving average helps mitigate the bias introduced if the 'missingness' lasts for several cycles, maintaining the trend signal without the overhead of complex modeling."
     },
     {
       "id": 2,
-      "scenario": "A logistics company uses a standard Recurrent Neural Network (RNN) to predict fuel consumption patterns based on sensor telemetry data collected every second over 12-hour shifts. The engineering team observes two specific issues: first, the model's 'memory' fails to correlate morning driving behavior with evening fuel levels; second, the weights frequently update to 'NaN' values during the backpropagation process through time (BPTT).",
-      "question": "What is the most likely cause of these issues and the recommended architectural change?",
+      "scenario": "A global logistics firm uses a high-capacity regression model to predict 'Delivery Lead Time'. The feature 'Shipment Weight' is highly right-skewed (log-normal distribution) with extreme outliers representing specialized industrial equipment. When applying standard Z-score normalization, the model's Mean Absolute Error (MAE) increases because the outliers compress the majority of the data into a very narrow range near zero.",
+      "question": "Which preprocessing technique should be applied to 'Shipment Weight' to improve model convergence while retaining the predictive signal of the heavy-tail outliers?",
       "options": [
-        "A) Vanishing gradients and lack of non-linear activation; switch to a standard MLP with ReLU.",
-        "B) Overfitting due to high-dimensional input; apply Dropout and L2 regularization to the RNN layers.",
-        "C) Vanishing/Exploding gradients; replace the RNN with an LSTM or GRU and implement Gradient Clipping.",
-        "D) Data redundancy in the sequence; use a 1D-CNN with a small kernel size to reduce the sequence length."
+        "A) Hard-clipping (Winsorization) at the 95th percentile to remove outlier influence.",
+        "B) Logarithmic Transformation followed by Standard Scaling.",
+        "C) Min-Max Scaling to squeeze all values into the [0, 1] range.",
+        "D) Deleting all records where the Z-score exceeds 3.0."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Vanishing/Exploding gradients; replace the RNN with an LSTM or GRU and implement Gradient Clipping.",
-      "explanation": "Standard RNNs struggle with long-term dependencies due to the vanishing gradient problem, where the gradient signal decays exponentially as it travels back in time, explaining why the model forgets morning data. The 'NaN' values indicate the exploding gradient problem. LSTMs and GRUs use gating mechanisms (input, forget, and output gates) to maintain a constant error flow. Gradient Clipping is a standard industrial practice to cap the maximum value of gradients, preventing numerical instability (NaNs) during training."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Logarithmic Transformation followed by Standard Scaling.",
+      "explanation": "Skewed data, particularly log-normal distributions common in physical measurements, disproportionately affects gradient-based optimizers. A Log Transformation (log(x+1)) maps the exponential scale to a linear scale, effectively 'pulling in' outliers and spreading out the dense lower-value region. Subsequent Standard Scaling ensures the feature has a mean of 0 and variance of 1, which stabilizes the weight updates in the neural network or regression model. Clipping or deleting (A and D) would result in the loss of critical information regarding heavy shipments which are often the most expensive to predict incorrectly."
     },
     {
       "id": 3,
-      "scenario": "A security firm is developing an AI system for 'Action Recognition' to detect suspicious behavior in low-light CCTV footage. The input consists of temporal sequences of video frames. A 3D-CNN was initially proposed, but the high dimensionality of the spatial-temporal volume is leading to excessive VRAM usage on the deployment servers and very slow convergence during training.",
-      "question": "Which architectural optimization would most effectively reduce the computational complexity while still capturing the necessary spatial and temporal features?",
+      "scenario": "A FinTech startup is building a credit scoring engine using Support Vector Machines (SVM). The dataset contains a 'Number of Credit Inquiries' feature which is zero-inflated (most values are 0) and highly skewed. Additionally, some features contain negative values due to account balance adjustments. The team needs a power transformation to stabilize variance and minimize the impact of skewness before feeding the data into the SVM's RBF kernel.",
+      "question": "Given the presence of zero-inflated data and negative values, which transformation is most mathematically appropriate for this preprocessing pipeline?",
       "options": [
-        "A) Flatten each frame into a 1D vector and feed it into a bidirectional RNN.",
-        "B) Use a (2+1)D Convolutional approach to factorize the 3D kernels into separate spatial and temporal filters.",
-        "C) Increase the stride and pooling size in a standard 3D-CNN to reduce the feature map resolution.",
-        "D) Replace the CNN with a Large Language Model (LLM) adapted for image token sequences."
+        "A) Box-Cox Transformation.",
+        "B) Unit Vector Normalization (L2 Norm).",
+        "C) Yeo-Johnson Transformation.",
+        "D) Simple Square Root Transformation."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Use a (2+1)D Convolutional approach to factorize the 3D kernels into separate spatial and temporal filters.",
-      "explanation": "A (2+1)D convolution factorizes a 3D convolution into a 2D spatial convolution followed by a 1D temporal convolution. This significantly reduces the number of parameters and computational cost compared to full 3D convolutions (which are O(n^3)). It also introduces more non-linearities (since an activation function can be placed between the spatial and temporal steps), which often improves learning capacity without the memory overhead that causes VRAM issues in standard 3D-CNNs."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Yeo-Johnson Transformation.",
+      "explanation": "The Box-Cox transformation requires strictly positive data (x > 0). In this scenario, the presence of zero-inflated data (zeros) and negative balance adjustments makes Box-Cox inapplicable without arbitrary shifting. The Yeo-Johnson transformation is an extension of Box-Cox that handles zero and negative values while minimizing skewness and making the distribution more Gaussian-like. This is crucial for SVMs with RBF kernels, as they assume that features are scaled and centered, and they perform poorly when the feature variance is driven by a few extreme skewed points."
     }
   ]
 }
