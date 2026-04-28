@@ -38,5 +38,8 @@
   ],
   "Database Sharding & Replication Strategies": [
     "Horizontal Sharding: Scaling Out Your Data"
+  ],
+  "Design a Notification System (Kafka + SQS + Webhooks)": [
+    "Designing a Scalable Notification System (Kafka + SQS + Webhooks)"
   ]
 }
