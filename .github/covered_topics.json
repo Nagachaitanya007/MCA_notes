@@ -6,7 +6,8 @@
     "Mastering Distributed Transactions: The Saga Pattern & Transactional Outbox"
   ],
   "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)": [
-    "\ud83d\ude80 Java Concurrency & Multithreading: Virtual Threads & CompletableFuture"
+    "\ud83d\ude80 Java Concurrency & Multithreading: Virtual Threads & CompletableFuture",
+    "Asynchronous Orchestration: CompletableFuture vs. Virtual Threads"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
