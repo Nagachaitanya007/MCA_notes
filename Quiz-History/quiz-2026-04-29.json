@@ -1,48 +1,48 @@
 {
-  "topic": "Exception Handling Strategies in Distributed Systems",
+  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `RuntimeException` is thrown during a database operation, but the transaction is not rolling back as expected. You find the following code snippet in a `@Service` class:\n\njava\n@Service\npublic class InventoryService {\n    public void updateStock(String itemId, int quantity) {\n        try {\n            executeStockUpdate(itemId, quantity);\n        } catch (Exception e) {\n            throw new RuntimeException(\"Failed to update stock\", e);\n        }\n    }\n\n    @Transactional\n    public void executeStockUpdate(String itemId, int quantity) {\n        inventoryRepo.update(itemId, quantity);\n        if (quantity < 0) throw new RuntimeException(\"Invalid quantity\");\n    }\n}\n",
-      "question": "What is the primary cause of the transaction failing to roll back?",
+      "scenario": "You are debugging a production issue where a Spring Boot application is failing to rollback a database transaction. The service layer contains the following code: \n\n`@Service` \n`public class OrderService {` \n`  @Transactional` \n`  public void processOrder(Order order) {` \n`    saveOrder(order);` \n`    try {` \n`      this.logAudit(order);` \n`    } catch (Exception e) {` \n`      // Log and continue` \n`    }` \n`  }` \n\n`  @Transactional(propagation = Propagation.REQUIRES_NEW)` \n`  public void logAudit(Order order) {` \n`    throw new RuntimeException(\"Audit DB Down\");` \n`  }` \n`}` \n\nDespite the `REQUIRES_NEW` attribute, the `logAudit` method does not start a new transaction, and its failure doesn't trigger the expected proxy behavior.",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) The `RuntimeException` is caught and re-thrown as another `RuntimeException`.",
-        "B) The `@Transactional` annotation is on a method that is called via an internal reference (`this`), bypassing the Spring Proxy.",
-        "C) The `inventoryRepo.update` call is executing in a separate thread.",
-        "D) Spring's `TransactionManager` defaults to `Propagation.SUPPORTS` when no parameters are provided."
+        "A) The `RuntimeException` is caught in a try-catch block, preventing the transaction interceptor from seeing it.",
+        "B) Spring Proxies use 'this' reference for internal calls, bypassing the aspect-oriented wrapper and the `TransactionInterceptor`.",
+        "C) The JVM `Classloader` has loaded `OrderService` twice, causing a conflict in the Bean definition.",
+        "D) G1GC is cleaning up the Short-Lived transaction objects before they can be committed."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `@Transactional` annotation is on a method that is called via an internal reference (`this`), bypassing the Spring Proxy.",
-      "explanation": "Spring's declarative transaction management uses AOP proxies. When `updateStock` (which is not `@Transactional`) calls `executeStockUpdate` (which is `@Transactional`) within the same class, the call is made on the `this` reference rather than the proxy. Consequently, the `TransactionInterceptor` is never invoked, and no transaction context is started. To fix this, one should either move the `@Transactional` annotation to the entry-point method or move the transactional logic to a separate bean."
+      "correct_answer_text": "B) Spring Proxies use 'this' reference for internal calls, bypassing the aspect-oriented wrapper and the `TransactionInterceptor`.",
+      "explanation": "Spring's `@Transactional` works via CGLIB or Dynamic Proxies. When `processOrder` calls `this.logAudit`, it is a direct method call on the object instance, not the proxy. Consequently, the proxy logic (which handles transaction propagation) is never invoked. To fix this, one must either move the method to a different `@Service` or inject the `OrderService` into itself (self-injection) to call the proxy."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a microservice intermittently throws an `org.springframework.transaction.UnexpectedRollbackException: Transaction rolled back because it has been marked as rollback-only`. The logs show that a nested service method caught a `ConstraintViolationException` and handled it internally, yet the parent transaction still failed.",
-      "question": "Why did the parent transaction fail even though the exception was caught in the nested method?",
+      "scenario": "You are debugging a production issue where a low-latency trading application using the `ZGC` (Z Garbage Collector) is experiencing 'Allocation Stalls' and latency spikes of 100ms+, despite `ZGC` being advertised as a sub-millisecond pause collector. The heap is 128GB and usage fluctuates rapidly between 40% and 70%.",
+      "question": "What is the most likely reason for these high latency spikes in `ZGC`?",
       "options": [
-        "A) The nested method was marked with `Propagation.REQUIRES_NEW`, but the parent was `Propagation.REQUIRED`.",
-        "B) The nested method shared the same physical transaction as the parent (default `Propagation.REQUIRED`), and the runtime exception automatically marked the transaction as rollback-only before it could be caught.",
-        "C) The JVM's `ThreadLocal` storage for the transaction state was corrupted by a concurrent garbage collection cycle.",
-        "D) Spring's `DefaultTransactionStatus` does not allow manual clearing of the rollback-only flag once it is set by a sub-transaction."
+        "A) The application is experiencing 'Stop-The-World' pauses during the marking phase due to a large Root Set.",
+        "B) The allocation rate of the application is exceeding the rate at which `ZGC` can reclaim memory, forcing threads to stall.",
+        "C) The `ZGC` colored pointers are causing cache line contention on the L3 cache of the CPU.",
+        "D) The `ClassLoader` is triggering a synchronous class unloading event that blocks all application threads."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The nested method shared the same physical transaction as the parent (default `Propagation.REQUIRED`), and the runtime exception automatically marked the transaction as rollback-only before it could be caught.",
-      "explanation": "In Spring, with `Propagation.REQUIRED`, all nested methods participate in the same physical transaction. When a `RuntimeException` propagates out of a `@Transactional` method, the proxy marks the transaction as 'rollback-only'. Even if the caller catches this exception, the transaction is already tainted. When the caller tries to commit, the `TransactionManager` sees the rollback-only flag and throws `UnexpectedRollbackException` to ensure data integrity."
+      "correct_answer_text": "B) The allocation rate of the application is exceeding the rate at which `ZGC` can reclaim memory, forcing threads to stall.",
+      "explanation": "While `ZGC` performs almost all work concurrently, it is not immune to 'Allocation Stalls'. If the application allocates memory faster than the background GC threads can identify and compact dead objects, the JVM must stall the allocating threads until space is cleared. This is typically solved by increasing the number of GC threads using `-XX:ConcGCThreads` or increasing the heap size to provide more 'headroom' for the concurrent collector."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue in a high-throughput reactive gateway using `CompletableFuture`. The system is leaking threads and eventually hanging. You observe the following pattern used for service orchestration:\n\njava\npublic CompletableFuture<UserDTO> fetchUser(String id) {\n    return CompletableFuture.supplyAsync(() -> userService.call(id), customExecutor)\n        .thenApply(user -> {\n            if (user == null) throw new UserNotFoundException();\n            return enrichUser(user);\n        });\n}\n\nWhen `UserNotFoundException` occurs, downstream consumers waiting on `join()` or `get()` block indefinitely or fail without specific error details.",
-      "question": "What is the critical flaw in this asynchronous exception handling strategy?",
+      "scenario": "You are debugging a production issue involving a custom `ClassLoader` in a plugin-based system. Occasionally, the JVM deadlocks during startup when two different threads attempt to load classes that have circular static dependencies. Thread A is loading `ClassA` and Thread B is loading `ClassB`. Both classes have static blocks that reference each other.",
+      "question": "Which JVM mechanism or property should be evaluated to resolve this specific `ClassLoader` deadlock?",
       "options": [
-        "A) The `customExecutor` is not being passed to the `thenApply` stage, causing it to run in the `ForkJoinPool.commonPool()`.",
-        "B) `CompletableFuture` does not propagate exceptions across stages unless `handle()` or `exceptionally()` is used.",
-        "C) If an exception is thrown in `thenApply`, the future completes exceptionally, but if the caller doesn't handle the exception in a non-blocking way, the terminal state of the future might never be reached.",
-        "D) The `UserNotFoundException` is a checked exception and cannot be thrown inside a `Function` passed to `thenApply` without a wrapper."
+        "A) Enable `parallelCapable` registration for the custom `ClassLoader` to allow concurrent class loading.",
+        "B) Force the JVM to use the `AppClassLoader` instead of the `CustomClassLoader` via `-Djava.system.class.loader`.",
+        "C) Increase the `Metaspace` size to prevent the GC from triggering during class initialization.",
+        "D) Implement a `synchronized` block on the `ClassLoader` instance in the `loadClass` method to serialize all requests."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) If an exception is thrown in `thenApply`, the future completes exceptionally, but if the caller doesn't handle the exception in a non-blocking way, the terminal state of the future might never be reached.",
-      "explanation": "In a distributed system using `CompletableFuture`, if a stage fails, the exception is encapsulated in the `CompletionException`. However, if the calling code is using a blocking call like `join()` without a timeout, or if the pipeline lacks an `exceptionally()` or `handle()` block to recover or transform the error, the calling thread can be held in a waiting state indefinitely if the underlying async task hangs or if the exception propagation logic is interrupted. Furthermore, `CompletableFuture` stages do not trigger the `UncaughtExceptionHandler` of the thread pool, making failures silent if not explicitly handled."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Enable `parallelCapable` registration for the custom `ClassLoader` to allow concurrent class loading.",
+      "explanation": "Since Java 7, ClassLoaders can be registered as 'parallel capable'. Without this, ClassLoaders often synchronize on the global `ClassLoader` instance lock, which is a common source of deadlocks in multi-threaded environments with circular dependencies. Using `ClassLoader.registerAsParallelCapable()` allows for more granular locking (on the class name itself), significantly reducing the risk of deadlocks during complex class loading hierarchies."
     }
   ]
 }
