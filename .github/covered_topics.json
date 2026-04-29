@@ -14,7 +14,8 @@
     "Resilient Retries: Exponential Backoff and Jitter"
   ],
   "Advanced Collections Framework & Custom Implementations": [
-    "The LRU Cache: Mastering Custom Hybrid Collections"
+    "The LRU Cache: Mastering Custom Hybrid Collections",
+    "The ConcurrentHashMap: Mastering Lock Striping & Non-Blocking Scalability"
   ],
   "JVM Internals (Memory Model, G1/ZGC, Class Loading)": [
     "JVM Internals: The Lifecycle of a Java Object",
