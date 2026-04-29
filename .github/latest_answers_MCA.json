@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "A smart-grid energy provider collects per-minute power consumption data from 50,000 smart meters. Due to intermittent network packet loss in urban canyons, approximately 8% of the data points are Missing At Random (MAR). The downstream application is a real-time Recurrent Neural Network (RNN) designed for short-term load forecasting where temporal continuity is critical, and inference latency must be under 200ms.",
-      "question": "Which imputation strategy offers the best trade-off between preserving temporal dependencies and meeting strict real-time processing constraints?",
+      "scenario": "Real-world Industrial Problem Statement: A smart grid utility provider collects energy consumption data from millions of IoT-enabled smart meters. The data pipeline experiences intermittent network latency, resulting in 'Missing at Random' (MAR) values for several correlated features like 'Voltage', 'Current', and 'Active Power'. The downstream task requires a Principal Component Analysis (PCA) for load forecasting, where maintaining the covariance structure of the features is critical.",
+      "question": "Which imputation strategy should be implemented to minimize bias in the covariance matrix while ensuring the statistical integrity of the multi-dimensional feature space?",
       "options": [
-        "A) K-Nearest Neighbors (KNN) Imputation using the 10 closest geographical meters.",
-        "B) Multiple Imputation by Chained Equations (MICE) using predictive mean matching.",
-        "C) Last Observation Carried Forward (LOCF) supplemented with a decaying moving average.",
-        "D) Global Mean Imputation based on the historical monthly average of each meter."
+        "A) Mean Imputation to ensure the central tendency of the dataset remains unchanged.",
+        "B) Last Observation Carried Forward (LOCF) to leverage the temporal continuity of smart meter data.",
+        "C) Multivariate Imputation by Chained Equations (MICE) using Bayesian Ridge regression.",
+        "D) Zero-filling to represent periods of network inactivity as non-consumption events."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) Last Observation Carried Forward (LOCF) supplemented with a decaying moving average.",
-      "explanation": "In time-series forecasting for IoT/Smart Grids, temporal local correlation is high. LOCF is computationally O(1), making it ideal for the 200ms real-time constraint. Unlike MICE or KNN, which require iterative passes or distance calculations over large datasets (O(n log n) or O(n^2)), LOCF preserves the most recent state. The decaying moving average helps mitigate the bias introduced if the 'missingness' lasts for several cycles, maintaining the trend signal without the overhead of complex modeling."
+      "correct_answer_text": "C) Multivariate Imputation by Chained Equations (MICE) using Bayesian Ridge regression.",
+      "explanation": "In high-dimensional datasets where features are correlated, mean imputation (A) reduces variance and artificially inflates correlations. LOCF (B) is suitable for time-series but fails to capture the cross-correlations required for PCA. MICE (C) is superior because it models each missing feature as a function of others, preserving the multivariate relationships and the variance-covariance structure. This is essential for PCA, which relies on the eigen-decomposition of the covariance matrix."
     },
     {
       "id": 2,
-      "scenario": "A global logistics firm uses a high-capacity regression model to predict 'Delivery Lead Time'. The feature 'Shipment Weight' is highly right-skewed (log-normal distribution) with extreme outliers representing specialized industrial equipment. When applying standard Z-score normalization, the model's Mean Absolute Error (MAE) increases because the outliers compress the majority of the data into a very narrow range near zero.",
-      "question": "Which preprocessing technique should be applied to 'Shipment Weight' to improve model convergence while retaining the predictive signal of the heavy-tail outliers?",
+      "scenario": "Real-world Industrial Problem Statement: A Fintech startup is building a credit scoring model. The 'Annual Income' feature exhibits a heavy-tailed Power Law distribution (extreme positive skew), while some records contain zero or negative values due to business losses or accounting adjustments. The modeling team is using a Linear Support Vector Machine (SVM) which is sensitive to feature scales and distributions.",
+      "question": "Which data transformation technique is most appropriate to normalize the skewness of this specific feature while accommodating the non-positive values?",
       "options": [
-        "A) Hard-clipping (Winsorization) at the 95th percentile to remove outlier influence.",
-        "B) Logarithmic Transformation followed by Standard Scaling.",
-        "C) Min-Max Scaling to squeeze all values into the [0, 1] range.",
-        "D) Deleting all records where the Z-score exceeds 3.0."
+        "A) Box-Cox Transformation with a lambda parameter optimization.",
+        "B) Yeo-Johnson Transformation followed by Standard Scaling.",
+        "C) Logarithmic Transformation [log(x+1)] to compress the range of the tail.",
+        "D) Min-Max Scaling to bound the feature between 0 and 1."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Logarithmic Transformation followed by Standard Scaling.",
-      "explanation": "Skewed data, particularly log-normal distributions common in physical measurements, disproportionately affects gradient-based optimizers. A Log Transformation (log(x+1)) maps the exponential scale to a linear scale, effectively 'pulling in' outliers and spreading out the dense lower-value region. Subsequent Standard Scaling ensures the feature has a mean of 0 and variance of 1, which stabilizes the weight updates in the neural network or regression model. Clipping or deleting (A and D) would result in the loss of critical information regarding heavy shipments which are often the most expensive to predict incorrectly."
+      "correct_answer_text": "B) Yeo-Johnson Transformation followed by Standard Scaling.",
+      "explanation": "The Box-Cox transform (A) requires strictly positive data, making it unsuitable for features with zero or negative values. While log-transform (C) handles positive skew, it does not guarantee normality as effectively as the Yeo-Johnson transform. Yeo-Johnson (B) is a generalized power transform that supports zero and negative values. For SVMs, achieving a Gaussian-like distribution and subsequent standard scaling (mean=0, variance=1) is critical for optimal hyperplane separation."
     },
     {
       "id": 3,
-      "scenario": "A FinTech startup is building a credit scoring engine using Support Vector Machines (SVM). The dataset contains a 'Number of Credit Inquiries' feature which is zero-inflated (most values are 0) and highly skewed. Additionally, some features contain negative values due to account balance adjustments. The team needs a power transformation to stabilize variance and minimize the impact of skewness before feeding the data into the SVM's RBF kernel.",
-      "question": "Given the presence of zero-inflated data and negative values, which transformation is most mathematically appropriate for this preprocessing pipeline?",
+      "scenario": "Real-world Industrial Problem Statement: A cybersecurity firm is deploying an automated Network Intrusion Detection System (NIDS). The system processes high-velocity packet headers in a high-dimensional space (100+ features). The goal is to identify zero-day attacks, which appear as rare outliers. The system must operate with low latency (sub-millisecond) and handle 'concept drift' where normal network behavior evolves over time.",
+      "question": "Considering the 'Curse of Dimensionality' and real-time constraints, which algorithm is most suitable for detecting these outliers?",
       "options": [
-        "A) Box-Cox Transformation.",
-        "B) Unit Vector Normalization (L2 Norm).",
-        "C) Yeo-Johnson Transformation.",
-        "D) Simple Square Root Transformation."
+        "A) K-Nearest Neighbors (KNN) based on Euclidean distance with k=5.",
+        "B) Local Outlier Factor (LOF) using a density-based reachability metric.",
+        "C) Isolation Forest (iForest) with a sub-sampling strategy.",
+        "D) Mahalanobis Distance calculation using the full covariance matrix."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) Yeo-Johnson Transformation.",
-      "explanation": "The Box-Cox transformation requires strictly positive data (x > 0). In this scenario, the presence of zero-inflated data (zeros) and negative balance adjustments makes Box-Cox inapplicable without arbitrary shifting. The Yeo-Johnson transformation is an extension of Box-Cox that handles zero and negative values while minimizing skewness and making the distribution more Gaussian-like. This is crucial for SVMs with RBF kernels, as they assume that features are scaled and centered, and they perform poorly when the feature variance is driven by a few extreme skewed points."
+      "correct_answer_text": "C) Isolation Forest (iForest) with a sub-sampling strategy.",
+      "explanation": "Distance-based methods like KNN (A) and Mahalanobis (D) become computationally expensive as dimensionality and data volume increase (O(n^2) or O(d^3)). LOF (B) struggles with high-dimensional 'sparsity'. Isolation Forest (C) is ideal because it has a linear time complexity O(n) and works by isolating anomalies through random partitioning. It is uniquely effective for high-dimensional data because it does not rely on distance or density measures, making it highly efficient for real-time industrial applications."
     }
   ]
 }

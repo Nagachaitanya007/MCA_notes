@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
-  "mode": "Java",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a Spring Boot application is failing to rollback a database transaction. The service layer contains the following code: \n\n`@Service` \n`public class OrderService {` \n`  @Transactional` \n`  public void processOrder(Order order) {` \n`    saveOrder(order);` \n`    try {` \n`      this.logAudit(order);` \n`    } catch (Exception e) {` \n`      // Log and continue` \n`    }` \n`  }` \n\n`  @Transactional(propagation = Propagation.REQUIRES_NEW)` \n`  public void logAudit(Order order) {` \n`    throw new RuntimeException(\"Audit DB Down\");` \n`  }` \n`}` \n\nDespite the `REQUIRES_NEW` attribute, the `logAudit` method does not start a new transaction, and its failure doesn't trigger the expected proxy behavior.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "Real-world Industrial Problem Statement: A smart grid utility provider collects energy consumption data from millions of IoT-enabled smart meters. The data pipeline experiences intermittent network latency, resulting in 'Missing at Random' (MAR) values for several correlated features like 'Voltage', 'Current', and 'Active Power'. The downstream task requires a Principal Component Analysis (PCA) for load forecasting, where maintaining the covariance structure of the features is critical.",
+      "question": "Which imputation strategy should be implemented to minimize bias in the covariance matrix while ensuring the statistical integrity of the multi-dimensional feature space?",
       "options": [
-        "A) The `RuntimeException` is caught in a try-catch block, preventing the transaction interceptor from seeing it.",
-        "B) Spring Proxies use 'this' reference for internal calls, bypassing the aspect-oriented wrapper and the `TransactionInterceptor`.",
-        "C) The JVM `Classloader` has loaded `OrderService` twice, causing a conflict in the Bean definition.",
-        "D) G1GC is cleaning up the Short-Lived transaction objects before they can be committed."
+        "A) Mean Imputation to ensure the central tendency of the dataset remains unchanged.",
+        "B) Last Observation Carried Forward (LOCF) to leverage the temporal continuity of smart meter data.",
+        "C) Multivariate Imputation by Chained Equations (MICE) using Bayesian Ridge regression.",
+        "D) Zero-filling to represent periods of network inactivity as non-consumption events."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Spring Proxies use 'this' reference for internal calls, bypassing the aspect-oriented wrapper and the `TransactionInterceptor`.",
-      "explanation": "Spring's `@Transactional` works via CGLIB or Dynamic Proxies. When `processOrder` calls `this.logAudit`, it is a direct method call on the object instance, not the proxy. Consequently, the proxy logic (which handles transaction propagation) is never invoked. To fix this, one must either move the method to a different `@Service` or inject the `OrderService` into itself (self-injection) to call the proxy."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Multivariate Imputation by Chained Equations (MICE) using Bayesian Ridge regression.",
+      "explanation": "In high-dimensional datasets where features are correlated, mean imputation (A) reduces variance and artificially inflates correlations. LOCF (B) is suitable for time-series but fails to capture the cross-correlations required for PCA. MICE (C) is superior because it models each missing feature as a function of others, preserving the multivariate relationships and the variance-covariance structure. This is essential for PCA, which relies on the eigen-decomposition of the covariance matrix."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a low-latency trading application using the `ZGC` (Z Garbage Collector) is experiencing 'Allocation Stalls' and latency spikes of 100ms+, despite `ZGC` being advertised as a sub-millisecond pause collector. The heap is 128GB and usage fluctuates rapidly between 40% and 70%.",
-      "question": "What is the most likely reason for these high latency spikes in `ZGC`?",
+      "scenario": "Real-world Industrial Problem Statement: A Fintech startup is building a credit scoring model. The 'Annual Income' feature exhibits a heavy-tailed Power Law distribution (extreme positive skew), while some records contain zero or negative values due to business losses or accounting adjustments. The modeling team is using a Linear Support Vector Machine (SVM) which is sensitive to feature scales and distributions.",
+      "question": "Which data transformation technique is most appropriate to normalize the skewness of this specific feature while accommodating the non-positive values?",
       "options": [
-        "A) The application is experiencing 'Stop-The-World' pauses during the marking phase due to a large Root Set.",
-        "B) The allocation rate of the application is exceeding the rate at which `ZGC` can reclaim memory, forcing threads to stall.",
-        "C) The `ZGC` colored pointers are causing cache line contention on the L3 cache of the CPU.",
-        "D) The `ClassLoader` is triggering a synchronous class unloading event that blocks all application threads."
+        "A) Box-Cox Transformation with a lambda parameter optimization.",
+        "B) Yeo-Johnson Transformation followed by Standard Scaling.",
+        "C) Logarithmic Transformation [log(x+1)] to compress the range of the tail.",
+        "D) Min-Max Scaling to bound the feature between 0 and 1."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The allocation rate of the application is exceeding the rate at which `ZGC` can reclaim memory, forcing threads to stall.",
-      "explanation": "While `ZGC` performs almost all work concurrently, it is not immune to 'Allocation Stalls'. If the application allocates memory faster than the background GC threads can identify and compact dead objects, the JVM must stall the allocating threads until space is cleared. This is typically solved by increasing the number of GC threads using `-XX:ConcGCThreads` or increasing the heap size to provide more 'headroom' for the concurrent collector."
+      "correct_answer_text": "B) Yeo-Johnson Transformation followed by Standard Scaling.",
+      "explanation": "The Box-Cox transform (A) requires strictly positive data, making it unsuitable for features with zero or negative values. While log-transform (C) handles positive skew, it does not guarantee normality as effectively as the Yeo-Johnson transform. Yeo-Johnson (B) is a generalized power transform that supports zero and negative values. For SVMs, achieving a Gaussian-like distribution and subsequent standard scaling (mean=0, variance=1) is critical for optimal hyperplane separation."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue involving a custom `ClassLoader` in a plugin-based system. Occasionally, the JVM deadlocks during startup when two different threads attempt to load classes that have circular static dependencies. Thread A is loading `ClassA` and Thread B is loading `ClassB`. Both classes have static blocks that reference each other.",
-      "question": "Which JVM mechanism or property should be evaluated to resolve this specific `ClassLoader` deadlock?",
+      "scenario": "Real-world Industrial Problem Statement: A cybersecurity firm is deploying an automated Network Intrusion Detection System (NIDS). The system processes high-velocity packet headers in a high-dimensional space (100+ features). The goal is to identify zero-day attacks, which appear as rare outliers. The system must operate with low latency (sub-millisecond) and handle 'concept drift' where normal network behavior evolves over time.",
+      "question": "Considering the 'Curse of Dimensionality' and real-time constraints, which algorithm is most suitable for detecting these outliers?",
       "options": [
-        "A) Enable `parallelCapable` registration for the custom `ClassLoader` to allow concurrent class loading.",
-        "B) Force the JVM to use the `AppClassLoader` instead of the `CustomClassLoader` via `-Djava.system.class.loader`.",
-        "C) Increase the `Metaspace` size to prevent the GC from triggering during class initialization.",
-        "D) Implement a `synchronized` block on the `ClassLoader` instance in the `loadClass` method to serialize all requests."
+        "A) K-Nearest Neighbors (KNN) based on Euclidean distance with k=5.",
+        "B) Local Outlier Factor (LOF) using a density-based reachability metric.",
+        "C) Isolation Forest (iForest) with a sub-sampling strategy.",
+        "D) Mahalanobis Distance calculation using the full covariance matrix."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Enable `parallelCapable` registration for the custom `ClassLoader` to allow concurrent class loading.",
-      "explanation": "Since Java 7, ClassLoaders can be registered as 'parallel capable'. Without this, ClassLoaders often synchronize on the global `ClassLoader` instance lock, which is a common source of deadlocks in multi-threaded environments with circular dependencies. Using `ClassLoader.registerAsParallelCapable()` allows for more granular locking (on the class name itself), significantly reducing the risk of deadlocks during complex class loading hierarchies."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Isolation Forest (iForest) with a sub-sampling strategy.",
+      "explanation": "Distance-based methods like KNN (A) and Mahalanobis (D) become computationally expensive as dimensionality and data volume increase (O(n^2) or O(d^3)). LOF (B) struggles with high-dimensional 'sparsity'. Isolation Forest (C) is ideal because it has a linear time complexity O(n) and works by isolating anomalies through random partitioning. It is uniquely effective for high-dimensional data because it does not rely on distance or density measures, making it highly efficient for real-time industrial applications."
     }
   ]
 }
