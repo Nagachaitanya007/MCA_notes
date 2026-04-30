@@ -43,5 +43,8 @@
   ],
   "Design a Notification System (Kafka + SQS + Webhooks)": [
     "Designing a Scalable Notification System (Kafka + SQS + Webhooks)"
+  ],
+  "Design a Rate Limiter (Token Bucket vs Leaky Bucket)": [
+    "Rate Limiting: The Token Bucket vs. The Leaky Bucket"
   ]
 }
