@@ -11,7 +11,8 @@
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
-    "Resilient Retries: Exponential Backoff and Jitter"
+    "Resilient Retries: Exponential Backoff and Jitter",
+    "The Circuit Breaker Pattern: Preventing Cascading Failures"
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections",
