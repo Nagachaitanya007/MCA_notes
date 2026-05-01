@@ -47,5 +47,8 @@
   ],
   "Design a Rate Limiter (Token Bucket vs Leaky Bucket)": [
     "Rate Limiting: The Token Bucket vs. The Leaky Bucket"
+  ],
+  "Design a Distributed Cache (Consistent Hashing, LRU)": [
+    "Distributed Cache Design: Consistent Hashing & LRU"
   ]
 }
