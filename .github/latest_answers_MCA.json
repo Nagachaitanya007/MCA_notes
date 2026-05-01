@@ -1,48 +1,48 @@
 {
-  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "Real-world Industrial Problem Statement: A smart grid utility provider collects energy consumption data from millions of IoT-enabled smart meters. The data pipeline experiences intermittent network latency, resulting in 'Missing at Random' (MAR) values for several correlated features like 'Voltage', 'Current', and 'Active Power'. The downstream task requires a Principal Component Analysis (PCA) for load forecasting, where maintaining the covariance structure of the features is critical.",
-      "question": "Which imputation strategy should be implemented to minimize bias in the covariance matrix while ensuring the statistical integrity of the multi-dimensional feature space?",
+      "scenario": "A logistics giant, LogiRoute, utilizes the A* algorithm to optimize delivery paths for autonomous drones across a smart city grid. To ensure real-time responsiveness, their engineering team developed a heuristic function h(n) that incorporates both Manhattan distance and a predictive 'congestion coefficient' based on historical traffic patterns. During peak hours, the system frequently returns paths that are significantly longer than the known optimal routes, despite the heuristic being computationally efficient.",
+      "question": "Which of the following is the most likely technical reason for the algorithm's failure to find the shortest path?",
       "options": [
-        "A) Mean Imputation to ensure the central tendency of the dataset remains unchanged.",
-        "B) Last Observation Carried Forward (LOCF) to leverage the temporal continuity of smart meter data.",
-        "C) Multivariate Imputation by Chained Equations (MICE) using Bayesian Ridge regression.",
-        "D) Zero-filling to represent periods of network inactivity as non-consumption events."
+        "A) The congestion coefficient has made the heuristic inconsistent, although it remains admissible.",
+        "B) The heuristic function h(n) is overestimating the actual cost to reach the goal, violating the admissibility criterion.",
+        "C) The state-space has become too high-dimensional for A* to handle, forcing the algorithm to default to Breadth-First Search behavior.",
+        "D) The heuristic is too 'informed', causing the algorithm to expand fewer nodes but increasing the overhead per node beyond the latency threshold."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Multivariate Imputation by Chained Equations (MICE) using Bayesian Ridge regression.",
-      "explanation": "In high-dimensional datasets where features are correlated, mean imputation (A) reduces variance and artificially inflates correlations. LOCF (B) is suitable for time-series but fails to capture the cross-correlations required for PCA. MICE (C) is superior because it models each missing feature as a function of others, preserving the multivariate relationships and the variance-covariance structure. This is essential for PCA, which relies on the eigen-decomposition of the covariance matrix."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The heuristic function h(n) is overestimating the actual cost to reach the goal, violating the admissibility criterion.",
+      "explanation": "For A* search to guarantee an optimal solution, the heuristic must be admissible, meaning h(n) must never exceed the actual cost h*(n). By adding a 'congestion coefficient' that reflects historical delays, the heuristic might predict a cost higher than the actual minimum cost in current conditions, leading the algorithm to settle for a sub-optimal path and lose its optimality guarantee."
     },
     {
       "id": 2,
-      "scenario": "Real-world Industrial Problem Statement: A Fintech startup is building a credit scoring model. The 'Annual Income' feature exhibits a heavy-tailed Power Law distribution (extreme positive skew), while some records contain zero or negative values due to business losses or accounting adjustments. The modeling team is using a Linear Support Vector Machine (SVM) which is sensitive to feature scales and distributions.",
-      "question": "Which data transformation technique is most appropriate to normalize the skewness of this specific feature while accommodating the non-positive values?",
+      "scenario": "A Fintech company, AlphaTrade, uses a Min-Max search tree with Alpha-Beta pruning to simulate adversarial market conditions for high-frequency trading bots. During a period of extreme market volatility, the team observes that the pruning efficiency drops significantly, and the system is expanding almost as many nodes as a standard Min-Max search, causing critical latency spikes.",
+      "question": "Which strategy would most effectively restore the pruning efficiency of the Alpha-Beta algorithm in this high-pressure scenario?",
       "options": [
-        "A) Box-Cox Transformation with a lambda parameter optimization.",
-        "B) Yeo-Johnson Transformation followed by Standard Scaling.",
-        "C) Logarithmic Transformation [log(x+1)] to compress the range of the tail.",
-        "D) Min-Max Scaling to bound the feature between 0 and 1."
+        "A) Implementing a Transposition Table to store and reuse evaluations of redundant market states.",
+        "B) Increasing the search depth to ensure the algorithm sees past the immediate volatility.",
+        "C) Applying Move Ordering techniques to evaluate the most promising (best) moves first.",
+        "D) Switching to a Greedy Best-First Search to prioritize speed over the minimax optimality."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Yeo-Johnson Transformation followed by Standard Scaling.",
-      "explanation": "The Box-Cox transform (A) requires strictly positive data, making it unsuitable for features with zero or negative values. While log-transform (C) handles positive skew, it does not guarantee normality as effectively as the Yeo-Johnson transform. Yeo-Johnson (B) is a generalized power transform that supports zero and negative values. For SVMs, achieving a Gaussian-like distribution and subsequent standard scaling (mean=0, variance=1) is critical for optimal hyperplane separation."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Applying Move Ordering techniques to evaluate the most promising (best) moves first.",
+      "explanation": "The effectiveness of Alpha-Beta pruning is highly dependent on the order in which successors are examined. In the worst-case scenario (where moves are ordered from worst to best), no pruning occurs (O(b^d)). By implementing Move Ordering to evaluate 'strong' moves first, the algorithm can maximize the number of cut-offs, ideally reaching a complexity of O(b^(d/2))."
     },
     {
       "id": 3,
-      "scenario": "Real-world Industrial Problem Statement: A cybersecurity firm is deploying an automated Network Intrusion Detection System (NIDS). The system processes high-velocity packet headers in a high-dimensional space (100+ features). The goal is to identify zero-day attacks, which appear as rare outliers. The system must operate with low latency (sub-millisecond) and handle 'concept drift' where normal network behavior evolves over time.",
-      "question": "Considering the 'Curse of Dimensionality' and real-time constraints, which algorithm is most suitable for detecting these outliers?",
+      "scenario": "A precision robotics firm is designing a 6-Degree-of-Freedom (6-DOF) robotic arm for micro-welding inside a dense aircraft fuselage. The search space for path planning is massive and high-dimensional. While using A* search, the system frequently crashes due to 'Out of Memory' (OOM) errors because the 'Open List' (frontier) grows exponentially before a solution is found.",
+      "question": "Considering the hard memory constraints of the embedded industrial controller, which algorithmic trade-off is most appropriate?",
       "options": [
-        "A) K-Nearest Neighbors (KNN) based on Euclidean distance with k=5.",
-        "B) Local Outlier Factor (LOF) using a density-based reachability metric.",
-        "C) Isolation Forest (iForest) with a sub-sampling strategy.",
-        "D) Mahalanobis Distance calculation using the full covariance matrix."
+        "A) Replace A* with IDA* (Iterative Deepening A*) to reduce memory complexity from exponential to linear.",
+        "B) Increase the weight of the g(n) component in the A* function to prioritize the path cost from the start.",
+        "C) Switch to a Uniform Cost Search (UCS) to ensure that the memory is used only for the most optimal partial paths.",
+        "D) Disable the 'Closed List' to prevent the tracking of visited states, thereby freeing up memory for the Open List."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Isolation Forest (iForest) with a sub-sampling strategy.",
-      "explanation": "Distance-based methods like KNN (A) and Mahalanobis (D) become computationally expensive as dimensionality and data volume increase (O(n^2) or O(d^3)). LOF (B) struggles with high-dimensional 'sparsity'. Isolation Forest (C) is ideal because it has a linear time complexity O(n) and works by isolating anomalies through random partitioning. It is uniquely effective for high-dimensional data because it does not rely on distance or density measures, making it highly efficient for real-time industrial applications."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Replace A* with IDA* (Iterative Deepening A*) to reduce memory complexity from exponential to linear.",
+      "explanation": "A* has a memory complexity of O(b^d) because it must store all generated nodes in the Open List. IDA* (Iterative Deepening A*) addresses this by using the heuristic to bound a Depth-First Search. This reduces the memory requirement to O(d) (linear), which is essential for embedded systems with limited RAM, even though it may result in redundant node expansions across iterations."
     }
   ]
 }

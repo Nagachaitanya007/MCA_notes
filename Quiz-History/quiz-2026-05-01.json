@@ -1,49 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
-  "mode": "Java",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production deadlock in a high-concurrency caching service. The service uses a `ConcurrentHashMap` to store pre-computed results. A developer recently introduced the following code to handle nested dependencies: \n\n`public String getVal(String key) {` \n`  return map.computeIfAbsent(key, k -> {` \n`    if (k.equals(\"A\")) return getVal(\"B\");` \n`    return \"data\";` \n`  });` \n`}` \n\nDuring peak load, threads are hanging indefinitely even though no external locks are held.",
-      "question": "What is the primary cause of this issue?",
-      "questions_type": "Bug Hunter",
+      "scenario": "A logistics giant, LogiRoute, utilizes the A* algorithm to optimize delivery paths for autonomous drones across a smart city grid. To ensure real-time responsiveness, their engineering team developed a heuristic function h(n) that incorporates both Manhattan distance and a predictive 'congestion coefficient' based on historical traffic patterns. During peak hours, the system frequently returns paths that are significantly longer than the known optimal routes, despite the heuristic being computationally efficient.",
+      "question": "Which of the following is the most likely technical reason for the algorithm's failure to find the shortest path?",
       "options": [
-        "A) The mapping function is not atomic, allowing multiple threads to compute the same key.",
-        "B) Recursive calls to `computeIfAbsent` on the same `ConcurrentHashMap` can lead to a deadlock due to internal lock acquisition on the bucket (bin) before the mapping function completes.",
-        "C) The `ConcurrentHashMap` uses a `ReentrantLock` per segment, and the recursion exceeds the maximum hold count.",
-        "D) The `ForkJoinPool` common pool is exhausted because `computeIfAbsent` executes asynchronously."
+        "A) The congestion coefficient has made the heuristic inconsistent, although it remains admissible.",
+        "B) The heuristic function h(n) is overestimating the actual cost to reach the goal, violating the admissibility criterion.",
+        "C) The state-space has become too high-dimensional for A* to handle, forcing the algorithm to default to Breadth-First Search behavior.",
+        "D) The heuristic is too 'informed', causing the algorithm to expand fewer nodes but increasing the overhead per node beyond the latency threshold."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Recursive calls to `computeIfAbsent` on the same `ConcurrentHashMap` can lead to a deadlock due to internal lock acquisition on the bucket (bin) before the mapping function completes.",
-      "explanation": "In `ConcurrentHashMap`, the `computeIfAbsent` method performs a synchronized operation on the specific bin (bucket) corresponding to the hash of the key. If the mapping function attempts to modify or access the same map recursively, and that second access hashes to the same bin (or in some JVM versions, any bin), it can lead to a `Deadlock` or `IllegalStateException`. While Java 9+ improved some scenarios, recursive updates remain a major anti-pattern that violates the atomicity guarantees of the collection."
+      "correct_answer_text": "B) The heuristic function h(n) is overestimating the actual cost to reach the goal, violating the admissibility criterion.",
+      "explanation": "For A* search to guarantee an optimal solution, the heuristic must be admissible, meaning h(n) must never exceed the actual cost h*(n). By adding a 'congestion coefficient' that reflects historical delays, the heuristic might predict a cost higher than the actual minimum cost in current conditions, leading the algorithm to settle for a sub-optimal path and lose its optimality guarantee."
     },
     {
       "id": 2,
-      "scenario": "You are investigating why updates to a `User` entity's `List<Order>` are not being persisted to the database. The developer implemented a custom `AuditList<T>` to wrap the entity's collection for logging purposes: \n\n`@Transactional` \n`public void addOrder(Long userId, Order order) {` \n`  User user = repository.findById(userId).orElseThrow();` \n`  List<Order> auditedOrders = new AuditList<>(user.getOrders());` \n`  auditedOrders.add(order);` \n`  // No explicit save is called, relying on dirty checking` \n`}`",
-      "question": "Why does Hibernate's 'dirty checking' mechanism fail to persist the new order?",
+      "scenario": "A Fintech company, AlphaTrade, uses a Min-Max search tree with Alpha-Beta pruning to simulate adversarial market conditions for high-frequency trading bots. During a period of extreme market volatility, the team observes that the pruning efficiency drops significantly, and the system is expanding almost as many nodes as a standard Min-Max search, causing critical latency spikes.",
+      "question": "Which strategy would most effectively restore the pruning efficiency of the Alpha-Beta algorithm in this high-pressure scenario?",
       "options": [
-        "A) The `@Transactional` proxy cannot intercept calls made to a custom `List` implementation.",
-        "B) Hibernate requires the `List` to be an instance of `PersistentBag` to track changes; wrapping it in `AuditList` breaks the proxy relationship.",
-        "C) The `AuditList` does not implement the `RandomAccess` interface, which Hibernate uses to verify collection integrity.",
-        "D) The `User` entity becomes detached the moment `user.getOrders()` is passed into a new constructor."
+        "A) Implementing a Transposition Table to store and reuse evaluations of redundant market states.",
+        "B) Increasing the search depth to ensure the algorithm sees past the immediate volatility.",
+        "C) Applying Move Ordering techniques to evaluate the most promising (best) moves first.",
+        "D) Switching to a Greedy Best-First Search to prioritize speed over the minimax optimality."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Hibernate requires the `List` to be an instance of `PersistentBag` to track changes; wrapping it in `AuditList` breaks the proxy relationship.",
-      "explanation": "Hibernate uses its own internal collection implementations (like `PersistentBag` or `PersistentSet`) to track changes (dirty checking) within a session. When the developer wraps `user.getOrders()` in a new `AuditList`, the `auditedOrders.add(order)` call modifies the wrapper, not the `PersistentBag` attached to the Hibernate session. Since the original collection managed by Hibernate remains unchanged, the `Session` concludes no database update is necessary during the transaction commit."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Applying Move Ordering techniques to evaluate the most promising (best) moves first.",
+      "explanation": "The effectiveness of Alpha-Beta pruning is highly dependent on the order in which successors are examined. In the worst-case scenario (where moves are ordered from worst to best), no pruning occurs (O(b^d)). By implementing Move Ordering to evaluate 'strong' moves first, the algorithm can maximize the number of cut-offs, ideally reaching a complexity of O(b^(d/2))."
     },
     {
       "id": 3,
-      "scenario": "A custom `IdentityCache` was implemented to reduce memory footprint using `WeakHashMap<K, V>`. The keys are `Session` objects and the values are `Metadata` objects. During a heap dump analysis, you notice that thousands of `Session` objects are still in memory despite their corresponding threads having terminated and no other parts of the application holding references to them.",
-      "question": "What is the most likely reason the `WeakHashMap` is not clearing these entries?",
+      "scenario": "A precision robotics firm is designing a 6-Degree-of-Freedom (6-DOF) robotic arm for micro-welding inside a dense aircraft fuselage. The search space for path planning is massive and high-dimensional. While using A* search, the system frequently crashes due to 'Out of Memory' (OOM) errors because the 'Open List' (frontier) grows exponentially before a solution is found.",
+      "question": "Considering the hard memory constraints of the embedded industrial controller, which algorithmic trade-off is most appropriate?",
       "options": [
-        "A) The `Session` objects have a custom `finalize()` method which delays GC collection.",
-        "B) The `Metadata` value objects contain a strong reference back to the `Session` key.",
-        "C) `WeakHashMap` only clears entries when the JVM performs a Full GC, not a Young Generation GC.",
-        "D) The `Session` keys do not override `equals()` and `hashCode()`, causing the `IdentityCache` to fail."
+        "A) Replace A* with IDA* (Iterative Deepening A*) to reduce memory complexity from exponential to linear.",
+        "B) Increase the weight of the g(n) component in the A* function to prioritize the path cost from the start.",
+        "C) Switch to a Uniform Cost Search (UCS) to ensure that the memory is used only for the most optimal partial paths.",
+        "D) Disable the 'Closed List' to prevent the tracking of visited states, thereby freeing up memory for the Open List."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `Metadata` value objects contain a strong reference back to the `Session` key.",
-      "explanation": "In a `WeakHashMap`, the entry is eligible for removal only if the key is no longer in ordinary use (i.e., no strong references). However, the `Value` objects in a `WeakHashMap` are held by ordinary strong references. If a `Value` (the `Metadata`) contains a reference back to its `Key` (the `Session`), that creates a strong reference cycle originating from the `Map` itself (Map -> Entry -> Value -> Key). This prevents the key from being weakly reachable, effectively leaking the entry until the Map itself is garbage collected."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Replace A* with IDA* (Iterative Deepening A*) to reduce memory complexity from exponential to linear.",
+      "explanation": "A* has a memory complexity of O(b^d) because it must store all generated nodes in the Open List. IDA* (Iterative Deepening A*) addresses this by using the heuristic to bound a Depth-First Search. This reduces the memory requirement to O(d) (linear), which is essential for embedded systems with limited RAM, even though it may result in redundant node expansions across iterations."
     }
   ]
 }
