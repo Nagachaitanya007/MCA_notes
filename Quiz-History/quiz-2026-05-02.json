@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
-  "mode": "Java",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput microservice was migrated to Java 21 `Virtual Threads`. Despite the high volume of incoming requests, the application throughput has plummeted. Thread dumps reveal that while there are thousands of `VirtualThreads`, the small pool of `Carrier Threads` (ForkJoinPool) is completely saturated. The application uses a legacy logging library that relies heavily on `synchronized` blocks for file I/O.",
-      "question": "What is the primary cause of this performance degradation?",
+      "scenario": "A logistics tech startup is designing an autonomous drone delivery system for a smart city. The drone uses the A* algorithm to navigate a 3D grid. To ensure fast computation, the engineers implemented a heuristic h(n) based on the Manhattan distance. However, during test flights in high-density areas with 'Hyper-lanes' (low-cost aerial corridors that allow drones to move faster than standard speeds), the drones are consistently ignoring these lanes and taking longer, sub-optimal paths.",
+      "question": "What is the primary cause of the drone's failure to find the optimal path, and how should the heuristic be adjusted?",
       "options": [
-        "A) Virtual threads are inherently slower than platform threads for I/O bound tasks.",
-        "B) The `synchronized` blocks are causing 'thread pinning', preventing the scheduler from unmounting the virtual thread during I/O.",
-        "C) The `ForkJoinPool` is incorrectly configured to use a FIFO scheduling policy instead of LIFO.",
-        "D) The `VirtualThread` stack size is exceeding the available Metaspace memory."
+        "A) The Manhattan distance is too computationally expensive for 3D space, causing the search to time out.",
+        "B) The heuristic has become inadmissible because it overestimates the true cost to the goal when Hyper-lanes are available.",
+        "C) The heuristic is too consistent, leading to an expansion of too many nodes in the state space.",
+        "D) A* is inherently unable to handle negative edge weights provided by the Hyper-lanes."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `synchronized` blocks are causing 'thread pinning', preventing the scheduler from unmounting the virtual thread during I/O.",
-      "explanation": "In Java 21, when a `VirtualThread` enters a `synchronized` block or method, it 'pins' the underlying `Carrier Thread`. If a blocking I/O operation occurs while pinned, the `Carrier Thread` cannot be released to perform other work. This negates the benefit of virtual threads. The solution is to replace `synchronized` with `ReentrantLock`, which allows the virtual thread to unmount properly."
+      "correct_answer_text": "B) The heuristic has become inadmissible because it overestimates the true cost to the goal when Hyper-lanes are available.",
+      "explanation": "For A* to guarantee optimality, the heuristic h(n) must be admissible, meaning it must never overestimate the cost to reach the goal. If 'Hyper-lanes' reduce the actual cost below the Manhattan distance calculation, h(n) > h*(n), violating admissibility. In this case, the algorithm may find a sub-optimal path and terminate before exploring the path containing the Hyper-lane."
     },
     {
       "id": 2,
-      "scenario": "You are performing a Bug Hunter review on the following Spring Boot service snippet designed to process orders asynchronously:\n\njava\n@Service\npublic class OrderService {\n    @Transactional\n    public void placeOrder(Order order) {\n        orderRepository.save(order);\n        CompletableFuture.runAsync(() -> {\n            paymentService.process(order);\n            order.setStatus(Status.COMPLETED);\n            orderRepository.save(order);\n        });\n    }\n}\n\nUsers report that occasionally orders are saved with 'PENDING' status even when `paymentService` succeeds, and logs show `LazyInitializationException` or missing transaction context.",
-      "question": "What is the fundamental flaw in this concurrency implementation?",
+      "scenario": "A FinTech company utilizes a Min-Max algorithm with Alpha-Beta pruning to model competitive bidding in high-frequency trading. The system is configured to search to a depth of 8 moves. During a period of extreme market volatility, the system successfully prunes 60% of the search tree but fails to anticipate a market crash occurring at move 10, leading to a catastrophic liquidation of assets despite the 'optimal' move identified at depth 8.",
+      "question": "Which specific phenomenon is the bidding system experiencing, and what is the most effective industrial mitigation strategy?",
       "options": [
-        "A) `CompletableFuture.runAsync` uses the common `ForkJoinPool`, which is too small for Spring tasks.",
-        "B) The `Order` entity is not thread-safe and should be wrapped in an `AtomicReference`.",
-        "C) The async lambda runs in a separate thread where the Spring `@Transactional` context (ThreadLocal) is absent, leading to inconsistent DB state and session loss.",
-        "D) Spring proxies do not support `CompletableFuture` unless the `@Async` annotation is explicitly used on the same method."
+        "A) The Horizon Effect; mitigate by implementing Quiescence Search to evaluate unstable positions beyond the fixed depth.",
+        "B) Singular Extension failure; mitigate by increasing the branching factor of the root node.",
+        "C) Transposition Table overflow; mitigate by increasing the cache size for previously visited market states.",
+        "D) Evaluation Function Skew; mitigate by switching from Alpha-Beta pruning to a Pure Min-Max search."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The async lambda runs in a separate thread where the Spring `@Transactional` context (ThreadLocal) is absent, leading to inconsistent DB state and session loss.",
-      "explanation": "Spring's `@Transactional` relies on `ThreadLocal` variables to manage the `EntityManager` or `Connection`. When `runAsync` is called, the task executes on a different thread that does not share the transaction or Persistence Context. This means the second `save()` call is outside the original transaction, and any lazy-loaded associations on the `order` object will fail because the Hibernate session was closed when the primary thread exited the method."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The Horizon Effect; mitigate by implementing Quiescence Search to evaluate unstable positions beyond the fixed depth.",
+      "explanation": "The Horizon Effect occurs when a significant event (like a market crash) is just beyond the search depth (the horizon). The algorithm makes moves that look good within its limit but lead to disaster. Quiescence Search mitigates this by extending the search depth specifically for 'volatile' or 'non-quiet' states until they stabilize, providing a more accurate terminal value."
     },
     {
       "id": 3,
-      "scenario": "You are optimizing a data-aggregation engine. You use `CompletableFuture.supplyAsync()` to fetch data from five different microservices. You combine them using `CompletableFuture.allOf()`. You notice that while the individual service calls are fast, the final 'join' operation occasionally blocks for a long time, and some `ThreadLocal` data you set in the parent thread is missing in the callbacks.",
-      "question": "How should you ensure that the internal state and the execution environment are correctly managed across these asynchronous boundaries?",
+      "scenario": "An industrial AI system is managing a power grid with 10,000 interconnected nodes. The goal is to find a reconfiguration path that minimizes energy loss using Heuristic Search. The current A* implementation is finding the mathematically optimal solution, but the high-dimensional state space and the complexity of the heuristic calculation result in a 30-second delay per decision, while the grid requires a response within 2 seconds.",
+      "question": "Given the real-time constraint and the massive state space, which modification offers the best trade-off between performance and solution quality?",
       "options": [
-        "A) Use `ThreadLocal.withInitial()` to force value propagation.",
-        "B) Replace `CompletableFuture` with `Parallel Streams` to ensure the `ForkJoinPool` manages state automatically.",
-        "C) Use `ScopedValue` (introduced in JEP 446/Java 21) or a custom `Executor` that implements task wrapping for context propagation.",
-        "D) Call `System.gc()` before `allOf()` to ensure the heap is clear for the merged results."
+        "A) Switch to Breadth-First Search (BFS) to ensure the shortest number of reconfigurations is found quickly.",
+        "B) Use Uniform Cost Search (UCS) to ignore the heuristic calculation entirely and save CPU cycles.",
+        "C) Implement Weighted A* (W-A*) by multiplying the heuristic by a factor (w > 1) to transform the search into a greedy-tending approach.",
+        "D) Deploy a Depth-First Search (DFS) with an infinite depth limit to ensure a solution is found without checking all nodes."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) Use `ScopedValue` (introduced in JEP 446/Java 21) or a custom `Executor` that implements task wrapping for context propagation.",
-      "explanation": "Standard `ThreadLocal` variables do not propagate across thread boundaries in `CompletableFuture` chains. `ScopedValue` provides a more modern, efficient way to share immutable data across threads, especially with `Virtual Threads`. Alternatively, a custom `Executor` can capture the context and re-establish it on the worker thread. `Parallel Streams` would not solve the context propagation issue and might block the common pool."
+      "correct_answer_text": "C) Implement Weighted A* (W-A*) by multiplying the heuristic by a factor (w > 1) to transform the search into a greedy-tending approach.",
+      "explanation": "Weighted A* (f(n) = g(n) + w * h(n)) is a standard industrial solution for high-dimensional problems with real-time constraints. By increasing the weight of the heuristic, the search becomes more 'greedy,' significantly reducing the number of nodes expanded (speeding up the search) while still providing a solution within a provable bound of the optimal (\u03b5-optimal)."
     }
   ]
 }

@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "A logistics giant, LogiRoute, utilizes the A* algorithm to optimize delivery paths for autonomous drones across a smart city grid. To ensure real-time responsiveness, their engineering team developed a heuristic function h(n) that incorporates both Manhattan distance and a predictive 'congestion coefficient' based on historical traffic patterns. During peak hours, the system frequently returns paths that are significantly longer than the known optimal routes, despite the heuristic being computationally efficient.",
-      "question": "Which of the following is the most likely technical reason for the algorithm's failure to find the shortest path?",
+      "scenario": "A logistics tech startup is designing an autonomous drone delivery system for a smart city. The drone uses the A* algorithm to navigate a 3D grid. To ensure fast computation, the engineers implemented a heuristic h(n) based on the Manhattan distance. However, during test flights in high-density areas with 'Hyper-lanes' (low-cost aerial corridors that allow drones to move faster than standard speeds), the drones are consistently ignoring these lanes and taking longer, sub-optimal paths.",
+      "question": "What is the primary cause of the drone's failure to find the optimal path, and how should the heuristic be adjusted?",
       "options": [
-        "A) The congestion coefficient has made the heuristic inconsistent, although it remains admissible.",
-        "B) The heuristic function h(n) is overestimating the actual cost to reach the goal, violating the admissibility criterion.",
-        "C) The state-space has become too high-dimensional for A* to handle, forcing the algorithm to default to Breadth-First Search behavior.",
-        "D) The heuristic is too 'informed', causing the algorithm to expand fewer nodes but increasing the overhead per node beyond the latency threshold."
+        "A) The Manhattan distance is too computationally expensive for 3D space, causing the search to time out.",
+        "B) The heuristic has become inadmissible because it overestimates the true cost to the goal when Hyper-lanes are available.",
+        "C) The heuristic is too consistent, leading to an expansion of too many nodes in the state space.",
+        "D) A* is inherently unable to handle negative edge weights provided by the Hyper-lanes."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The heuristic function h(n) is overestimating the actual cost to reach the goal, violating the admissibility criterion.",
-      "explanation": "For A* search to guarantee an optimal solution, the heuristic must be admissible, meaning h(n) must never exceed the actual cost h*(n). By adding a 'congestion coefficient' that reflects historical delays, the heuristic might predict a cost higher than the actual minimum cost in current conditions, leading the algorithm to settle for a sub-optimal path and lose its optimality guarantee."
+      "correct_answer_text": "B) The heuristic has become inadmissible because it overestimates the true cost to the goal when Hyper-lanes are available.",
+      "explanation": "For A* to guarantee optimality, the heuristic h(n) must be admissible, meaning it must never overestimate the cost to reach the goal. If 'Hyper-lanes' reduce the actual cost below the Manhattan distance calculation, h(n) > h*(n), violating admissibility. In this case, the algorithm may find a sub-optimal path and terminate before exploring the path containing the Hyper-lane."
     },
     {
       "id": 2,
-      "scenario": "A Fintech company, AlphaTrade, uses a Min-Max search tree with Alpha-Beta pruning to simulate adversarial market conditions for high-frequency trading bots. During a period of extreme market volatility, the team observes that the pruning efficiency drops significantly, and the system is expanding almost as many nodes as a standard Min-Max search, causing critical latency spikes.",
-      "question": "Which strategy would most effectively restore the pruning efficiency of the Alpha-Beta algorithm in this high-pressure scenario?",
+      "scenario": "A FinTech company utilizes a Min-Max algorithm with Alpha-Beta pruning to model competitive bidding in high-frequency trading. The system is configured to search to a depth of 8 moves. During a period of extreme market volatility, the system successfully prunes 60% of the search tree but fails to anticipate a market crash occurring at move 10, leading to a catastrophic liquidation of assets despite the 'optimal' move identified at depth 8.",
+      "question": "Which specific phenomenon is the bidding system experiencing, and what is the most effective industrial mitigation strategy?",
       "options": [
-        "A) Implementing a Transposition Table to store and reuse evaluations of redundant market states.",
-        "B) Increasing the search depth to ensure the algorithm sees past the immediate volatility.",
-        "C) Applying Move Ordering techniques to evaluate the most promising (best) moves first.",
-        "D) Switching to a Greedy Best-First Search to prioritize speed over the minimax optimality."
+        "A) The Horizon Effect; mitigate by implementing Quiescence Search to evaluate unstable positions beyond the fixed depth.",
+        "B) Singular Extension failure; mitigate by increasing the branching factor of the root node.",
+        "C) Transposition Table overflow; mitigate by increasing the cache size for previously visited market states.",
+        "D) Evaluation Function Skew; mitigate by switching from Alpha-Beta pruning to a Pure Min-Max search."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Applying Move Ordering techniques to evaluate the most promising (best) moves first.",
-      "explanation": "The effectiveness of Alpha-Beta pruning is highly dependent on the order in which successors are examined. In the worst-case scenario (where moves are ordered from worst to best), no pruning occurs (O(b^d)). By implementing Move Ordering to evaluate 'strong' moves first, the algorithm can maximize the number of cut-offs, ideally reaching a complexity of O(b^(d/2))."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The Horizon Effect; mitigate by implementing Quiescence Search to evaluate unstable positions beyond the fixed depth.",
+      "explanation": "The Horizon Effect occurs when a significant event (like a market crash) is just beyond the search depth (the horizon). The algorithm makes moves that look good within its limit but lead to disaster. Quiescence Search mitigates this by extending the search depth specifically for 'volatile' or 'non-quiet' states until they stabilize, providing a more accurate terminal value."
     },
     {
       "id": 3,
-      "scenario": "A precision robotics firm is designing a 6-Degree-of-Freedom (6-DOF) robotic arm for micro-welding inside a dense aircraft fuselage. The search space for path planning is massive and high-dimensional. While using A* search, the system frequently crashes due to 'Out of Memory' (OOM) errors because the 'Open List' (frontier) grows exponentially before a solution is found.",
-      "question": "Considering the hard memory constraints of the embedded industrial controller, which algorithmic trade-off is most appropriate?",
+      "scenario": "An industrial AI system is managing a power grid with 10,000 interconnected nodes. The goal is to find a reconfiguration path that minimizes energy loss using Heuristic Search. The current A* implementation is finding the mathematically optimal solution, but the high-dimensional state space and the complexity of the heuristic calculation result in a 30-second delay per decision, while the grid requires a response within 2 seconds.",
+      "question": "Given the real-time constraint and the massive state space, which modification offers the best trade-off between performance and solution quality?",
       "options": [
-        "A) Replace A* with IDA* (Iterative Deepening A*) to reduce memory complexity from exponential to linear.",
-        "B) Increase the weight of the g(n) component in the A* function to prioritize the path cost from the start.",
-        "C) Switch to a Uniform Cost Search (UCS) to ensure that the memory is used only for the most optimal partial paths.",
-        "D) Disable the 'Closed List' to prevent the tracking of visited states, thereby freeing up memory for the Open List."
+        "A) Switch to Breadth-First Search (BFS) to ensure the shortest number of reconfigurations is found quickly.",
+        "B) Use Uniform Cost Search (UCS) to ignore the heuristic calculation entirely and save CPU cycles.",
+        "C) Implement Weighted A* (W-A*) by multiplying the heuristic by a factor (w > 1) to transform the search into a greedy-tending approach.",
+        "D) Deploy a Depth-First Search (DFS) with an infinite depth limit to ensure a solution is found without checking all nodes."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Replace A* with IDA* (Iterative Deepening A*) to reduce memory complexity from exponential to linear.",
-      "explanation": "A* has a memory complexity of O(b^d) because it must store all generated nodes in the Open List. IDA* (Iterative Deepening A*) addresses this by using the heuristic to bound a Depth-First Search. This reduces the memory requirement to O(d) (linear), which is essential for embedded systems with limited RAM, even though it may result in redundant node expansions across iterations."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Implement Weighted A* (W-A*) by multiplying the heuristic by a factor (w > 1) to transform the search into a greedy-tending approach.",
+      "explanation": "Weighted A* (f(n) = g(n) + w * h(n)) is a standard industrial solution for high-dimensional problems with real-time constraints. By increasing the weight of the heuristic, the search becomes more 'greedy,' significantly reducing the number of nodes expanded (speeding up the search) while still providing a solution within a provable bound of the optimal (\u03b5-optimal)."
     }
   ]
 }
