@@ -51,5 +51,8 @@
   ],
   "Design a Distributed Cache (Consistent Hashing, LRU)": [
     "Distributed Cache Design: Consistent Hashing & LRU"
+  ],
+  "Design a Distributed ID Generator (Snowflake ID)": [
+    "Design a Distributed ID Generator (Snowflake ID)"
   ]
 }
