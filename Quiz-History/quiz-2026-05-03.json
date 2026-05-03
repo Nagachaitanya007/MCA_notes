@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Java 21 application was recently migrated to use `Virtual Threads` to handle I/O-bound requests. However, monitoring shows that the application is experiencing significant latency spikes and CPU saturation. You find the following code snippet in a shared logging utility: \n\njava\npublic class LogService {\n    public synchronized void logTransaction(String data) {\n        // Simulate writing to a slow remote syslog server\n        remoteLogger.send(data);\n    }\n}\n\nMultiple `Virtual Threads` call this `logTransaction` method simultaneously.",
-      "question": "What is the primary cause of the performance degradation in this Virtual Thread-based system?",
+      "scenario": "You are debugging a production issue in a Spring Boot 3.2 application that has enabled Virtual Threads via `spring.threads.virtual.enabled=true`. You notice that during peak traffic, the application's throughput drops significantly and CPU utilization on the worker nodes spikes, despite the application being IO-bound. You find the following code snippet in a legacy integration module: \n\njava\npublic class LegacyDataService {\n    private final Object lock = new Object();\n\n    public void processData() {\n        synchronized (lock) {\n            // Performs a blocking network call to a legacy mainframe\n            String response = restTemplate.getForObject(\"http://legacy-api/data\", String.class);\n            persistResponse(response);\n        }\n    }\n}\n",
+      "question": "What is the primary cause of the performance degradation in this Virtual Thread-enabled environment?",
       "options": [
-        "A) Virtual Threads are unable to yield execution because the thread is 'pinned' to the carrier thread due to the `synchronized` block.",
-        "B) The `synchronized` keyword causes a context switch to the kernel, which Virtual Threads cannot handle.",
-        "C) Virtual Threads do not support the `synchronized` keyword and will throw an `IllegalMonitorStateException`.",
-        "D) The `RemoteLogger` is likely using `ThreadLocal` variables which are not supported in Java 21 Virtual Threads."
+        "A) Virtual threads are not compatible with `RestTemplate` and require `WebClient` to function.",
+        "B) The `synchronized` block causes 'Thread Pinning', where the Virtual Thread is stuck to its carrier Platform Thread during the blocking IO call.",
+        "C) The JVM cannot context switch Virtual Threads if a `private final Object` is used as a monitor.",
+        "D) Virtual threads have a default stack size that is too small for `RestTemplate`'s internal call stack, leading to frequent GC cycles."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Virtual Threads are unable to yield execution because the thread is 'pinned' to the carrier thread due to the `synchronized` block.",
-      "explanation": "In Java 21, when a `Virtual Thread` enters a `synchronized` block or method, it 'pins' the virtual thread to its underlying carrier thread (a platform thread). If the code inside the block performs a blocking I/O operation (like `remoteLogger.send(data)`), the carrier thread is blocked as well, preventing it from executing other virtual threads. This negates the scalability benefits of virtual threads. The recommended fix is to use `java.util.concurrent.locks.ReentrantLock`, which allows virtual threads to unmount properly during I/O."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The `synchronized` block causes 'Thread Pinning', where the Virtual Thread is stuck to its carrier Platform Thread during the blocking IO call.",
+      "explanation": "In Java 21, when a Virtual Thread enters a `synchronized` block or method and performs a blocking operation (like network IO), it 'pins' the underlying carrier (Platform) thread. This prevents the JVM from unmounting the Virtual Thread and using that Platform Thread for other tasks. This leads to starvation of the carrier thread pool, negating the scalability benefits of Virtual Threads. Replacing `synchronized` with `ReentrantLock` resolves this, as `ReentrantLock` allows the Virtual Thread to unmount normally."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a Spring Boot service is failing to roll back database transactions. The service uses a `CompletableFuture` to perform parallel processing of order items. The code looks like this:\n\njava\n@Service\npublic class OrderService {\n    @Autowired private OrderRepository repository;\n\n    @Transactional\n    public CompletableFuture<Void> processOrder(Order order) {\n        return CompletableFuture.runAsync(() -> {\n            repository.save(order);\n            if (order.getAmount() < 0) throw new RuntimeException(\"Invalid amount\");\n        });\n    }\n}\n\nEven when an exception is thrown, the order remains saved in the database.",
-      "question": "Why is the `@Transactional` annotation failing to roll back the changes in this scenario?",
+      "scenario": "You are investigating why a business-critical audit log is not being persisted asynchronously in a Spring-managed service. The method `createTransaction` is called by an external controller, but the `saveAuditAsync` method seems to execute on the same thread as the caller and fails to roll back when the main transaction fails. \n\njava\n@Service\npublic class TradeService {\n\n    @Transactional\n    public void createTransaction(TradeData data) {\n        // ... business logic ...\n        saveAuditAsync(data);\n    }\n\n    @Async\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public CompletableFuture<Void> saveAuditAsync(TradeData data) {\n        // ... persist audit log ...\n        return CompletableFuture.completedFuture(null);\n    }\n}\n",
+      "question": "Why does `saveAuditAsync` fail to run asynchronously and ignore the `Propagation.REQUIRES_NEW` setting?",
       "options": [
-        "A) Spring's `@Transactional` only supports checked exceptions for rollback by default.",
-        "B) The transaction context is stored in a `ThreadLocal`, and `CompletableFuture.runAsync` executes the logic in a different thread from the Spring Proxy.",
-        "C) The `OrderRepository` is likely using an `Isolation.READ_UNCOMMITTED` level which ignores rollbacks.",
-        "D) Spring Proxies cannot intercept calls inside lambda expressions used by `CompletableFuture`."
+        "A) `CompletableFuture<Void>` is not a supported return type for Spring `@Async` methods.",
+        "B) The `@Transactional` annotation on `createTransaction` locks the `TradeService` instance, preventing other threads from entering.",
+        "C) The internal call to `saveAuditAsync` bypasses the Spring Proxy, meaning the `@Async` and `@Transactional` interceptors are never invoked.",
+        "D) The `ForkJoinPool.commonPool()` used by `CompletableFuture` does not support Spring's `TransactionManager`."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The transaction context is stored in a `ThreadLocal`, and `CompletableFuture.runAsync` executes the logic in a different thread from the Spring Proxy.",
-      "explanation": "Spring's declarative transaction management (`@Transactional`) relies on `ThreadLocal` storage via `TransactionSynchronizationManager` to keep track of the current database connection and transaction state. `CompletableFuture.runAsync` switches execution to a thread from the `ForkJoinPool.commonPool()` (or a provided executor). Because this is a different thread, the Spring transaction started by the proxy is not visible to the code inside the lambda, resulting in the `repository.save()` call running in its own auto-commit transaction or no transaction at all."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) The internal call to `saveAuditAsync` bypasses the Spring Proxy, meaning the `@Async` and `@Transactional` interceptors are never invoked.",
+      "explanation": "Spring uses AOP proxies to implement `@Transactional` and `@Async`. When a method within the same class calls another method in that class (`this.saveAuditAsync()`), it bypasses the proxy and calls the raw object method directly. Consequently, the logic for starting a new thread (via `TaskExecutor`) and the logic for creating a new transaction is never triggered. To fix this, the methods should be in different services, or the proxy should be self-injected (though the latter is generally discouraged)."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a system utilizing a complex chain of `CompletableFuture` tasks is intermittently hanging. Thread dumps reveal that many threads are in a `WAITING` state, but the `ForkJoinPool.commonPool()` shows high contention. The code involves a pattern where a parent `CompletableFuture` waits for several child futures created within its own execution block using `join()`:\n\njava\nCompletableFuture.supplyAsync(() -> {\n    var f1 = CompletableFuture.supplyAsync(() -> serviceA.call());\n    var f2 = CompletableFuture.supplyAsync(() -> serviceB.call());\n    return f1.join() + f2.join(); // Internal waiting\n});\n",
-      "question": "What is the internal JVM risk associated with this specific implementation using the `commonPool`?",
+      "scenario": "You are debugging an issue where a high-throughput data pipeline using `CompletableFuture` hangs indefinitely under heavy load. The pipeline aggregates data from multiple microservices: \n\njava\npublic CompletableFuture<UserDTO> getUserFullProfile(String userId) {\n    return CompletableFuture.supplyAsync(() -> userService.fetchBase(userId))\n        .thenCompose(base -> CompletableFuture.supplyAsync(() -> {\n            return authService.getRoles(base.getId()); // Potentially slow IO\n        }))\n        .thenCombine(CompletableFuture.supplyAsync(() -> {\n            return prefService.getPreferences(userId); // Potentially slow IO\n        }), (roles, prefs) -> buildDTO(roles, prefs));\n}\n",
+      "question": "Considering JVM internals and default configurations, what is the most likely cause of the hang under load?",
       "options": [
-        "A) The `join()` call triggers a `StackOverflowError` due to recursive task stealing.",
-        "B) It leads to 'Pool-Induced Deadlock' (or starvation) because worker threads are occupied waiting for tasks that are still sitting in the work queue.",
-        "C) `CompletableFuture.join()` is deprecated in favor of `get()` when used within the `ForkJoinPool`.",
-        "D) The `commonPool` parallelism level is dynamically reduced by the JVM when it detects nested `join()` calls."
+        "A) `thenCompose` creates a recursive stack frame that causes a `StackOverflowError` which is swallowed by the `ForkJoinPool`.",
+        "B) The default `ForkJoinPool.commonPool()` is being exhausted by blocking IO operations, leading to a deadlocked state where no threads are available to complete futures.",
+        "C) `CompletableFuture.supplyAsync` uses a `DirectExecutor` by default, which runs tasks on the main Event Loop thread.",
+        "D) The `buildDTO` method is likely throwing an `IllegalMonitorStateException` because the combining threads are from different `ThreadGroup` instances."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) It leads to 'Pool-Induced Deadlock' (or starvation) because worker threads are occupied waiting for tasks that are still sitting in the work queue.",
-      "explanation": "This is a classic case of thread starvation deadlock. The `ForkJoinPool.commonPool()` has a limited number of threads (usually CPU cores - 1). If all threads are used to run 'parent' tasks that are blocking on `join()` for 'child' tasks, and those child tasks are still waiting in the queue to be picked up by a thread, the system deadlocks. While `ForkJoinPool` has some 'managed blocker' capabilities, nested `supplyAsync` calls without careful resource management or using separate executors for different layers of the hierarchy frequently lead to this production failure."
+      "correct_answer_text": "B) The default `ForkJoinPool.commonPool()` is being exhausted by blocking IO operations, leading to a deadlocked state where no threads are available to complete futures.",
+      "explanation": "When `CompletableFuture.supplyAsync` is called without providing a custom `Executor`, it defaults to the `ForkJoinPool.commonPool()`. This pool is sized based on the number of available CPU cores. If the tasks involve blocking IO (like calling `authService` or `prefService`), the few threads in the common pool become saturated. Since the completion of the 'chained' stages depends on these threads being available, the system enters a state of starvation or 'Livelock'. In production, a dedicated `ThreadPoolTaskExecutor` should be provided to isolate IO-bound tasks from the common pool."
     }
   ]
 }
