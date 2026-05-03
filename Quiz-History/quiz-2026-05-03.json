@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
-  "mode": "Java",
+  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue in a Spring Boot 3.2 application that has enabled Virtual Threads via `spring.threads.virtual.enabled=true`. You notice that during peak traffic, the application's throughput drops significantly and CPU utilization on the worker nodes spikes, despite the application being IO-bound. You find the following code snippet in a legacy integration module: \n\njava\npublic class LegacyDataService {\n    private final Object lock = new Object();\n\n    public void processData() {\n        synchronized (lock) {\n            // Performs a blocking network call to a legacy mainframe\n            String response = restTemplate.getForObject(\"http://legacy-api/data\", String.class);\n            persistResponse(response);\n        }\n    }\n}\n",
-      "question": "What is the primary cause of the performance degradation in this Virtual Thread-enabled environment?",
+      "scenario": "A global financial institution develops a machine learning model to automate credit limit increases. The training dataset consists of historical approvals over the last 15 years. Despite removing 'Gender' and 'Zip Code' from the feature set to ensure neutrality, the model consistently assigns significantly lower credit limits to residents of specific neighborhoods. Investigation reveals that the model is using 'Shopping Habits' and 'Educational Background' as latent indicators of demographic status.",
+      "question": "Which phenomenon is most likely responsible for this persistent bias, and what is the most effective technical mitigation strategy?",
       "options": [
-        "A) Virtual threads are not compatible with `RestTemplate` and require `WebClient` to function.",
-        "B) The `synchronized` block causes 'Thread Pinning', where the Virtual Thread is stuck to its carrier Platform Thread during the blocking IO call.",
-        "C) The JVM cannot context switch Virtual Threads if a `private final Object` is used as a monitor.",
-        "D) Virtual threads have a default stack size that is too small for `RestTemplate`'s internal call stack, leading to frequent GC cycles."
+        "A) Redundant Masking; use L1 regularization to force the coefficients of redundant features to zero.",
+        "B) Proxy Variable Bias; identify features highly correlated with protected attributes and apply In-processing fairness constraints.",
+        "C) Algorithmic Determinism; increase the depth of the neural network to capture higher-order non-linear relationships.",
+        "D) Data Sparsity; use Synthetic Minority Over-sampling Technique (SMOTE) to balance the representation of different neighborhoods."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `synchronized` block causes 'Thread Pinning', where the Virtual Thread is stuck to its carrier Platform Thread during the blocking IO call.",
-      "explanation": "In Java 21, when a Virtual Thread enters a `synchronized` block or method and performs a blocking operation (like network IO), it 'pins' the underlying carrier (Platform) thread. This prevents the JVM from unmounting the Virtual Thread and using that Platform Thread for other tasks. This leads to starvation of the carrier thread pool, negating the scalability benefits of Virtual Threads. Replacing `synchronized` with `ReentrantLock` resolves this, as `ReentrantLock` allows the Virtual Thread to unmount normally."
+      "correct_answer_text": "B) Proxy Variable Bias; identify features highly correlated with protected attributes and apply In-processing fairness constraints.",
+      "explanation": "Proxy variable bias occurs when non-protected attributes (like shopping habits) are highly correlated with protected attributes (like socioeconomic status or race). Removing direct identifiers is insufficient because the model learns these correlations. In-processing fairness constraints (like adding a fairness penalty to the loss function) directly optimize for parity during training, which is more effective than simple feature removal."
     },
     {
       "id": 2,
-      "scenario": "You are investigating why a business-critical audit log is not being persisted asynchronously in a Spring-managed service. The method `createTransaction` is called by an external controller, but the `saveAuditAsync` method seems to execute on the same thread as the caller and fails to roll back when the main transaction fails. \n\njava\n@Service\npublic class TradeService {\n\n    @Transactional\n    public void createTransaction(TradeData data) {\n        // ... business logic ...\n        saveAuditAsync(data);\n    }\n\n    @Async\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public CompletableFuture<Void> saveAuditAsync(TradeData data) {\n        // ... persist audit log ...\n        return CompletableFuture.completedFuture(null);\n    }\n}\n",
-      "question": "Why does `saveAuditAsync` fail to run asynchronously and ignore the `Propagation.REQUIRES_NEW` setting?",
+      "scenario": "An autonomous vehicle manufacturer is implementing a collision avoidance system using a deep Vision Transformer (ViT). During a high-stakes safety audit, the system fails to brake for a pedestrian in a non-standard costume. The engineering team is required to provide a 'Local Explanation' for this specific failure instance to understand which part of the input image led to the classification error, without modifying the underlying 'black-box' architecture or accessing internal gradients.",
+      "question": "Which Explainable AI (XAI) technique is most suitable for this requirement, given the constraint of being model-agnostic and focused on a single prediction?",
       "options": [
-        "A) `CompletableFuture<Void>` is not a supported return type for Spring `@Async` methods.",
-        "B) The `@Transactional` annotation on `createTransaction` locks the `TradeService` instance, preventing other threads from entering.",
-        "C) The internal call to `saveAuditAsync` bypasses the Spring Proxy, meaning the `@Async` and `@Transactional` interceptors are never invoked.",
-        "D) The `ForkJoinPool.commonPool()` used by `CompletableFuture` does not support Spring's `TransactionManager`."
+        "A) Global Surrogate Models; training a decision tree to approximate the entire logic of the Vision Transformer.",
+        "B) Integrated Gradients; calculating the integral of gradients along a path from a baseline image to the input image.",
+        "C) LIME (Local Interpretable Model-agnostic Explanations); perturbing the input image and training a local linear model to approximate the prediction.",
+        "D) CAM (Class Activation Mapping); using the global average pooling layer to identify discriminative image regions."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) The internal call to `saveAuditAsync` bypasses the Spring Proxy, meaning the `@Async` and `@Transactional` interceptors are never invoked.",
-      "explanation": "Spring uses AOP proxies to implement `@Transactional` and `@Async`. When a method within the same class calls another method in that class (`this.saveAuditAsync()`), it bypasses the proxy and calls the raw object method directly. Consequently, the logic for starting a new thread (via `TaskExecutor`) and the logic for creating a new transaction is never triggered. To fix this, the methods should be in different services, or the proxy should be self-injected (though the latter is generally discouraged)."
+      "correct_answer_text": "C) LIME (Local Interpretable Model-agnostic Explanations); perturbing the input image and training a local linear model to approximate the prediction.",
+      "explanation": "LIME is specifically designed to provide local explanations for individual predictions by perturbing the input and observing the output changes, making it model-agnostic. Integrated Gradients and CAM are model-specific as they require access to the internal architecture (gradients or specific layers), and Global Surrogates explain the model's overall behavior rather than a specific failure instance."
     },
     {
       "id": 3,
-      "scenario": "You are debugging an issue where a high-throughput data pipeline using `CompletableFuture` hangs indefinitely under heavy load. The pipeline aggregates data from multiple microservices: \n\njava\npublic CompletableFuture<UserDTO> getUserFullProfile(String userId) {\n    return CompletableFuture.supplyAsync(() -> userService.fetchBase(userId))\n        .thenCompose(base -> CompletableFuture.supplyAsync(() -> {\n            return authService.getRoles(base.getId()); // Potentially slow IO\n        }))\n        .thenCombine(CompletableFuture.supplyAsync(() -> {\n            return prefService.getPreferences(userId); // Potentially slow IO\n        }), (roles, prefs) -> buildDTO(roles, prefs));\n}\n",
-      "question": "Considering JVM internals and default configurations, what is the most likely cause of the hang under load?",
+      "scenario": "A healthcare startup deploys a model for predicting patient readmission rates across multiple hospitals. The regulatory body mandates that the model must satisfy 'Equalized Odds,' meaning it must have the same True Positive Rate (TPR) and False Positive Rate (FPR) across different ethnic groups. However, the available data for minority groups is significantly skewed and high-dimensional, leading to high variance in group-specific performance.",
+      "question": "When balancing the trade-off between model accuracy and regulatory fairness (Equalized Odds), which approach offers the most robust path toward compliance in high-dimensional, skewed data environments?",
       "options": [
-        "A) `thenCompose` creates a recursive stack frame that causes a `StackOverflowError` which is swallowed by the `ForkJoinPool`.",
-        "B) The default `ForkJoinPool.commonPool()` is being exhausted by blocking IO operations, leading to a deadlocked state where no threads are available to complete futures.",
-        "C) `CompletableFuture.supplyAsync` uses a `DirectExecutor` by default, which runs tasks on the main Event Loop thread.",
-        "D) The `buildDTO` method is likely throwing an `IllegalMonitorStateException` because the combining threads are from different `ThreadGroup` instances."
+        "A) Post-processing Threshold Calibration; adjusting the decision thresholds for each group independently after model training.",
+        "B) Dimensionality Reduction; using PCA to eliminate the dimensions that contribute to the variance across ethnic groups.",
+        "C) Adversarial Debiasng; training a primary predictor and an adversary network simultaneously to minimize the adversary's ability to predict the protected attribute.",
+        "D) Data Augmentation; using GANs to generate synthetic samples for minority groups until the dataset is perfectly balanced."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The default `ForkJoinPool.commonPool()` is being exhausted by blocking IO operations, leading to a deadlocked state where no threads are available to complete futures.",
-      "explanation": "When `CompletableFuture.supplyAsync` is called without providing a custom `Executor`, it defaults to the `ForkJoinPool.commonPool()`. This pool is sized based on the number of available CPU cores. If the tasks involve blocking IO (like calling `authService` or `prefService`), the few threads in the common pool become saturated. Since the completion of the 'chained' stages depends on these threads being available, the system enters a state of starvation or 'Livelock'. In production, a dedicated `ThreadPoolTaskExecutor` should be provided to isolate IO-bound tasks from the common pool."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Adversarial Debiasng; training a primary predictor and an adversary network simultaneously to minimize the adversary's ability to predict the protected attribute.",
+      "explanation": "Adversarial debiasing is an in-processing technique that is highly effective for high-dimensional data. It forces the model to learn features that are predictive of the outcome but uninformative about the protected attribute. Post-processing (Option A) can achieve fairness but often at a higher cost to accuracy, while simple data augmentation (Option D) does not guarantee that the model will not learn latent biases present in the high-dimensional feature space."
     }
   ]
 }

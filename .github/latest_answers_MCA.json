@@ -1,48 +1,48 @@
 {
-  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A logistics tech startup is designing an autonomous drone delivery system for a smart city. The drone uses the A* algorithm to navigate a 3D grid. To ensure fast computation, the engineers implemented a heuristic h(n) based on the Manhattan distance. However, during test flights in high-density areas with 'Hyper-lanes' (low-cost aerial corridors that allow drones to move faster than standard speeds), the drones are consistently ignoring these lanes and taking longer, sub-optimal paths.",
-      "question": "What is the primary cause of the drone's failure to find the optimal path, and how should the heuristic be adjusted?",
+      "scenario": "A global financial institution develops a machine learning model to automate credit limit increases. The training dataset consists of historical approvals over the last 15 years. Despite removing 'Gender' and 'Zip Code' from the feature set to ensure neutrality, the model consistently assigns significantly lower credit limits to residents of specific neighborhoods. Investigation reveals that the model is using 'Shopping Habits' and 'Educational Background' as latent indicators of demographic status.",
+      "question": "Which phenomenon is most likely responsible for this persistent bias, and what is the most effective technical mitigation strategy?",
       "options": [
-        "A) The Manhattan distance is too computationally expensive for 3D space, causing the search to time out.",
-        "B) The heuristic has become inadmissible because it overestimates the true cost to the goal when Hyper-lanes are available.",
-        "C) The heuristic is too consistent, leading to an expansion of too many nodes in the state space.",
-        "D) A* is inherently unable to handle negative edge weights provided by the Hyper-lanes."
+        "A) Redundant Masking; use L1 regularization to force the coefficients of redundant features to zero.",
+        "B) Proxy Variable Bias; identify features highly correlated with protected attributes and apply In-processing fairness constraints.",
+        "C) Algorithmic Determinism; increase the depth of the neural network to capture higher-order non-linear relationships.",
+        "D) Data Sparsity; use Synthetic Minority Over-sampling Technique (SMOTE) to balance the representation of different neighborhoods."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The heuristic has become inadmissible because it overestimates the true cost to the goal when Hyper-lanes are available.",
-      "explanation": "For A* to guarantee optimality, the heuristic h(n) must be admissible, meaning it must never overestimate the cost to reach the goal. If 'Hyper-lanes' reduce the actual cost below the Manhattan distance calculation, h(n) > h*(n), violating admissibility. In this case, the algorithm may find a sub-optimal path and terminate before exploring the path containing the Hyper-lane."
+      "correct_answer_text": "B) Proxy Variable Bias; identify features highly correlated with protected attributes and apply In-processing fairness constraints.",
+      "explanation": "Proxy variable bias occurs when non-protected attributes (like shopping habits) are highly correlated with protected attributes (like socioeconomic status or race). Removing direct identifiers is insufficient because the model learns these correlations. In-processing fairness constraints (like adding a fairness penalty to the loss function) directly optimize for parity during training, which is more effective than simple feature removal."
     },
     {
       "id": 2,
-      "scenario": "A FinTech company utilizes a Min-Max algorithm with Alpha-Beta pruning to model competitive bidding in high-frequency trading. The system is configured to search to a depth of 8 moves. During a period of extreme market volatility, the system successfully prunes 60% of the search tree but fails to anticipate a market crash occurring at move 10, leading to a catastrophic liquidation of assets despite the 'optimal' move identified at depth 8.",
-      "question": "Which specific phenomenon is the bidding system experiencing, and what is the most effective industrial mitigation strategy?",
+      "scenario": "An autonomous vehicle manufacturer is implementing a collision avoidance system using a deep Vision Transformer (ViT). During a high-stakes safety audit, the system fails to brake for a pedestrian in a non-standard costume. The engineering team is required to provide a 'Local Explanation' for this specific failure instance to understand which part of the input image led to the classification error, without modifying the underlying 'black-box' architecture or accessing internal gradients.",
+      "question": "Which Explainable AI (XAI) technique is most suitable for this requirement, given the constraint of being model-agnostic and focused on a single prediction?",
       "options": [
-        "A) The Horizon Effect; mitigate by implementing Quiescence Search to evaluate unstable positions beyond the fixed depth.",
-        "B) Singular Extension failure; mitigate by increasing the branching factor of the root node.",
-        "C) Transposition Table overflow; mitigate by increasing the cache size for previously visited market states.",
-        "D) Evaluation Function Skew; mitigate by switching from Alpha-Beta pruning to a Pure Min-Max search."
+        "A) Global Surrogate Models; training a decision tree to approximate the entire logic of the Vision Transformer.",
+        "B) Integrated Gradients; calculating the integral of gradients along a path from a baseline image to the input image.",
+        "C) LIME (Local Interpretable Model-agnostic Explanations); perturbing the input image and training a local linear model to approximate the prediction.",
+        "D) CAM (Class Activation Mapping); using the global average pooling layer to identify discriminative image regions."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The Horizon Effect; mitigate by implementing Quiescence Search to evaluate unstable positions beyond the fixed depth.",
-      "explanation": "The Horizon Effect occurs when a significant event (like a market crash) is just beyond the search depth (the horizon). The algorithm makes moves that look good within its limit but lead to disaster. Quiescence Search mitigates this by extending the search depth specifically for 'volatile' or 'non-quiet' states until they stabilize, providing a more accurate terminal value."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) LIME (Local Interpretable Model-agnostic Explanations); perturbing the input image and training a local linear model to approximate the prediction.",
+      "explanation": "LIME is specifically designed to provide local explanations for individual predictions by perturbing the input and observing the output changes, making it model-agnostic. Integrated Gradients and CAM are model-specific as they require access to the internal architecture (gradients or specific layers), and Global Surrogates explain the model's overall behavior rather than a specific failure instance."
     },
     {
       "id": 3,
-      "scenario": "An industrial AI system is managing a power grid with 10,000 interconnected nodes. The goal is to find a reconfiguration path that minimizes energy loss using Heuristic Search. The current A* implementation is finding the mathematically optimal solution, but the high-dimensional state space and the complexity of the heuristic calculation result in a 30-second delay per decision, while the grid requires a response within 2 seconds.",
-      "question": "Given the real-time constraint and the massive state space, which modification offers the best trade-off between performance and solution quality?",
+      "scenario": "A healthcare startup deploys a model for predicting patient readmission rates across multiple hospitals. The regulatory body mandates that the model must satisfy 'Equalized Odds,' meaning it must have the same True Positive Rate (TPR) and False Positive Rate (FPR) across different ethnic groups. However, the available data for minority groups is significantly skewed and high-dimensional, leading to high variance in group-specific performance.",
+      "question": "When balancing the trade-off between model accuracy and regulatory fairness (Equalized Odds), which approach offers the most robust path toward compliance in high-dimensional, skewed data environments?",
       "options": [
-        "A) Switch to Breadth-First Search (BFS) to ensure the shortest number of reconfigurations is found quickly.",
-        "B) Use Uniform Cost Search (UCS) to ignore the heuristic calculation entirely and save CPU cycles.",
-        "C) Implement Weighted A* (W-A*) by multiplying the heuristic by a factor (w > 1) to transform the search into a greedy-tending approach.",
-        "D) Deploy a Depth-First Search (DFS) with an infinite depth limit to ensure a solution is found without checking all nodes."
+        "A) Post-processing Threshold Calibration; adjusting the decision thresholds for each group independently after model training.",
+        "B) Dimensionality Reduction; using PCA to eliminate the dimensions that contribute to the variance across ethnic groups.",
+        "C) Adversarial Debiasng; training a primary predictor and an adversary network simultaneously to minimize the adversary's ability to predict the protected attribute.",
+        "D) Data Augmentation; using GANs to generate synthetic samples for minority groups until the dataset is perfectly balanced."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) Implement Weighted A* (W-A*) by multiplying the heuristic by a factor (w > 1) to transform the search into a greedy-tending approach.",
-      "explanation": "Weighted A* (f(n) = g(n) + w * h(n)) is a standard industrial solution for high-dimensional problems with real-time constraints. By increasing the weight of the heuristic, the search becomes more 'greedy,' significantly reducing the number of nodes expanded (speeding up the search) while still providing a solution within a provable bound of the optimal (\u03b5-optimal)."
+      "correct_answer_text": "C) Adversarial Debiasng; training a primary predictor and an adversary network simultaneously to minimize the adversary's ability to predict the protected attribute.",
+      "explanation": "Adversarial debiasing is an in-processing technique that is highly effective for high-dimensional data. It forces the model to learn features that are predictive of the outcome but uninformative about the protected attribute. Post-processing (Option A) can achieve fairness but often at a higher cost to accuracy, while simple data augmentation (Option D) does not guarantee that the model will not learn latent biases present in the high-dimensional feature space."
     }
   ]
 }
