@@ -16,7 +16,8 @@
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections",
-    "The ConcurrentHashMap: Mastering Lock Striping & Non-Blocking Scalability"
+    "The ConcurrentHashMap: Mastering Lock Striping & Non-Blocking Scalability",
+    "The Binary Heap: Mastering Custom Priority Logic"
   ],
   "JVM Internals (Memory Model, G1/ZGC, Class Loading)": [
     "JVM Internals: The Lifecycle of a Java Object",
