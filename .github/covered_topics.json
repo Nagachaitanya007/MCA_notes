@@ -26,7 +26,8 @@
     "JVM Internals: The Blueprint, The Safety Protocol, and the Elite Cleaners"
   ],
   "Design a Real-time Chat System (WebSockets, Redis Pub/Sub)": [
-    "Scalable Real-time Chat: WebSockets & Redis Pub/Sub"
+    "Scalable Real-time Chat: WebSockets & Redis Pub/Sub",
+    "Horizontal Scaling of WebSockets with Redis Pub/Sub"
   ],
   "Memory Management & Garbage Collection Tuning": [
     "Java Memory Management & Garbage Collection Tuning",
