@@ -1,48 +1,48 @@
 {
-  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A global financial institution develops a machine learning model to automate credit limit increases. The training dataset consists of historical approvals over the last 15 years. Despite removing 'Gender' and 'Zip Code' from the feature set to ensure neutrality, the model consistently assigns significantly lower credit limits to residents of specific neighborhoods. Investigation reveals that the model is using 'Shopping Habits' and 'Educational Background' as latent indicators of demographic status.",
-      "question": "Which phenomenon is most likely responsible for this persistent bias, and what is the most effective technical mitigation strategy?",
+      "scenario": "Real-world Industrial Problem Statement: A FinTech organization is building a predictive model for 'Transaction Amounts' across a global user base. The data exhibits significant right-skewness (positive skew) and contains a substantial number of zero values representing failed or canceled transactions. Initial testing with a Gradient Boosting Regressor shows that the model is sensitive to the extreme values in the tail, leading to sub-optimal convergence and high Mean Squared Error (MSE).",
+      "question": "Which data preprocessing strategy would most effectively stabilize the variance and minimize the impact of the skewness while mathematically accommodating the zero-value entries?",
       "options": [
-        "A) Redundant Masking; use L1 regularization to force the coefficients of redundant features to zero.",
-        "B) Proxy Variable Bias; identify features highly correlated with protected attributes and apply In-processing fairness constraints.",
-        "C) Algorithmic Determinism; increase the depth of the neural network to capture higher-order non-linear relationships.",
-        "D) Data Sparsity; use Synthetic Minority Over-sampling Technique (SMOTE) to balance the representation of different neighborhoods."
+        "A) Apply a standard Log(x) transformation to the target variable.",
+        "B) Use the Yeo-Johnson Power Transformation to optimize the lambda parameter for normality.",
+        "C) Implement Min-Max Normalization to constrain all values between 0 and 1.",
+        "D) Perform Z-score standardization to shift the mean to zero and the variance to one."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Proxy Variable Bias; identify features highly correlated with protected attributes and apply In-processing fairness constraints.",
-      "explanation": "Proxy variable bias occurs when non-protected attributes (like shopping habits) are highly correlated with protected attributes (like socioeconomic status or race). Removing direct identifiers is insufficient because the model learns these correlations. In-processing fairness constraints (like adding a fairness penalty to the loss function) directly optimize for parity during training, which is more effective than simple feature removal."
+      "correct_answer_text": "B) Use the Yeo-Johnson Power Transformation to optimize the lambda parameter for normality.",
+      "explanation": "While Log(x+1) is a common heuristic for skewed data with zeros, the Yeo-Johnson transformation is a more robust, generalized power transform that handles zero and negative values natively. It uses Maximum Likelihood Estimation (MLE) to determine the optimal lambda parameter that minimizes the skewness of the distribution, making it superior to fixed transformations for industrial-grade regression pipelines where the distribution shape is not known a priori."
     },
     {
       "id": 2,
-      "scenario": "An autonomous vehicle manufacturer is implementing a collision avoidance system using a deep Vision Transformer (ViT). During a high-stakes safety audit, the system fails to brake for a pedestrian in a non-standard costume. The engineering team is required to provide a 'Local Explanation' for this specific failure instance to understand which part of the input image led to the classification error, without modifying the underlying 'black-box' architecture or accessing internal gradients.",
-      "question": "Which Explainable AI (XAI) technique is most suitable for this requirement, given the constraint of being model-agnostic and focused on a single prediction?",
+      "scenario": "Real-world Industrial Problem Statement: An E-commerce giant is processing a high-dimensional dataset (200+ features) for customer churn prediction. Feature engineering reveals that 'Annual Income' and 'Net Savings' are missing for 35% of the records. A simple mean imputation has been observed to drastically reduce the variance of these features, leading to 'shrunken' coefficients in the logistic regression model and poor performance on minority classes.",
+      "question": "Considering the high-dimensional nature of the data and the need to preserve the covariance structure between features, which approach is most appropriate for handling the missing values?",
       "options": [
-        "A) Global Surrogate Models; training a decision tree to approximate the entire logic of the Vision Transformer.",
-        "B) Integrated Gradients; calculating the integral of gradients along a path from a baseline image to the input image.",
-        "C) LIME (Local Interpretable Model-agnostic Explanations); perturbing the input image and training a local linear model to approximate the prediction.",
-        "D) CAM (Class Activation Mapping); using the global average pooling layer to identify discriminative image regions."
+        "A) K-Nearest Neighbors (KNN) Imputation with k=5 and Euclidean distance.",
+        "B) Simple Constant Imputation using the value -999 to represent missingness.",
+        "C) Multivariate Imputation by Chained Equations (MICE) using a Bayesian Ridge estimator.",
+        "D) Complete Case Analysis by dropping all rows with missing values."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) LIME (Local Interpretable Model-agnostic Explanations); perturbing the input image and training a local linear model to approximate the prediction.",
-      "explanation": "LIME is specifically designed to provide local explanations for individual predictions by perturbing the input and observing the output changes, making it model-agnostic. Integrated Gradients and CAM are model-specific as they require access to the internal architecture (gradients or specific layers), and Global Surrogates explain the model's overall behavior rather than a specific failure instance."
+      "correct_answer_text": "C) Multivariate Imputation by Chained Equations (MICE) using a Bayesian Ridge estimator.",
+      "explanation": "MICE (also known as Iterative Imputer) is a sophisticated technique that models each feature with missing values as a function of other features. Unlike KNN, which suffers from the 'curse of dimensionality' in high-dimensional spaces (making distance metrics unreliable), MICE accounts for the statistical relationships between all variables, thereby preserving the dataset's variance and covariance structure better than single-value or distance-based imputation."
     },
     {
       "id": 3,
-      "scenario": "A healthcare startup deploys a model for predicting patient readmission rates across multiple hospitals. The regulatory body mandates that the model must satisfy 'Equalized Odds,' meaning it must have the same True Positive Rate (TPR) and False Positive Rate (FPR) across different ethnic groups. However, the available data for minority groups is significantly skewed and high-dimensional, leading to high variance in group-specific performance.",
-      "question": "When balancing the trade-off between model accuracy and regulatory fairness (Equalized Odds), which approach offers the most robust path toward compliance in high-dimensional, skewed data environments?",
+      "scenario": "Real-world Industrial Problem Statement: An Autonomous Vehicle startup is developing a real-time monitoring system for LIDAR sensor streams to detect 'spurious data points' (outliers) caused by atmospheric noise. The system must operate with extreme low latency (<15ms per frame) on an edge device with limited memory. The data distribution is non-linear and multidimensional.",
+      "question": "Which outlier detection algorithm offers the best trade-off between computational efficiency (sub-linear complexity) and the ability to isolate anomalies in high-dimensional, non-linear sensor data?",
       "options": [
-        "A) Post-processing Threshold Calibration; adjusting the decision thresholds for each group independently after model training.",
-        "B) Dimensionality Reduction; using PCA to eliminate the dimensions that contribute to the variance across ethnic groups.",
-        "C) Adversarial Debiasng; training a primary predictor and an adversary network simultaneously to minimize the adversary's ability to predict the protected attribute.",
-        "D) Data Augmentation; using GANs to generate synthetic samples for minority groups until the dataset is perfectly balanced."
+        "A) Local Outlier Factor (LOF) using a density-based connectivity approach.",
+        "B) Isolation Forest using a series of random recursive partitions.",
+        "C) Robust Mahalanobis Distance based on the Minimum Covariance Determinant (MCD).",
+        "D) DBSCAN clustering with optimized epsilon and MinPts parameters."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Adversarial Debiasng; training a primary predictor and an adversary network simultaneously to minimize the adversary's ability to predict the protected attribute.",
-      "explanation": "Adversarial debiasing is an in-processing technique that is highly effective for high-dimensional data. It forces the model to learn features that are predictive of the outcome but uninformative about the protected attribute. Post-processing (Option A) can achieve fairness but often at a higher cost to accuracy, while simple data augmentation (Option D) does not guarantee that the model will not learn latent biases present in the high-dimensional feature space."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Isolation Forest using a series of random recursive partitions.",
+      "explanation": "Isolation Forest is uniquely suited for real-time, high-dimensional applications because it has a linear time complexity (O(n)) and a low memory footprint. Unlike LOF or DBSCAN, which require calculating pairwise distances between points (expensive and slow for real-time streams), Isolation Forest isolates anomalies by randomly partitioning features. Since outliers are 'few and different,' they are isolated in fewer splits, allowing for rapid detection without the computational overhead of distance-based metrics."
     }
   ]
 }
