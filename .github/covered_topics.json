@@ -39,7 +39,8 @@
     "URL Shortener: Key Generation Service (KGS) & Sharding"
   ],
   "The CAP Theorem: Choosing between AP and CP in Distributed Systems": [
-    "The CAP Theorem: Choosing Between AP and CP in Distributed Systems"
+    "The CAP Theorem: Choosing Between AP and CP in Distributed Systems",
+    "The CAP Theorem: Navigating the Trade-off Between AP and CP"
   ],
   "Design a Scalable File Storage System (S3 Internals, CDN)": [
     "Distributed Object Storage & Global Delivery Architecture"
