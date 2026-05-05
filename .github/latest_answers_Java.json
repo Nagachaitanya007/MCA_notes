@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue in a Spring Boot application. A developer has implemented a `PaymentService` where an outer transaction should survive a failure in a non-critical auditing task. However, logs show that when `auditTransaction()` fails, the entire transaction is rolled back despite the `try-catch` block. \n\njava\n@Service\npublic class PaymentService {\n    @Transactional\n    public void processPayment(Payment p) {\n        savePayment(p);\n        try {\n            this.auditTransaction(p);\n        } catch (Exception e) {\n            log.error(\"Audit failed but continuing payment\");\n        }\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void auditTransaction(Payment p) {\n        throw new RuntimeException(\"Audit DB Down\");\n    }\n}\n",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "You are debugging a production issue where a `PaymentService` is failing to roll back database changes even though an exception is thrown during a sub-process. The code structure is as follows:\n\njava\n@Service\npublic class PaymentService {\n    @Autowired\n    private AccountRepository accountRepo;\n\n    @Transactional\n    public void processPayment(Long id) {\n        accountRepo.updateBalance(id, -100);\n        try {\n            this.applyTax(id);\n        } catch (RuntimeException e) {\n            // Log error\n        }\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void applyTax(Long id) {\n        throw new RuntimeException(\"Tax calculation failed\");\n    }\n}\n",
+      "question": "What is the primary cause of the transaction failing to behave as expected (i.e., not creating a new transaction for `applyTax`) and failing to roll back correctly?",
       "options": [
-        "A) The `RuntimeException` is a checked exception and requires manual rollback configuration.",
-        "B) Spring Proxies only intercept calls from external callers; the self-invocation of `auditTransaction` bypasses the proxy and the `REQUIRES_NEW` logic.",
-        "C) The `PlatformTransactionManager` cannot handle two concurrent transactions on the same thread.",
-        "D) The `try-catch` block is inside the same method, which prevents the `TransactionInterceptor` from seeing the exception."
+        "A) The `RuntimeException` is caught in the `processPayment` method, which prevents the global transaction from marking itself as rollback-only.",
+        "B) Spring's `@Transactional` uses CGLIB/JDK dynamic proxies; internal calls to `this.applyTax()` bypass the proxy, executing the method without the `REQUIRES_NEW` behavior.",
+        "C) The `AccountRepository` and `PaymentService` must use different `PlatformTransactionManager` beans for `Propagation.REQUIRES_NEW` to function.",
+        "D) `RuntimeException` is not a default rollback-triggering exception for Spring's declarative transaction management."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Spring Proxies only intercept calls from external callers; the self-invocation of `auditTransaction` bypasses the proxy and the `REQUIRES_NEW` logic.",
-      "explanation": "Spring's `@Transactional` is implemented using AOP Proxies. When `processPayment` calls `this.auditTransaction(p)`, it is a direct method call on the object instance, not via the proxy. Consequently, the `Propagation.REQUIRES_NEW` attribute is ignored, the auditing logic runs within the same transaction context as `processPayment`, and the `RuntimeException` marks the current transaction as 'rollback-only'."
+      "correct_answer_text": "B) Spring's `@Transactional` uses CGLIB/JDK dynamic proxies; internal calls to `this.applyTax()` bypass the proxy, executing the method without the `REQUIRES_NEW` behavior.",
+      "explanation": "In Spring AOP, the transactional behavior is applied via a proxy. When `processPayment` is called from another bean, it goes through the proxy. However, the call to `this.applyTax()` is a direct method call on the target object, bypassing the proxy entirely. Consequently, the `@Transactional(propagation = Propagation.REQUIRES_NEW)` annotation on `applyTax` is ignored, and it executes within the existing transaction context of `processPayment`. Since the exception is then caught in `processPayment`, the transaction is committed normally instead of rolling back."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a high-throughput microservice is experiencing 'Retry Storms'. When a downstream service experiences a minor 500ms latency spike, Service A (which has a 3-retry policy) suddenly spikes to 400% CPU usage and eventually crashes the downstream service completely.",
-      "question": "Which strategy would best mitigate this distributed system failure pattern?",
+      "scenario": "You are debugging a production issue where a distributed system experiences 'Zombie Threads' and cascading failures. A service uses a `ThreadPoolExecutor` to handle downstream requests. When a downstream service becomes latent, the `Future.get(timeout, unit)` call throws a `TimeoutException`, but the underlying worker thread remains active, eventually exhausting the pool.",
+      "question": "How should the exception handling and thread management be corrected to ensure the system is resilient?",
       "options": [
-        "A) Switch from `ScheduledExecutorService` to a `ForkJoinPool` for retries.",
-        "B) Implement a 'Circuit Breaker' pattern and add 'Jitter' to an 'Exponential Backoff' retry strategy.",
-        "C) Increase the `max-connections` pool size in the `HttpClient` to handle the backlog.",
-        "D) Wrap the retry logic in a `synchronized` block to ensure only one retry happens at a time."
+        "A) Catch the `TimeoutException` and call `Thread.currentThread().interrupt()` to stop the worker thread.",
+        "B) Increase the `keepAliveTime` of the `ThreadPoolExecutor` to ensure threads are recycled faster after a timeout.",
+        "C) Catch the `TimeoutException` and call `future.cancel(true)` to attempt to interrupt the worker thread, ensuring the task logic checks `Thread.interrupted()`.",
+        "D) Replace `ThreadPoolExecutor` with `ForkJoinPool` which handles `TimeoutException` automatically through work-stealing."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Implement a 'Circuit Breaker' pattern and add 'Jitter' to an 'Exponential Backoff' retry strategy.",
-      "explanation": "Without 'Jitter' (randomness) and 'Exponential Backoff', multiple failed clients will retry at the exact same intervals, creating 'Thundering Herd' synchronized spikes. A 'Circuit Breaker' (like Resilience4j) prevents the client from even attempting calls once a failure threshold is met, allowing the downstream service time to recover."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Catch the `TimeoutException` and call `future.cancel(true)` to attempt to interrupt the worker thread, ensuring the task logic checks `Thread.interrupted()`.",
+      "explanation": "When `Future.get(timeout, unit)` times out, it throws a `TimeoutException` in the caller thread, but the task in the executor continues to run. Calling `future.cancel(true)` sends an interrupt signal to the specific thread executing that task. For this to work, the task implementation must be 'interrupt-friendly' (e.g., checking `Thread.currentThread().isInterrupted()` or handling `InterruptedException`), otherwise the thread will continue to hang, leading to resource exhaustion."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a reactive Netty-based Spring Cloud Gateway is leaking memory and intermittently hanging. You find that a custom `GlobalFilter` has a generic catch block meant to handle all errors during request signing. \n\njava\npublic Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {\n    try {\n        return chain.filter(exchange);\n    } catch (Exception e) {\n        return handleFailure(exchange);\n    }\n}\n\nHowever, logs show that certain fatal issues, like `OutOfMemoryError` or `StackOverflowError`, are bypassing this block and causing the thread to die silently.",
-      "question": "Why does the `catch (Exception e)` block fail to capture these events?",
+      "scenario": "You are debugging a production issue in a high-throughput Reactive system using `Project Reactor` and `WebClient`. Users report that occasionally, specific requests fail silently with no logs, and the connection pool for the downstream service stays saturated until a restart.",
+      "question": "Which of the following reactive error handling patterns is likely missing or misused, causing 'silent' failures and resource leaks?",
       "options": [
-        "A) Reactive streams require the use of `onErrorResume` rather than standard Java `try-catch` blocks.",
-        "B) `OutOfMemoryError` is handled by the JVM's `UncaughtExceptionHandler` and cannot be caught.",
-        "C) In the JVM hierarchy, `Error` (and its subclasses like `VirtualMachineError`) extends `Throwable` but not `Exception`.",
-        "D) The Netty `EventLoop` thread is non-blocking and uses a separate memory space that `Exception` cannot access."
+        "A) Failure to use `.subscribeOn(Schedulers.boundedElastic())`, causing the Netty event loop to block on synchronous exception mapping.",
+        "B) Misusing `.onErrorResume()` by returning `Mono.empty()`, which terminates the stream and swallows the error without triggering global `WebExceptionHandler` or logging.",
+        "C) Using `.onErrorReturn()` which causes the `HttpClient` to keep the TCP connection open for the duration of the timeout.",
+        "D) Forgetting to add `.doOnError()` as the final operator, as it is the only operator that can safely close `ByteBuf` resources."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) In the JVM hierarchy, `Error` (and its subclasses like `VirtualMachineError`) extends `Throwable` but not `Exception`.",
-      "explanation": "The Java `Throwable` class has two main subclasses: `Exception` and `Error`. Critical JVM failures like `OutOfMemoryError` or `StackOverflowError` extend `VirtualMachineError`, which is an `Error`. A `catch (Exception e)` block will not capture any subclass of `Error`. To catch everything, one must catch `Throwable`, though in distributed systems, catching `Error` is often discouraged unless for logging and immediate shutdown."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Misusing `.onErrorResume()` by returning `Mono.empty()`, which terminates the stream and swallows the error without triggering global `WebExceptionHandler` or logging.",
+      "explanation": "In Reactive programming, `onErrorResume` is a powerful operator that switches to a fallback publisher when an error occurs. If it returns `Mono.empty()`, the error is 'swallowed'\u2014the stream completes successfully with no signal. In a distributed context, this prevents the error from propagating to the global exception handler (preventing logging) and may lead to UI or downstream services waiting for a response that will never arrive. To ensure resource cleanup and visibility, errors should be logged and, if necessary, re-thrown or mapped to a meaningful error signal using `Mono.error()`."
     }
   ]
 }
