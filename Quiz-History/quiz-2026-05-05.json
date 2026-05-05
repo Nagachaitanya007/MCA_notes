@@ -1,48 +1,48 @@
 {
-  "topic": "Exception Handling Strategies in Distributed Systems",
-  "mode": "Java",
+  "topic": "Clustering Scenarios: K-Means vs DBSCAN vs Hierarchical",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `PaymentService` is failing to roll back database changes even though an exception is thrown during a sub-process. The code structure is as follows:\n\njava\n@Service\npublic class PaymentService {\n    @Autowired\n    private AccountRepository accountRepo;\n\n    @Transactional\n    public void processPayment(Long id) {\n        accountRepo.updateBalance(id, -100);\n        try {\n            this.applyTax(id);\n        } catch (RuntimeException e) {\n            // Log error\n        }\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void applyTax(Long id) {\n        throw new RuntimeException(\"Tax calculation failed\");\n    }\n}\n",
-      "question": "What is the primary cause of the transaction failing to behave as expected (i.e., not creating a new transaction for `applyTax`) and failing to roll back correctly?",
+      "scenario": "A logistics optimization firm is analyzing GPS pings from a fleet of 10,000 delivery vans to identify informal 'micro-hubs' where drivers frequently stop for breaks. The data visualization reveals that these stop patterns are not circular but elongated along major highways and coastal roads. Furthermore, the dataset is 'noisy' due to random pings from traffic lights and congestion which should not be considered hubs. Initial attempts using K-Means with K=50 resulted in clusters that cross geographical boundaries and include significant noise points.",
+      "question": "Which clustering strategy would be most effective for identifying these irregularly shaped hubs while filtering out the traffic-related noise?",
       "options": [
-        "A) The `RuntimeException` is caught in the `processPayment` method, which prevents the global transaction from marking itself as rollback-only.",
-        "B) Spring's `@Transactional` uses CGLIB/JDK dynamic proxies; internal calls to `this.applyTax()` bypass the proxy, executing the method without the `REQUIRES_NEW` behavior.",
-        "C) The `AccountRepository` and `PaymentService` must use different `PlatformTransactionManager` beans for `Propagation.REQUIRES_NEW` to function.",
-        "D) `RuntimeException` is not a default rollback-triggering exception for Spring's declarative transaction management."
+        "A) Apply K-Means++ with a larger K value and then merge adjacent clusters manually.",
+        "B) Utilize DBSCAN (Density-Based Spatial Clustering of Applications with Noise) by tuning Epsilon and MinPts.",
+        "C) Use Agglomerative Hierarchical Clustering with Ward's linkage to minimize intra-cluster variance.",
+        "D) Implement Expectation-Maximization (EM) clustering using Gaussian Mixture Models (GMM) to account for elongated shapes."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Spring's `@Transactional` uses CGLIB/JDK dynamic proxies; internal calls to `this.applyTax()` bypass the proxy, executing the method without the `REQUIRES_NEW` behavior.",
-      "explanation": "In Spring AOP, the transactional behavior is applied via a proxy. When `processPayment` is called from another bean, it goes through the proxy. However, the call to `this.applyTax()` is a direct method call on the target object, bypassing the proxy entirely. Consequently, the `@Transactional(propagation = Propagation.REQUIRES_NEW)` annotation on `applyTax` is ignored, and it executes within the existing transaction context of `processPayment`. Since the exception is then caught in `processPayment`, the transaction is committed normally instead of rolling back."
+      "correct_answer_text": "B) Utilize DBSCAN (Density-Based Spatial Clustering of Applications with Noise) by tuning Epsilon and MinPts.",
+      "explanation": "DBSCAN is specifically designed to discover clusters of arbitrary shapes, making it ideal for the elongated structures found along highways. Unlike K-Means, which assumes spherical clusters and forces every point (including noise) into a cluster, DBSCAN uses density reachability to define clusters and labels low-density points as 'noise' (-1), effectively filtering out traffic-light pings."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a distributed system experiences 'Zombie Threads' and cascading failures. A service uses a `ThreadPoolExecutor` to handle downstream requests. When a downstream service becomes latent, the `Future.get(timeout, unit)` call throws a `TimeoutException`, but the underlying worker thread remains active, eventually exhausting the pool.",
-      "question": "How should the exception handling and thread management be corrected to ensure the system is resilient?",
+      "scenario": "A genomics research laboratory needs to cluster 750,000 gene expression profiles to identify evolutionary relationships. The researchers require a dendrogram to visualize the hierarchical taxonomy of these genes. However, when the data science team attempted to use a standard Agglomerative Hierarchical Clustering algorithm on a high-performance server, the system encountered a 'Memory Limit Exceeded' error during the construction of the distance matrix.",
+      "question": "Given the scale of the data and the requirement for a hierarchical structure, which approach provides the best trade-off between computational feasibility and the need for a taxonomy?",
       "options": [
-        "A) Catch the `TimeoutException` and call `Thread.currentThread().interrupt()` to stop the worker thread.",
-        "B) Increase the `keepAliveTime` of the `ThreadPoolExecutor` to ensure threads are recycled faster after a timeout.",
-        "C) Catch the `TimeoutException` and call `future.cancel(true)` to attempt to interrupt the worker thread, ensuring the task logic checks `Thread.interrupted()`.",
-        "D) Replace `ThreadPoolExecutor` with `ForkJoinPool` which handles `TimeoutException` automatically through work-stealing."
+        "A) Switch to Divisive (Top-Down) Hierarchical Clustering as it has lower memory requirements than Agglomerative.",
+        "B) Increase the virtual memory swap space to accommodate the O(N^2) distance matrix.",
+        "C) Use the BIRCH (Balanced Iterative Reducing and Clustering using Hierarchies) algorithm to compress data into Clustering Feature (CF) trees first.",
+        "D) Reduce the dimensionality using PCA to 2 components, then re-run the Agglomerative Clustering."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) Catch the `TimeoutException` and call `future.cancel(true)` to attempt to interrupt the worker thread, ensuring the task logic checks `Thread.interrupted()`.",
-      "explanation": "When `Future.get(timeout, unit)` times out, it throws a `TimeoutException` in the caller thread, but the task in the executor continues to run. Calling `future.cancel(true)` sends an interrupt signal to the specific thread executing that task. For this to work, the task implementation must be 'interrupt-friendly' (e.g., checking `Thread.currentThread().isInterrupted()` or handling `InterruptedException`), otherwise the thread will continue to hang, leading to resource exhaustion."
+      "correct_answer_text": "C) Use the BIRCH (Balanced Iterative Reducing and Clustering using Hierarchies) algorithm to compress data into Clustering Feature (CF) trees first.",
+      "explanation": "Standard Agglomerative Hierarchical clustering has a space complexity of O(N^2) and time complexity of O(N^2) to O(N^3), which is prohibitive for 750,000 samples. BIRCH is designed for very large datasets; it builds a compact CF Tree in a single pass. The actual hierarchical clustering can then be performed on the much smaller number of leaf nodes in the CF Tree, preserving the hierarchical intent while drastically reducing memory usage."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue in a high-throughput Reactive system using `Project Reactor` and `WebClient`. Users report that occasionally, specific requests fail silently with no logs, and the connection pool for the downstream service stays saturated until a restart.",
-      "question": "Which of the following reactive error handling patterns is likely missing or misused, causing 'silent' failures and resource leaks?",
+      "scenario": "A fintech company is building a real-time fraud detection engine. The system must assign incoming transactions (represented by 150 features including amount, location, and velocity) into one of 12 pre-defined 'risk segments' within a 10-millisecond latency window. The marketing and risk departments have already established that there are exactly 12 segments based on historical behavior. While the data is high-dimensional, the cluster centers are relatively stable over time.",
+      "question": "In this production environment with strict real-time constraints and a fixed number of clusters, why is K-Means generally preferred over DBSCAN or Hierarchical methods?",
       "options": [
-        "A) Failure to use `.subscribeOn(Schedulers.boundedElastic())`, causing the Netty event loop to block on synchronous exception mapping.",
-        "B) Misusing `.onErrorResume()` by returning `Mono.empty()`, which terminates the stream and swallows the error without triggering global `WebExceptionHandler` or logging.",
-        "C) Using `.onErrorReturn()` which causes the `HttpClient` to keep the TCP connection open for the duration of the timeout.",
-        "D) Forgetting to add `.doOnError()` as the final operator, as it is the only operator that can safely close `ByteBuf` resources."
+        "A) K-Means is theoretically more robust against the 'Curse of Dimensionality' in 150-dimensional space.",
+        "B) K-Means allows for O(K*d) inference time per transaction by simply calculating the distance to existing centroids.",
+        "C) DBSCAN's Epsilon parameter becomes mathematically undefined when dealing with more than 100 features.",
+        "D) Hierarchical clustering requires a constant re-calculation of the entire tree for every new incoming transaction."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Misusing `.onErrorResume()` by returning `Mono.empty()`, which terminates the stream and swallows the error without triggering global `WebExceptionHandler` or logging.",
-      "explanation": "In Reactive programming, `onErrorResume` is a powerful operator that switches to a fallback publisher when an error occurs. If it returns `Mono.empty()`, the error is 'swallowed'\u2014the stream completes successfully with no signal. In a distributed context, this prevents the error from propagating to the global exception handler (preventing logging) and may lead to UI or downstream services waiting for a response that will never arrive. To ensure resource cleanup and visibility, errors should be logged and, if necessary, re-thrown or mapped to a meaningful error signal using `Mono.error()`."
+      "correct_answer_text": "B) K-Means allows for O(K*d) inference time per transaction by simply calculating the distance to existing centroids.",
+      "explanation": "In a real-time production setting, 'inference' speed is critical. With K-Means, once the model is trained, assigning a new point to a cluster only requires calculating the Euclidean distance to K centroids (where K=12). This is an O(K*d) operation, which is extremely fast. In contrast, DBSCAN would require a neighborhood search (potentially O(N) without indexing) and Hierarchical methods are not designed for point-by-point real-time assignment, making K-Means the industrial standard for low-latency cluster assignment."
     }
   ]
 }
