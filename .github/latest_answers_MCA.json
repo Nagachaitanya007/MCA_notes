@@ -1,48 +1,48 @@
 {
-  "topic": "Clustering Scenarios: K-Means vs DBSCAN vs Hierarchical",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A logistics optimization firm is analyzing GPS pings from a fleet of 10,000 delivery vans to identify informal 'micro-hubs' where drivers frequently stop for breaks. The data visualization reveals that these stop patterns are not circular but elongated along major highways and coastal roads. Furthermore, the dataset is 'noisy' due to random pings from traffic lights and congestion which should not be considered hubs. Initial attempts using K-Means with K=50 resulted in clusters that cross geographical boundaries and include significant noise points.",
-      "question": "Which clustering strategy would be most effective for identifying these irregularly shaped hubs while filtering out the traffic-related noise?",
+      "scenario": "A logistics automation company is deploying autonomous mobile robots (AMRs) in a high-density 3D-stacked warehouse. To ensure safety, the engineering team modifies the A* algorithm's heuristic function by adding a 'conservative safety buffer' multiplier, resulting in the heuristic $h(n)$ consistently overestimating the actual cost to reach the charging station ($h(n) > h^*(n)$). During pilot testing, the robots are reaching their destinations, but the management observes that the paths taken are significantly longer than the theoretical shortest paths.",
+      "question": "Which fundamental property of the A* algorithm is being violated, and what is the direct consequence of this industrial implementation choice?",
       "options": [
-        "A) Apply K-Means++ with a larger K value and then merge adjacent clusters manually.",
-        "B) Utilize DBSCAN (Density-Based Spatial Clustering of Applications with Noise) by tuning Epsilon and MinPts.",
-        "C) Use Agglomerative Hierarchical Clustering with Ward's linkage to minimize intra-cluster variance.",
-        "D) Implement Expectation-Maximization (EM) clustering using Gaussian Mixture Models (GMM) to account for elongated shapes."
+        "A) Completeness; the robot may fail to find a path even if one exists.",
+        "B) Admissibility; the algorithm is no longer guaranteed to find the optimal path.",
+        "C) Optimality; the algorithm will consume exponential memory compared to a standard BFS.",
+        "D) Monotonicity; the algorithm will revisit expanded nodes, leading to an infinite loop."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Utilize DBSCAN (Density-Based Spatial Clustering of Applications with Noise) by tuning Epsilon and MinPts.",
-      "explanation": "DBSCAN is specifically designed to discover clusters of arbitrary shapes, making it ideal for the elongated structures found along highways. Unlike K-Means, which assumes spherical clusters and forces every point (including noise) into a cluster, DBSCAN uses density reachability to define clusters and labels low-density points as 'noise' (-1), effectively filtering out traffic-light pings."
+      "correct_answer_text": "B) Admissibility; the algorithm is no longer guaranteed to find the optimal path.",
+      "explanation": "A heuristic is 'admissible' if it never overestimates the cost to reach the goal. When $h(n) > h^*(n)$, the search may terminate as soon as it finds any path that looks 'good' according to the inflated heuristic, potentially ignoring the actual shortest path. While the algorithm remains complete (it will find a path), it loses the guarantee of optimality."
     },
     {
       "id": 2,
-      "scenario": "A genomics research laboratory needs to cluster 750,000 gene expression profiles to identify evolutionary relationships. The researchers require a dendrogram to visualize the hierarchical taxonomy of these genes. However, when the data science team attempted to use a standard Agglomerative Hierarchical Clustering algorithm on a high-performance server, the system encountered a 'Memory Limit Exceeded' error during the construction of the distance matrix.",
-      "question": "Given the scale of the data and the requirement for a hierarchical structure, which approach provides the best trade-off between computational feasibility and the need for a taxonomy?",
+      "scenario": "A FinTech firm is developing an automated high-frequency trading (HFT) strategy engine based on the Min-Max algorithm with Alpha-Beta pruning to anticipate adversarial market moves. Despite having high-performance compute clusters, the engine frequently fails to reach the required search depth of 12 within the 10-millisecond latency window during periods of high market volatility, leading to sub-optimal trade executions.",
+      "question": "Which optimization technique should the lead AI architect implement to maximize the efficiency of the Alpha-Beta pruning and ensure deeper search within the latency constraint?",
       "options": [
-        "A) Switch to Divisive (Top-Down) Hierarchical Clustering as it has lower memory requirements than Agglomerative.",
-        "B) Increase the virtual memory swap space to accommodate the O(N^2) distance matrix.",
-        "C) Use the BIRCH (Balanced Iterative Reducing and Clustering using Hierarchies) algorithm to compress data into Clustering Feature (CF) trees first.",
-        "D) Reduce the dimensionality using PCA to 2 components, then re-run the Agglomerative Clustering."
+        "A) Transition to a Breadth-First Search (BFS) to ensure all immediate market states are evaluated.",
+        "B) Implement Iterative Deepening with a Move-Ordering heuristic to evaluate the most promising nodes first.",
+        "C) Remove the 'Beta' bound to reduce the computational overhead of conditional branching.",
+        "D) Switch to a Greedy Best-First Search to prioritize nodes with the lowest immediate volatility."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Use the BIRCH (Balanced Iterative Reducing and Clustering using Hierarchies) algorithm to compress data into Clustering Feature (CF) trees first.",
-      "explanation": "Standard Agglomerative Hierarchical clustering has a space complexity of O(N^2) and time complexity of O(N^2) to O(N^3), which is prohibitive for 750,000 samples. BIRCH is designed for very large datasets; it builds a compact CF Tree in a single pass. The actual hierarchical clustering can then be performed on the much smaller number of leaf nodes in the CF Tree, preserving the hierarchical intent while drastically reducing memory usage."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Implement Iterative Deepening with a Move-Ordering heuristic to evaluate the most promising nodes first.",
+      "explanation": "Alpha-Beta pruning is most effective when the 'best' moves (from the perspective of the player) are evaluated first, as this allows for earlier and more frequent cut-offs of sub-optimal branches. Move-ordering, often combined with iterative deepening and transposition tables, significantly reduces the effective branching factor from $O(b^d)$ toward $O(b^{d/2})$."
     },
     {
       "id": 3,
-      "scenario": "A fintech company is building a real-time fraud detection engine. The system must assign incoming transactions (represented by 150 features including amount, location, and velocity) into one of 12 pre-defined 'risk segments' within a 10-millisecond latency window. The marketing and risk departments have already established that there are exactly 12 segments based on historical behavior. While the data is high-dimensional, the cluster centers are relatively stable over time.",
-      "question": "In this production environment with strict real-time constraints and a fixed number of clusters, why is K-Means generally preferred over DBSCAN or Hierarchical methods?",
+      "scenario": "An urban planning department is using a heuristic-based search to optimize the placement of 5G small-cell towers across a metropolitan area. The state space is characterized by high dimensionality (thousands of possible locations) and complex constraints (signal interference, power availability, and zoning laws). The current A* implementation is crashing due to 'Out-of-Memory' (OOM) errors because the Open List grows exponentially as it stores all generated but unexpanded nodes.",
+      "question": "Given the strict hardware memory constraints of the department's edge servers, which search strategy would be most appropriate to find a near-optimal solution without exhausting RAM?",
       "options": [
-        "A) K-Means is theoretically more robust against the 'Curse of Dimensionality' in 150-dimensional space.",
-        "B) K-Means allows for O(K*d) inference time per transaction by simply calculating the distance to existing centroids.",
-        "C) DBSCAN's Epsilon parameter becomes mathematically undefined when dealing with more than 100 features.",
-        "D) Hierarchical clustering requires a constant re-calculation of the entire tree for every new incoming transaction."
+        "A) Uniform Cost Search (UCS) to ensure all paths are explored based on actual cost.",
+        "B) IDA* (Iterative Deepening A*) to combine the heuristic guidance of A* with the linear space complexity of Depth-First Search.",
+        "C) Bidirectional Search to meet in the middle and reduce the search depth by half.",
+        "D) Standard Breadth-First Search (BFS) to ensure the shallowest solution is found first."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) K-Means allows for O(K*d) inference time per transaction by simply calculating the distance to existing centroids.",
-      "explanation": "In a real-time production setting, 'inference' speed is critical. With K-Means, once the model is trained, assigning a new point to a cluster only requires calculating the Euclidean distance to K centroids (where K=12). This is an O(K*d) operation, which is extremely fast. In contrast, DBSCAN would require a neighborhood search (potentially O(N) without indexing) and Hierarchical methods are not designed for point-by-point real-time assignment, making K-Means the industrial standard for low-latency cluster assignment."
+      "correct_answer_text": "B) IDA* (Iterative Deepening A*) to combine the heuristic guidance of A* with the linear space complexity of Depth-First Search.",
+      "explanation": "IDA* (Iterative Deepening A*) is designed to solve the memory limitations of A*. While A* has a space complexity of $O(b^d)$ because it stores all nodes in memory, IDA* uses a DFS-based approach with a cost-limit (f-limit) based on the heuristic, reducing space complexity to $O(d)$. This makes it ideal for high-dimensional problems where memory is the primary bottleneck."
     }
   ]
 }
