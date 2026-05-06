@@ -13,7 +13,8 @@
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
     "Resilient Retries: Exponential Backoff and Jitter",
-    "The Circuit Breaker Pattern: Preventing Cascading Failures"
+    "The Circuit Breaker Pattern: Preventing Cascading Failures",
+    "The Saga Pattern: Handling Failures via Compensating Transactions"
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections",
