@@ -59,7 +59,8 @@
     "Choosing Your Throttle: Token Bucket vs. Leaky Bucket"
   ],
   "Design a Distributed Cache (Consistent Hashing, LRU)": [
-    "Distributed Cache Design: Consistent Hashing & LRU"
+    "Distributed Cache Design: Consistent Hashing & LRU",
+    "Distributed Cache: Scaling & Data Integrity with Consistent Hashing"
   ],
   "Design a Distributed ID Generator (Snowflake ID)": [
     "Design a Distributed ID Generator (Snowflake ID)"
