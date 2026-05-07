@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
-  "mode": "Java",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `PaymentService` in a Spring Boot application is failing to roll back database changes. The code looks like this: \n\njava\n@Service\npublic class PaymentService {\n    public void process(Order order) {\n        // ... validation logic\n        saveOrder(order);\n    }\n\n    @Transactional\n    public void saveOrder(Order order) {\n        repository.save(order);\n        throw new RuntimeException(\"Simulated Failure\");\n    }\n}\n\n\nEven though `saveOrder` is marked `@Transactional`, the record is persisted in the database after the exception is thrown.",
-      "question": "What is the primary cause of this issue based on JVM-level proxy mechanics?",
+      "scenario": "A logistics giant is developing a predictive maintenance system for its fleet. The dataset contains 'Engine Temperature' and 'Oil Pressure' readings sampled every second. Analysis reveals that several sensors intermittently transmit zero values during signal drops, and 'Engine Temperature' shows a heavy right-skewed distribution due to rare overheating events. The model must be a sensitive Linear Regression variant to predict 'Time to Failure'.",
+      "question": "Which preprocessing pipeline most effectively addresses the statistical requirements of the linear model while preserving the signal of the rare overheating events?",
       "options": [
-        "A) The `RuntimeException` is not a checked exception, so Spring's `TransactionManager` ignores it.",
-        "B) Spring uses CGLIB or JDK Dynamic Proxies; because `process` calls `saveOrder` via `this`, it bypasses the proxy object, and the transaction interceptor is never invoked.",
-        "C) The JVM `ClassLoader` loaded `PaymentService` before the Spring AOP configuration was initialized, preventing bytecode enhancement.",
-        "D) The `Transactional` annotation requires the method to be `final` for the proxy to subclass it correctly."
+        "A) Apply Mean Imputation to zeros and use Z-score Normalization to scale the features.",
+        "B) Replace zeros with the Median value and apply a Logarithmic Transformation to the temperature feature.",
+        "C) Use K-Nearest Neighbors (KNN) Imputer for the zeros and apply a Box-Cox Transformation.",
+        "D) Delete records with zero values and apply Min-Max Scaling to maintain the original range."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Spring uses CGLIB or JDK Dynamic Proxies; because `process` calls `saveOrder` via `this`, it bypasses the proxy object, and the transaction interceptor is never invoked.",
-      "explanation": "Spring's declarative transaction management relies on proxies (either JDK Dynamic Proxies or CGLIB). When a bean is injected, it is actually the proxy instance. However, internal method calls (self-invocation) within the same class use the `this` reference, which points to the actual instance rather than the proxy. Consequently, the `TransactionInterceptor` logic associated with the proxy is skipped. To fix this, one must move the `@Transactional` method to a different bean or use `AopContext.currentProxy()`."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Use K-Nearest Neighbors (KNN) Imputer for the zeros and apply a Box-Cox Transformation.",
+      "explanation": "Linear Regression assumes normality of residuals and homoscedasticity. Log transformation (Option B) only works for positive values and may not fully normalize various skew types. Box-Cox is a more generalized power transform that stabilizes variance and makes data more Gaussian-like. KNN Imputation is superior to Mean/Median for time-series sensor data as it captures local correlations between sensors, whereas simple imputation would distort the variance and potentially mask the 'rare events' the model needs to learn."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a high-throughput microservice using `G1GC` on a 32GB heap is experiencing frequent `Full GC` events. Upon inspecting the GC logs, you see many entries for `Pause Full (Allocation Failure)` while the `Old Gen` occupancy is only at 40%. The `jstat` tool shows a high count of `Humongous` regions.",
-      "question": "What is the most likely cause of these premature Full GC cycles in the G1 collector?",
+      "scenario": "An E-commerce platform is building a real-time fraud detection engine. The feature 'Transaction Amount' contains extreme outliers representing legitimate high-value bulk purchases and fraudulent spikes. The system has a strict 50ms latency constraint for preprocessing. The data is high-dimensional, and traditional distance-based outlier removal is causing 'masking' effects where multiple outliers hide each other.",
+      "question": "To ensure the downstream Isolation Forest model performs optimally under these real-time constraints, how should the outliers and scaling be handled?",
       "options": [
-        "A) The `MaxGCPauseMillis` is set too low, forcing the collector to escalate to Full GC to meet the target.",
-        "B) Objects larger than 50% of the G1 region size are being allocated, leading to heap fragmentation and immediate allocation in Humongous regions which trigger concurrent cycles.",
-        "C) The `Metaspace` has reached its `MaxMetaspaceSize`, triggering a Full GC to collect class metadata.",
-        "D) The `Survivor` space is too small, causing 'Promotion Failure' where objects skip to Old Gen immediately."
+        "A) Use RobustScaler (based on IQR) to transform features and keep the outliers for the model to detect.",
+        "B) Apply a 3-Sigma filter to remove all values outside three standard deviations before scaling.",
+        "C) Implement Mahalanobis Distance filtering to identify and remove multivariate outliers in the pipeline.",
+        "D) Apply Winsorization at the 1st and 99th percentiles to cap the extreme values."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Objects larger than 50% of the G1 region size are being allocated, leading to heap fragmentation and immediate allocation in Humongous regions which trigger concurrent cycles.",
-      "explanation": "In `G1GC`, an object is considered 'Humongous' if it exceeds 50% of a single G1 region. These objects are allocated directly into the `Humongous` regions within the Old Generation. If many such objects (like large byte arrays or strings) are allocated frequently, they cause significant fragmentation and can trigger a `Full GC` even when the total heap usage appears low, as G1 struggles to find contiguous regions for these large allocations."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Use RobustScaler (based on IQR) to transform features and keep the outliers for the model to detect.",
+      "explanation": "In fraud detection, outliers are often the 'points of interest.' Removing them (B, C) or capping them (D) would remove the fraud signal. RobustScaler uses the median and the interquartile range, making it immune to the influence of outliers during the scaling process. This ensures that the scale of the 'normal' data is preserved without being squashed by extremes, which is critical for the Isolation Forest algorithm to effectively partition the anomalous points."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a legacy system intermittently hangs under high concurrency. You find a shared object being accessed by multiple threads. The code uses a `volatile boolean stopRequested` flag to stop worker threads. One thread sets `stopRequested = true`, but worker threads running tight loops continue to execute for several seconds or indefinitely on certain CPU architectures.",
-      "question": "Why might a `volatile` variable fail to stop the threads immediately in this JVM Memory Model (JMM) scenario?",
+      "scenario": "A healthcare provider is analyzing genomic data to predict patient response to a new drug. The dataset has 10,000 features but only 500 samples. Approximately 25% of the values in the 'Protein Expression' columns are missing (Missing at Random - MAR). The target variable is highly imbalanced, and the data distribution is non-linear.",
+      "question": "Which strategy minimizes the risk of introducing 'Imputation Bias' while handling the high-dimensionality of this dataset?",
       "options": [
-        "A) The JVM HotSpot compiler (JIT) may have hoisted the variable check out of the loop because it determined the value doesn't change within the thread's local scope.",
-        "B) `volatile` only ensures atomicity for 64-bit variables (long/double) and has no effect on boolean visibility.",
-        "C) The 'Happens-Before' relationship is only guaranteed if the reading thread also performs a `synchronized` block on the same monitor.",
-        "D) While `volatile` ensures visibility across threads, it does not prevent the JIT from optimizing code in a way that prevents the thread from checking the main memory periodically if the loop is considered 'counting'."
+        "A) Perform Listwise Deletion of any row containing a missing value to ensure data purity.",
+        "B) Use SimpleImputer with 'most_frequent' strategy and then apply Principal Component Analysis (PCA).",
+        "C) Use Multivariate Imputation by Chained Equations (MICE) followed by feature selection using a Tree-based model.",
+        "D) Fill missing values with '0' to represent absence and use a Linear Discriminant Analysis (LDA)."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The JVM HotSpot compiler (JIT) may have hoisted the variable check out of the loop because it determined the value doesn't change within the thread's local scope.",
-      "explanation": "This is a classic JMM visibility issue. Without the `volatile` keyword, the JIT compiler can perform 'hoisting,' where it reads the value once and caches it in a CPU register for the duration of the loop to optimize performance. While marking it `volatile` prevents this specific optimization by requiring a 'read-barrier' (ensuring the value is fetched from main memory), in extremely tight loops or complex JIT-optimized paths, developers often mistake the lack of atomicity for a lack of visibility. If the code *already* used `volatile` and still failed, it would suggest a deeper JIT optimization or architecture-specific memory barrier issue, but the primary mechanism for the 'infinite loop' is JIT hoisting."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Use Multivariate Imputation by Chained Equations (MICE) followed by feature selection using a Tree-based model.",
+      "explanation": "With a high-dimensional, low-sample-size (p >> n) dataset, simple imputation (B, D) or deletion (A) leads to significant bias and loss of critical information. MICE models each feature with missing values as a function of other features, preserving the relationships within the genomic data. Following this with tree-based feature selection (like Random Forest Importance) is better than PCA here because it maintains interpretability of which genes/proteins are responsible for the drug response, whereas PCA would create uninterpretable linear combinations."
     }
   ]
 }
