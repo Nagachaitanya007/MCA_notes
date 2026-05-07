@@ -8,7 +8,8 @@
   "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)": [
     "\ud83d\ude80 Java Concurrency & Multithreading: Virtual Threads & CompletableFuture",
     "Asynchronous Orchestration: CompletableFuture vs. Virtual Threads",
-    "The New Concurrency Paradigm: Scaling to Millions with Virtual Threads"
+    "The New Concurrency Paradigm: Scaling to Millions with Virtual Threads",
+    "Modern Concurrency Safety: Structured Concurrency & Scoped Values"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
