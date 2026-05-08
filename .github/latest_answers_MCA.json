@@ -1,48 +1,48 @@
 {
-  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A logistics giant is developing a predictive maintenance system for its fleet. The dataset contains 'Engine Temperature' and 'Oil Pressure' readings sampled every second. Analysis reveals that several sensors intermittently transmit zero values during signal drops, and 'Engine Temperature' shows a heavy right-skewed distribution due to rare overheating events. The model must be a sensitive Linear Regression variant to predict 'Time to Failure'.",
-      "question": "Which preprocessing pipeline most effectively addresses the statistical requirements of the linear model while preserving the signal of the rare overheating events?",
+      "scenario": "A large fintech corporation utilizes a Gradient Boosting Machine (GBM) to evaluate mortgage applications. To ensure ethical compliance, the data science team explicitly removed 'Gender' and 'Ethnicity' from the 500+ features in the training set. However, an internal audit reveals that the model still exhibits a statistically significant bias, rejecting applications from certain minority-dominated neighborhoods at a higher rate. The dataset includes high-dimensional features like 'Zip Code', 'Retail Spending Patterns', and 'Subscription Services'.",
+      "question": "Which specific ethical challenge is this model facing, and what is the most robust technical solution to address it without sacrificing significant predictive power?",
       "options": [
-        "A) Apply Mean Imputation to zeros and use Z-score Normalization to scale the features.",
-        "B) Replace zeros with the Median value and apply a Logarithmic Transformation to the temperature feature.",
-        "C) Use K-Nearest Neighbors (KNN) Imputer for the zeros and apply a Box-Cox Transformation.",
-        "D) Delete records with zero values and apply Min-Max Scaling to maintain the original range."
+        "A) Algorithmic Determinism; solve by implementing a human-in-the-loop validation for every rejected application.",
+        "B) Proxy Discrimination; solve by using Adversarial Debiasing to decorrelate latent features from the protected attributes.",
+        "C) Selection Bias; solve by oversampling the minority groups using SMOTE to balance the class distribution.",
+        "D) Data Sparsity; solve by applying Principal Component Analysis (PCA) to reduce the dimensionality of the zip code features."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Use K-Nearest Neighbors (KNN) Imputer for the zeros and apply a Box-Cox Transformation.",
-      "explanation": "Linear Regression assumes normality of residuals and homoscedasticity. Log transformation (Option B) only works for positive values and may not fully normalize various skew types. Box-Cox is a more generalized power transform that stabilizes variance and makes data more Gaussian-like. KNN Imputation is superior to Mean/Median for time-series sensor data as it captures local correlations between sensors, whereas simple imputation would distort the variance and potentially mask the 'rare events' the model needs to learn."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Proxy Discrimination; solve by using Adversarial Debiasing to decorrelate latent features from the protected attributes.",
+      "explanation": "Proxy discrimination occurs when non-protected features (like Zip Code or spending patterns) are highly correlated with protected attributes (like Ethnicity). Simply removing protected attributes is insufficient because the model learns the 'proxy'. Adversarial Debiasing works by training a secondary 'adversary' network that attempts to predict the protected attribute from the main model's representations; by minimizing the adversary's ability to do so, the main model learns features that are truly independent of the sensitive variable."
     },
     {
       "id": 2,
-      "scenario": "An E-commerce platform is building a real-time fraud detection engine. The feature 'Transaction Amount' contains extreme outliers representing legitimate high-value bulk purchases and fraudulent spikes. The system has a strict 50ms latency constraint for preprocessing. The data is high-dimensional, and traditional distance-based outlier removal is causing 'masking' effects where multiple outliers hide each other.",
-      "question": "To ensure the downstream Isolation Forest model performs optimally under these real-time constraints, how should the outliers and scaling be handled?",
+      "scenario": "A specialized diagnostic center employs a Deep Convolutional Neural Network (CNN) to detect pulmonary nodules in X-ray images. While the model achieves state-of-the-art accuracy, radiologists are hesitant to trust the output for critical surgeries. The center requires a solution that provides 'Local Interpretability' for each specific patient image, ensuring that the explanation is 'Axiomatically Consistent' (satisfying Sensitivity and Implementation Invariance) to meet medical regulatory standards.",
+      "question": "Which Explainable AI (XAI) technique should the team implement to provide pixel-level attributions that satisfy these specific axiomatic requirements?",
       "options": [
-        "A) Use RobustScaler (based on IQR) to transform features and keep the outliers for the model to detect.",
-        "B) Apply a 3-Sigma filter to remove all values outside three standard deviations before scaling.",
-        "C) Implement Mahalanobis Distance filtering to identify and remove multivariate outliers in the pipeline.",
-        "D) Apply Winsorization at the 1st and 99th percentiles to cap the extreme values."
+        "A) LIME (Local Interpretable Model-agnostic Explanations) using a linear surrogate model.",
+        "B) Grad-CAM (Gradient-weighted Class Activation Mapping) to visualize heatmaps of the final convolutional layer.",
+        "C) Integrated Gradients, which aggregates gradients along a path from a baseline to the input image.",
+        "D) Partial Dependence Plots (PDP) to show the marginal effect of specific pixel intensity on the prediction."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Use RobustScaler (based on IQR) to transform features and keep the outliers for the model to detect.",
-      "explanation": "In fraud detection, outliers are often the 'points of interest.' Removing them (B, C) or capping them (D) would remove the fraud signal. RobustScaler uses the median and the interquartile range, making it immune to the influence of outliers during the scaling process. This ensures that the scale of the 'normal' data is preserved without being squashed by extremes, which is critical for the Isolation Forest algorithm to effectively partition the anomalous points."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Integrated Gradients, which aggregates gradients along a path from a baseline to the input image.",
+      "explanation": "For deep neural networks, Integrated Gradients is preferred over simple gradient methods or LIME because it satisfies the 'Completeness' and 'Sensitivity' axioms. Simple gradients (Saliency) often vanish or saturate, leading to misleading interpretations. Integrated Gradients computes the integral of gradients along a straight path from a baseline (blank image) to the input, ensuring that the sum of attributions equals the difference between the prediction of the input and the baseline."
     },
     {
       "id": 3,
-      "scenario": "A healthcare provider is analyzing genomic data to predict patient response to a new drug. The dataset has 10,000 features but only 500 samples. Approximately 25% of the values in the 'Protein Expression' columns are missing (Missing at Random - MAR). The target variable is highly imbalanced, and the data distribution is non-linear.",
-      "question": "Which strategy minimizes the risk of introducing 'Imputation Bias' while handling the high-dimensionality of this dataset?",
+      "scenario": "An e-commerce platform uses a real-time recommendation engine that processes millions of events per second. The legal team expresses concern about 'Filter Bubbles' and the lack of 'Individual Fairness' (similar individuals should receive similar recommendations). The engineering team must implement a fairness constraint that can operate during the inference phase (Post-processing) because retraining the model frequently is computationally prohibitive due to the high-dimensional sparse feature space.",
+      "question": "Which Post-processing strategy is best suited to balance individual fairness and real-time performance constraints without modifying the underlying model weights?",
       "options": [
-        "A) Perform Listwise Deletion of any row containing a missing value to ensure data purity.",
-        "B) Use SimpleImputer with 'most_frequent' strategy and then apply Principal Component Analysis (PCA).",
-        "C) Use Multivariate Imputation by Chained Equations (MICE) followed by feature selection using a Tree-based model.",
-        "D) Fill missing values with '0' to represent absence and use a Linear Discriminant Analysis (LDA)."
+        "A) Reweighing the training samples to ensure the influence of different groups is equalized before the next training cycle.",
+        "B) Applying 'Equalized Odds' by adjusting the classification thresholds for different demographic groups at the prediction layer.",
+        "C) Implementing Counterfactual Explanations to tell the user what features they need to change to get a different recommendation.",
+        "D) Using a Disparate Impact Remover to transform the input features into a rank-preserved fair distribution."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Use Multivariate Imputation by Chained Equations (MICE) followed by feature selection using a Tree-based model.",
-      "explanation": "With a high-dimensional, low-sample-size (p >> n) dataset, simple imputation (B, D) or deletion (A) leads to significant bias and loss of critical information. MICE models each feature with missing values as a function of other features, preserving the relationships within the genomic data. Following this with tree-based feature selection (like Random Forest Importance) is better than PCA here because it maintains interpretability of which genes/proteins are responsible for the drug response, whereas PCA would create uninterpretable linear combinations."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Applying 'Equalized Odds' by adjusting the classification thresholds for different demographic groups at the prediction layer.",
+      "explanation": "Post-processing techniques like 'Equalized Odds' (or the Reject Option Classifier) are ideal for real-time constraints where retraining is not feasible. This method involves finding optimal threshold values for the output probabilities of different groups to ensure that the True Positive Rate and False Positive Rate are consistent across groups. This happens after the model has produced a raw score but before the final decision is served to the user, making it computationally efficient."
     }
   ]
 }

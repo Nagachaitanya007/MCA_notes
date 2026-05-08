@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
-  "mode": "Java",
+  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `HashMap` is used to cache JPA entities within a `@Transactional` Spring Service. The service performs the following logic: \n\njava\n@Transactional\npublic void syncUser(UserDTO dto) {\n    User user = new User(dto.getName()); // ID is null initially\n    Map<User, String> processingMap = new HashMap<>();\n    processingMap.put(user, \"PENDING\");\n\n    userRepository.saveAndFlush(user); // ID is generated here via Identity strategy\n\n    if (!processingMap.containsKey(user)) {\n        throw new IllegalStateException(\"User lost in map!\");\n    }\n}\n\nUsers report that the `IllegalStateException` is sporadically thrown even though the `user` object reference has not changed.",
-      "question": "What is the primary cause of this behavior?",
+      "scenario": "A large fintech corporation utilizes a Gradient Boosting Machine (GBM) to evaluate mortgage applications. To ensure ethical compliance, the data science team explicitly removed 'Gender' and 'Ethnicity' from the 500+ features in the training set. However, an internal audit reveals that the model still exhibits a statistically significant bias, rejecting applications from certain minority-dominated neighborhoods at a higher rate. The dataset includes high-dimensional features like 'Zip Code', 'Retail Spending Patterns', and 'Subscription Services'.",
+      "question": "Which specific ethical challenge is this model facing, and what is the most robust technical solution to address it without sacrificing significant predictive power?",
       "options": [
-        "A) The `HashMap` resizes during the `saveAndFlush` operation, causing a rehash of the internal buckets.",
-        "B) The `User` entity's `hashCode()` implementation relies on the database `id`. When the `id` is populated after persist, the object's hash changes, making it unreachable in its original bucket.",
-        "C) Spring's Transaction Manager creates a CGLIB proxy of the `User` entity, which overrides `equals()` to return false.",
-        "D) Hibernate's Dirty Checking mechanism replaces the `User` instance in memory with a persistent collection wrapper."
+        "A) Algorithmic Determinism; solve by implementing a human-in-the-loop validation for every rejected application.",
+        "B) Proxy Discrimination; solve by using Adversarial Debiasing to decorrelate latent features from the protected attributes.",
+        "C) Selection Bias; solve by oversampling the minority groups using SMOTE to balance the class distribution.",
+        "D) Data Sparsity; solve by applying Principal Component Analysis (PCA) to reduce the dimensionality of the zip code features."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The User entity's hashCode() implementation relies on the database id. When the id is populated after persist, the object's hash changes, making it unreachable in its original bucket.",
-      "explanation": "In Java `Collections`, the position of an object in a `HashMap` is determined by its `hashCode()` at the time of insertion. If the `User` class implements `hashCode()` using the database `id` (a common mistake), the hash changes from the default/null-based value to the generated ID value after `saveAndFlush()`. When `containsKey()` is called, the `HashMap` looks in a different bucket than where the object was originally stored, leading to a lookup failure despite it being the same object reference."
+      "correct_answer_text": "B) Proxy Discrimination; solve by using Adversarial Debiasing to decorrelate latent features from the protected attributes.",
+      "explanation": "Proxy discrimination occurs when non-protected features (like Zip Code or spending patterns) are highly correlated with protected attributes (like Ethnicity). Simply removing protected attributes is insufficient because the model learns the 'proxy'. Adversarial Debiasing works by training a secondary 'adversary' network that attempts to predict the protected attribute from the main model's representations; by minimizing the adversary's ability to do so, the main model learns features that are truly independent of the sensitive variable."
     },
     {
       "id": 2,
-      "scenario": "You are implementing a high-frequency trading system that requires a custom `Map` for ultra-low latency. You decide to use `WeakHashMap` to cache metadata related to short-lived `Transaction` objects to ensure memory is reclaimed quickly. However, you notice that even after the `Transaction` objects are no longer referenced anywhere else in the application, the heap usage continues to grow until an `OutOfMemoryError` occurs.",
-      "question": "What is the most likely reason the `WeakHashMap` is failing to reclaim memory?",
+      "scenario": "A specialized diagnostic center employs a Deep Convolutional Neural Network (CNN) to detect pulmonary nodules in X-ray images. While the model achieves state-of-the-art accuracy, radiologists are hesitant to trust the output for critical surgeries. The center requires a solution that provides 'Local Interpretability' for each specific patient image, ensuring that the explanation is 'Axiomatically Consistent' (satisfying Sensitivity and Implementation Invariance) to meet medical regulatory standards.",
+      "question": "Which Explainable AI (XAI) technique should the team implement to provide pixel-level attributions that satisfy these specific axiomatic requirements?",
       "options": [
-        "A) The `WeakReference` objects within the map are being promoted to the Old Generation, where the GC collects them less frequently.",
-        "B) The values in the `WeakHashMap` have a strong reference back to the keys, preventing the `WeakReference` from ever being cleared.",
-        "C) `WeakHashMap` requires an explicit call to `System.gc()` to trigger the cleanup of its internal `Entry` array.",
-        "D) The `Transaction` objects are being cached by the JVM's `String.intern()` pool internally."
+        "A) LIME (Local Interpretable Model-agnostic Explanations) using a linear surrogate model.",
+        "B) Grad-CAM (Gradient-weighted Class Activation Mapping) to visualize heatmaps of the final convolutional layer.",
+        "C) Integrated Gradients, which aggregates gradients along a path from a baseline to the input image.",
+        "D) Partial Dependence Plots (PDP) to show the marginal effect of specific pixel intensity on the prediction."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The values in the WeakHashMap have a strong reference back to the keys, preventing the WeakReference from ever being cleared.",
-      "explanation": "In a `WeakHashMap`, the keys are held via `WeakReference`, but the values are held via strong references. If the value object contains a reference back to the key object (directly or indirectly), a strong reference chain exists: `Map -> Value -> Key`. This prevents the Garbage Collector from reclaiming the key, which in turn prevents the `Entry` from being added to the `ReferenceQueue` for cleanup by the map's internal logic."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Integrated Gradients, which aggregates gradients along a path from a baseline to the input image.",
+      "explanation": "For deep neural networks, Integrated Gradients is preferred over simple gradient methods or LIME because it satisfies the 'Completeness' and 'Sensitivity' axioms. Simple gradients (Saliency) often vanish or saturate, leading to misleading interpretations. Integrated Gradients computes the integral of gradients along a straight path from a baseline (blank image) to the input, ensuring that the sum of attributions equals the difference between the prediction of the input and the baseline."
     },
     {
       "id": 3,
-      "scenario": "In a Spring Boot application, you have a shared `ConcurrentHashMap` used to aggregate statistics across multiple threads. You are using the `computeIfAbsent` method to ensure atomicity. During a performance audit, you notice significant thread contention and 'stuck' threads even though the map keys are highly distributed.",
-      "question": "Which scenario involving `ConcurrentHashMap.computeIfAbsent` is known to cause such performance degradation or deadlocks?",
+      "scenario": "An e-commerce platform uses a real-time recommendation engine that processes millions of events per second. The legal team expresses concern about 'Filter Bubbles' and the lack of 'Individual Fairness' (similar individuals should receive similar recommendations). The engineering team must implement a fairness constraint that can operate during the inference phase (Post-processing) because retraining the model frequently is computationally prohibitive due to the high-dimensional sparse feature space.",
+      "question": "Which Post-processing strategy is best suited to balance individual fairness and real-time performance constraints without modifying the underlying model weights?",
       "options": [
-        "A) The mapping function performs a long-running computation, which locks the entire `ConcurrentHashMap` segment.",
-        "B) The mapping function attempts to modify the same `ConcurrentHashMap` by calling another `computeIfAbsent` on a different key.",
-        "C) The `ConcurrentHashMap` has reached its `loadFactor` and is triggering a `transfer()` operation on all buckets simultaneously.",
-        "D) Multiple threads are accessing the same bucket, and the `ConcurrentHashMap` has not yet converted the bin from a `LinkedList` to a `TreeNode`."
+        "A) Reweighing the training samples to ensure the influence of different groups is equalized before the next training cycle.",
+        "B) Applying 'Equalized Odds' by adjusting the classification thresholds for different demographic groups at the prediction layer.",
+        "C) Implementing Counterfactual Explanations to tell the user what features they need to change to get a different recommendation.",
+        "D) Using a Disparate Impact Remover to transform the input features into a rank-preserved fair distribution."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The mapping function attempts to modify the same ConcurrentHashMap by calling another computeIfAbsent on a different key.",
-      "explanation": "While `ConcurrentHashMap` allows concurrent reads and updates to different buckets, the `computeIfAbsent` method performs a synchronized operation on a per-node/bucket basis. If the mapping function provided to `computeIfAbsent` recursively attempts to modify the same map, it can lead to a deadlock (in Java 8) or unexpected blocking behavior (in Java 9+), as the implementation is not designed to handle recursive updates during the computation phase of a single bin."
+      "correct_answer_text": "B) Applying 'Equalized Odds' by adjusting the classification thresholds for different demographic groups at the prediction layer.",
+      "explanation": "Post-processing techniques like 'Equalized Odds' (or the Reject Option Classifier) are ideal for real-time constraints where retraining is not feasible. This method involves finding optimal threshold values for the output probabilities of different groups to ensure that the True Positive Rate and False Positive Rate are consistent across groups. This happens after the model has produced a raw score but before the final decision is served to the user, making it computationally efficient."
     }
   ]
 }
