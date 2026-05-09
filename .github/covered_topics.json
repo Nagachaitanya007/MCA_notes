@@ -48,7 +48,8 @@
     "The CAP Theorem: Navigating the Trade-off Between AP and CP"
   ],
   "Design a Scalable File Storage System (S3 Internals, CDN)": [
-    "Distributed Object Storage & Global Delivery Architecture"
+    "Distributed Object Storage & Global Delivery Architecture",
+    "S3 Metadata Management & Data Durability: The Brain and Body of Storage"
   ],
   "Database Sharding & Replication Strategies": [
     "Horizontal Sharding: Scaling Out Your Data"
