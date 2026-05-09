@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
-  "mode": "Java",
+  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `@Service` method marked with `@Transactional` initiates an asynchronous task: `CompletableFuture.runAsync(() -> auditService.logAction(data))`. Even though `auditService.logAction` is also marked with `@Transactional(propagation = Propagation.REQUIRES_NEW)`, you notice that the audit logs are missing when the primary transaction rolls back, and occasionally, the `SecurityContextHolder` returns null inside the async thread.",
-      "question": "What is the primary architectural reason for this behavior?",
+      "scenario": "A multinational pharmaceutical company is developing a clinical decision support system using Web Ontology Language (OWL). The ontology contains over 500,000 classes and complex roles representing drug-drug interactions. During real-time emergency department integration, the Pellete/HermiT reasoners are taking several minutes to perform consistency checks and class realization, causing critical delays in patient care. The data is highly interconnected, and the expressivity of the current ontology is SHOIN(D).",
+      "question": "To satisfy the real-time constraint of sub-second response times without losing the ability to compute class hierarchies, which strategy is most appropriate?",
       "options": [
-        "A) Spring's `@Transactional` proxy uses a `ThreadLocal` based `TransactionContext` which does not propagate to the `ForkJoinPool.commonPool()` used by `CompletableFuture`.",
-        "B) The `CompletableFuture` is executing before the Spring Proxy can wrap the `auditService` call, bypassing the transaction interceptor.",
-        "C) The default `TaskExecutor` in Spring is not configured to handle `Virtual Threads`, causing a context leak.",
-        "D) `Propagation.REQUIRES_NEW` is ignored when the caller is not the owner of the `ThreadLocal` storage."
+        "A) Migrating the ontology from SHOIN(D) to a more restricted profile like OWL 2 EL.",
+        "B) Switching to a First-Order Logic (FOL) resolution refutation engine to handle the scale.",
+        "C) Implementing a graph-based Breadth-First Search (BFS) on the existing OWL triples.",
+        "D) Increasing the hardware memory and employing a distributed MapReduce-based reasoner."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Spring's `@Transactional` proxy uses a `ThreadLocal` based `TransactionContext` which does not propagate to the `ForkJoinPool.commonPool()` used by `CompletableFuture`.",
-      "explanation": "In Spring, both `TransactionManagement` and `SecurityContext` are heavily reliant on `ThreadLocal` variables. When you use `CompletableFuture.runAsync()` without providing a specific `Executor`, it runs in the `ForkJoinPool.commonPool()`. This pool does not inherit the `ThreadLocal` state of the parent thread. Consequently, the async task runs outside the original transaction and lacks the security context. To fix this, one must use a `DelegatingSecurityContextExecutor` or a custom `TaskExecutor` that handles context propagation."
+      "correct_answer_text": "A) Migrating the ontology from SHOIN(D) to a more restricted profile like OWL 2 EL.",
+      "explanation": "OWL 2 EL is specifically designed for large-scale ontologies with many classes. It restricts expressivity (disallowing disjunction and universal quantification) to ensure that reasoning tasks like subsumption can be performed in polynomial time, unlike the exponential complexity associated with SHOIN(D)."
     },
     {
       "id": 2,
-      "scenario": "Bug Hunter: You are reviewing code for a high-throughput gateway migrated to Java 21. Users report that under heavy load, the application becomes unresponsive and CPU usage spikes, even though Virtual Threads are used. You find the following snippet:\n\njava\npublic void processRequest(Request req) {\n    Thread.startVirtualThread(() -> {\n        synchronized (this.lock) {\n            String metadata = cache.get(req.id());\n            if (metadata == null) {\n                metadata = dbClient.fetchBlocking(req.id()); // JDBC call\n                cache.put(req.id(), metadata);\n            }\n        }\n    });\n}\n",
-      "question": "What is the subtle flaw in this snippet that causes the performance degradation?",
+      "scenario": "An e-commerce giant uses a massive Semantic Network to model consumer behavior and product relationships. The data is highly skewed, with certain 'hub' nodes (like 'Electronics') having millions of edges while niche categories have very few. When calculating product recommendations using spreading activation, the system frequently suffers from 'semantic drift' and memory overflows as the activation spreads too far from the source node in the high-dimensional graph.",
+      "question": "Which algorithmic adjustment would best mitigate the memory overflow and the semantic drift issue caused by the skewed distribution?",
       "options": [
-        "A) `synchronized` blocks are not permitted inside Virtual Threads and throw an `IllegalThreadStateException`.",
-        "B) The `dbClient.fetchBlocking` call triggers 'Pinning', where the Virtual Thread cannot be unmounted from the Carrier Thread (Platform Thread) because it is inside a `synchronized` block.",
-        "C) Virtual Threads cannot access objects shared across Platform Threads, causing a memory visibility fault.",
-        "D) `Thread.startVirtualThread` is deprecated in favor of `Executors.newVirtualThreadPerTaskExecutor()` for blocking JDBC calls."
+        "A) Implementing an unweighted depth-first traversal with a fixed depth of 5.",
+        "B) Applying an activation decay factor and a hard threshold for node firing.",
+        "C) Materializing all transitive relations into a relational database table.",
+        "D) Replacing the Semantic Net with a strictly hierarchical taxonomy (Is-A only)."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `dbClient.fetchBlocking` call triggers 'Pinning', where the Virtual Thread cannot be unmounted from the Carrier Thread (Platform Thread) because it is inside a `synchronized` block.",
-      "explanation": "In Java 21, when a Virtual Thread executes a blocking operation (like I/O) while inside a `synchronized` block or calling a `native` method, it 'pins' the carrier thread (the underlying Platform Thread). This prevents the JVM from unmounting the virtual thread and using the carrier thread for other tasks. In a high-concurrency scenario, this leads to Carrier Thread exhaustion, effectively turning your Virtual Threading model back into a limited Platform Threading model, causing starvation and latency."
+      "correct_answer_text": "B) Applying an activation decay factor and a hard threshold for node firing.",
+      "explanation": "Spreading activation in a skewed semantic net can lead to the 'fan-out' problem. An activation decay factor reduces the strength of the signal as it moves away from the source, and a hard threshold prevents weakly associated nodes from firing, effectively pruning the search space and preventing memory overflow."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue involving a complex data pipeline. The code uses `CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).join()`. You observe that when one of the futures in the list fails with a `RuntimeException`, the application continues as if everything succeeded, but with empty data fields.",
-      "question": "Why does `CompletableFuture.allOf(...).join()` fail to propagate the specific exception of the failed task?",
+      "scenario": "A smart factory uses a First-Order Logic (FOL) engine to verify robotic safety protocols. As the number of sensors (high-dimensional input) increases, the resolution-based inference engine fails to provide a 'Safe/Unsafe' verdict within the required 10ms cycle time of the robotic arms. The current rules involve complex nested quantifiers and negations to describe every possible collision state.",
+      "question": "What is the most effective logical trade-off to ensure the system meets its real-time industrial safety constraints?",
       "options": [
-        "A) `allOf` returns a `CompletableFuture<Void>` which only completes normally if all futures complete; if one fails, `join()` throws a `CompletionException` wrapping the first exception.",
-        "B) `join()` is non-blocking when used with `allOf`, requiring a subsequent call to `get()` to check for internal exceptions.",
-        "C) The question premise is incorrect; `join()` always throws the exception, but the developer likely ignored the result of the individual futures within the list after `join()` returned.",
-        "D) `allOf` suppresses exceptions to ensure that slow-running 'sister' threads are not interrupted prematurely."
+        "A) Utilizing a Closed World Assumption (CWA) and switching to a Propositional Logic framework.",
+        "B) Converting the knowledge base into Horn Clauses and using a Forward Chaining algorithm.",
+        "C) Moving the inference engine to a GPGPU-accelerated Resolution Refutation module.",
+        "D) Applying a fuzzy logic wrapper to handle the uncertainty of sensor noise."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The question premise is incorrect; `join()` always throws the exception, but the developer likely ignored the result of the individual futures within the list after `join()` returned.",
-      "explanation": "While `CompletableFuture.allOf(...).join()` will indeed throw a `CompletionException` if any of the underlying futures fail, a common mistake in production is to catch that exception at a high level or assume `allOf` aggregates results. `allOf` returns `Void`. Even if `join()` completes (either normally or after being caught), the developer must still inspect each individual future in the original list (e.g., using `future.isCompletedExceptionally()`) to retrieve results or handle specific errors. If the code simply proceeds to collect results from the list without checking state, it will encounter 'empty' or 'null' data."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Converting the knowledge base into Horn Clauses and using a Forward Chaining algorithm.",
+      "explanation": "General FOL is semi-decidable and computationally expensive. By restricting the logic to Horn Clauses (disjunctions with at most one positive literal), the inference becomes much more efficient. Forward chaining on Horn Clauses can be implemented in linear time relative to the size of the knowledge base, making it suitable for real-time industrial applications."
     }
   ]
 }
