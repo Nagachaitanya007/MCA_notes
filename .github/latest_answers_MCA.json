@@ -1,48 +1,48 @@
 {
-  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A multinational pharmaceutical company is developing a clinical decision support system using Web Ontology Language (OWL). The ontology contains over 500,000 classes and complex roles representing drug-drug interactions. During real-time emergency department integration, the Pellete/HermiT reasoners are taking several minutes to perform consistency checks and class realization, causing critical delays in patient care. The data is highly interconnected, and the expressivity of the current ontology is SHOIN(D).",
-      "question": "To satisfy the real-time constraint of sub-second response times without losing the ability to compute class hierarchies, which strategy is most appropriate?",
+      "scenario": "A global logistics firm is deploying autonomous warehouse robots that utilize A* search for pathfinding. The environment is a 2D grid with static obstacles. The current implementation uses the Manhattan distance as a heuristic h(n). However, engineers observe that while the paths are valid, the robots frequently take 'zig-zag' routes that are longer than the straight-line distance, leading to inefficient battery consumption in open floor sections. The system requires optimal paths with the least number of nodes expanded in a high-concurrency environment.",
+      "question": "Which adjustment to the heuristic or algorithm would best resolve the sub-optimal pathing while maintaining the admissibility required for A*?",
       "options": [
-        "A) Migrating the ontology from SHOIN(D) to a more restricted profile like OWL 2 EL.",
-        "B) Switching to a First-Order Logic (FOL) resolution refutation engine to handle the scale.",
-        "C) Implementing a graph-based Breadth-First Search (BFS) on the existing OWL triples.",
-        "D) Increasing the hardware memory and employing a distributed MapReduce-based reasoner."
+        "A) Switch the heuristic to Euclidean distance to provide a more accurate lower bound on the actual path length in a 2D space.",
+        "B) Multiply the Manhattan distance by a weight (w > 1) to create an 'Epsilon-Admissible' search for faster convergence.",
+        "C) Implement Dijkstra\u2019s algorithm instead to ensure that the search is not biased by a potentially misleading heuristic.",
+        "D) Increase the edge cost of diagonal movements to infinity to force the robot to follow the grid-aligned Manhattan paths strictly."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Migrating the ontology from SHOIN(D) to a more restricted profile like OWL 2 EL.",
-      "explanation": "OWL 2 EL is specifically designed for large-scale ontologies with many classes. It restricts expressivity (disallowing disjunction and universal quantification) to ensure that reasoning tasks like subsumption can be performed in polynomial time, unlike the exponential complexity associated with SHOIN(D)."
+      "correct_answer_text": "A) Switch the heuristic to Euclidean distance to provide a more accurate lower bound on the actual path length in a 2D space.",
+      "explanation": "In a 2D grid where movement isn't strictly restricted to 4-cardinal directions (or where straight lines are physically possible), Euclidean distance (L2 norm) provides a tighter, yet still admissible, lower bound compared to Manhattan distance (L1 norm). Manhattan distance often overestimates the cost if diagonal or 'true' straight-line movement is possible, or it creates a 'tie-breaking' issue where many paths have the same cost, leading to the zig-zag behavior. Euclidean distance helps the algorithm prioritize nodes that lie closer to the direct line of sight to the goal."
     },
     {
       "id": 2,
-      "scenario": "An e-commerce giant uses a massive Semantic Network to model consumer behavior and product relationships. The data is highly skewed, with certain 'hub' nodes (like 'Electronics') having millions of edges while niche categories have very few. When calculating product recommendations using spreading activation, the system frequently suffers from 'semantic drift' and memory overflows as the activation spreads too far from the source node in the high-dimensional graph.",
-      "question": "Which algorithmic adjustment would best mitigate the memory overflow and the semantic drift issue caused by the skewed distribution?",
+      "scenario": "A financial technology company uses a Min-Max search tree with Alpha-Beta pruning to simulate market 'adversary' movements for high-frequency trading risk assessment. During high-volatility periods, the search depth must be limited to meet a 10ms response time. Developers notice that despite Alpha-Beta pruning, the number of nodes pruned is inconsistent, often reverting to near-standard Min-Max performance, causing the system to miss the latency window.",
+      "question": "In this real-time constraint scenario, what is the most likely reason for the failure of Alpha-Beta pruning to significantly reduce the search space?",
       "options": [
-        "A) Implementing an unweighted depth-first traversal with a fixed depth of 5.",
-        "B) Applying an activation decay factor and a hard threshold for node firing.",
-        "C) Materializing all transitive relations into a relational database table.",
-        "D) Replacing the Semantic Net with a strictly hierarchical taxonomy (Is-A only)."
+        "A) The branching factor of the market state tree is too low for pruning to be mathematically effective.",
+        "B) The 'Horizon Effect' is causing the algorithm to evaluate nodes that are irrelevant to the current market state.",
+        "C) The moves are being evaluated in a suboptimal order, where the best moves are explored last in the search tree.",
+        "D) Alpha-Beta pruning is only effective in zero-sum games, and market dynamics are inherently non-zero-sum."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Applying an activation decay factor and a hard threshold for node firing.",
-      "explanation": "Spreading activation in a skewed semantic net can lead to the 'fan-out' problem. An activation decay factor reduces the strength of the signal as it moves away from the source, and a hard threshold prevents weakly associated nodes from firing, effectively pruning the search space and preventing memory overflow."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) The moves are being evaluated in a suboptimal order, where the best moves are explored last in the search tree.",
+      "explanation": "The efficiency of Alpha-Beta pruning is highly dependent on 'Move Ordering'. In the worst-case scenario, where moves are ordered such that the best moves (those that would cause a cutoff) are evaluated last, Alpha-Beta pruning performs no better than a standard Min-Max search (O(b^d)). To optimize this for real-time constraints, the company should implement move-ordering heuristics or iterative deepening to ensure high-quality branches are pruned early."
     },
     {
       "id": 3,
-      "scenario": "A smart factory uses a First-Order Logic (FOL) engine to verify robotic safety protocols. As the number of sensors (high-dimensional input) increases, the resolution-based inference engine fails to provide a 'Safe/Unsafe' verdict within the required 10ms cycle time of the robotic arms. The current rules involve complex nested quantifiers and negations to describe every possible collision state.",
-      "question": "What is the most effective logical trade-off to ensure the system meets its real-time industrial safety constraints?",
+      "scenario": "A pharmaceutical research lab is using a heuristic-driven search to navigate a high-dimensional chemical property space for molecular docking. The state space is massive and the branching factor is high. The current Best-First Search implementation quickly exhausts the 256GB system RAM because it maintains all generated nodes in the OPEN list, even those with poor heuristic scores, before it can find a goal state.",
+      "question": "Which search strategy should be implemented to handle this high-dimensional search space while operating within strict memory constraints?",
       "options": [
-        "A) Utilizing a Closed World Assumption (CWA) and switching to a Propositional Logic framework.",
-        "B) Converting the knowledge base into Horn Clauses and using a Forward Chaining algorithm.",
-        "C) Moving the inference engine to a GPGPU-accelerated Resolution Refutation module.",
-        "D) Applying a fuzzy logic wrapper to handle the uncertainty of sensor noise."
+        "A) Uniform Cost Search (UCS), as it guarantees optimality by expanding the lowest-cost nodes first.",
+        "B) Iterative Deepening A* (IDA*), as it combines the space-efficiency of Depth-First Search with the optimality of A*.",
+        "C) Breadth-First Search (BFS), because it is guaranteed to find the shallowest goal in a high-dimensional space.",
+        "D) Greedy Best-First Search, to minimize the time taken to find any solution, regardless of memory consumption."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Converting the knowledge base into Horn Clauses and using a Forward Chaining algorithm.",
-      "explanation": "General FOL is semi-decidable and computationally expensive. By restricting the logic to Horn Clauses (disjunctions with at most one positive literal), the inference becomes much more efficient. Forward chaining on Horn Clauses can be implemented in linear time relative to the size of the knowledge base, making it suitable for real-time industrial applications."
+      "correct_answer_text": "B) Iterative Deepening A* (IDA*), as it combines the space-efficiency of Depth-First Search with the optimality of A*.",
+      "explanation": "Standard A* and Best-First Search have a memory complexity of O(b^d) because they store all nodes in the OPEN/CLOSED lists. In high-dimensional spaces like molecular docking, this leads to memory exhaustion. IDA* solves this by using a depth-first approach with a heuristic-based 'f-limit'. It only requires O(d) memory, where d is the depth of the search, making it suitable for memory-constrained environments while still being optimal and complete if the heuristic is admissible."
     }
   ]
 }

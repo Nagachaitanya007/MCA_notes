@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
-  "mode": "Java",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot microservice is experiencing gradual heap exhaustion and eventual `OutOfMemoryError: Java heap space`. The service processes batch requests using a `FixedThreadPool` and sets custom metadata in a `ThreadLocal` variable for logging. You find this code snippet in a `Service` class:\n\njava\n@Service\npublic class RequestProcessor {\n    private static final ThreadLocal<UserContext> contextHolder = new ThreadLocal<>();\n\n    public void process(Request request) {\n        contextHolder.set(new UserContext(request.getHeaders()));\n        try {\n            validate(request);\n            enrich(request);\n            save(request);\n        } finally {\n            // Context cleanup intended here\n            if (request.isAsync()) {\n                return; \n            }\n            contextHolder.remove();\n        }\n    }\n}\n",
-      "question": "What is the primary cause of the memory leak in this scenario?",
+      "scenario": "A global logistics firm is deploying autonomous warehouse robots that utilize A* search for pathfinding. The environment is a 2D grid with static obstacles. The current implementation uses the Manhattan distance as a heuristic h(n). However, engineers observe that while the paths are valid, the robots frequently take 'zig-zag' routes that are longer than the straight-line distance, leading to inefficient battery consumption in open floor sections. The system requires optimal paths with the least number of nodes expanded in a high-concurrency environment.",
+      "question": "Which adjustment to the heuristic or algorithm would best resolve the sub-optimal pathing while maintaining the admissibility required for A*?",
       "options": [
-        "A) The `UserContext` objects are being promoted to the Old Generation too quickly due to the `FixedThreadPool` size.",
-        "B) For asynchronous requests, the `ThreadLocal` value is never removed, causing `UserContext` instances to persist in the worker threads indefinitely.",
-        "C) The `ThreadLocal` variable is declared `static`, which prevents the `ClassLoader` from reclaiming the `UserContext` instances.",
-        "D) Spring's `@Service` proxy creates a circular reference between the `ThreadLocal` and the `AOP` interceptor."
+        "A) Switch the heuristic to Euclidean distance to provide a more accurate lower bound on the actual path length in a 2D space.",
+        "B) Multiply the Manhattan distance by a weight (w > 1) to create an 'Epsilon-Admissible' search for faster convergence.",
+        "C) Implement Dijkstra\u2019s algorithm instead to ensure that the search is not biased by a potentially misleading heuristic.",
+        "D) Increase the edge cost of diagonal movements to infinity to force the robot to follow the grid-aligned Manhattan paths strictly."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) For asynchronous requests, the `ThreadLocal` value is never removed, causing `UserContext` instances to persist in the worker threads indefinitely.",
-      "explanation": "In Java, `ThreadLocal` variables are stored within the `Thread` object itself. When using a thread pool (like `FixedThreadPool`), threads are reused. If `contextHolder.remove()` is skipped (as it is here for async requests), the `UserContext` object remains tied to the thread. Even after the request finishes, the `Thread` persists in the pool, preventing GC from reclaiming the `UserContext` and any large objects it references, leading to a memory leak."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Switch the heuristic to Euclidean distance to provide a more accurate lower bound on the actual path length in a 2D space.",
+      "explanation": "In a 2D grid where movement isn't strictly restricted to 4-cardinal directions (or where straight lines are physically possible), Euclidean distance (L2 norm) provides a tighter, yet still admissible, lower bound compared to Manhattan distance (L1 norm). Manhattan distance often overestimates the cost if diagonal or 'true' straight-line movement is possible, or it creates a 'tie-breaking' issue where many paths have the same cost, leading to the zig-zag behavior. Euclidean distance helps the algorithm prioritize nodes that lie closer to the direct line of sight to the goal."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a Java application using the `G1 Garbage Collector` shows frequent 'Full GC' events despite the total heap usage being well below the `-Xmx` limit. The logs indicate frequent `Humongous Allocation` messages. The application processes large `byte[]` payloads ranging from 2MB to 5MB. The current JVM flags are: `-Xms16G -Xmx16G -XX:+UseG1GC`.",
-      "question": "Which tuning action is most likely to resolve the frequent Full GC cycles?",
+      "scenario": "A financial technology company uses a Min-Max search tree with Alpha-Beta pruning to simulate market 'adversary' movements for high-frequency trading risk assessment. During high-volatility periods, the search depth must be limited to meet a 10ms response time. Developers notice that despite Alpha-Beta pruning, the number of nodes pruned is inconsistent, often reverting to near-standard Min-Max performance, causing the system to miss the latency window.",
+      "question": "In this real-time constraint scenario, what is the most likely reason for the failure of Alpha-Beta pruning to significantly reduce the search space?",
       "options": [
-        "A) Increase the `-XX:MaxTenuringThreshold` to keep objects in the Survivor space longer.",
-        "B) Decrease the `-XX:InitiatingHeapOccupancyPercent` to trigger concurrent cycles earlier.",
-        "C) Increase the `-XX:G1HeapRegionSize` to a value like `8M` or `16M`.",
-        "D) Switch to the `ParallelGC` to handle large arrays more efficiently through compacting."
+        "A) The branching factor of the market state tree is too low for pruning to be mathematically effective.",
+        "B) The 'Horizon Effect' is causing the algorithm to evaluate nodes that are irrelevant to the current market state.",
+        "C) The moves are being evaluated in a suboptimal order, where the best moves are explored last in the search tree.",
+        "D) Alpha-Beta pruning is only effective in zero-sum games, and market dynamics are inherently non-zero-sum."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) Increase the `-XX:G1HeapRegionSize` to a value like `8M` or `16M`.",
-      "explanation": "In `G1GC`, an object is considered 'Humongous' if it exceeds 50% of the `G1 Region Size`. Humongous objects are allocated directly in the Old Generation in a contiguous set of regions. This often leads to premature heap fragmentation and triggers Full GC cycles because the collector cannot find enough contiguous regions. By increasing `-XX:G1HeapRegionSize` (the default is calculated based on heap size, usually 1MB to 4MB for a 16GB heap), these 2MB-5MB objects stop being classified as humongous or fit more easily into single regions, reducing fragmentation."
+      "correct_answer_text": "C) The moves are being evaluated in a suboptimal order, where the best moves are explored last in the search tree.",
+      "explanation": "The efficiency of Alpha-Beta pruning is highly dependent on 'Move Ordering'. In the worst-case scenario, where moves are ordered such that the best moves (those that would cause a cutoff) are evaluated last, Alpha-Beta pruning performs no better than a standard Min-Max search (O(b^d)). To optimize this for real-time constraints, the company should implement move-ordering heuristics or iterative deepening to ensure high-quality branches are pruned early."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue in a Spring Cloud application where memory usage spikes significantly during heavy database write operations. You observe that `Hibernate` is holding a massive number of entities in memory. The service method is defined as follows:\n\njava\n@Transactional\npublic void updateMassiveData(List<Long> ids) {\n    ids.forEach(id -> {\n        Entity e = repository.findById(id).orElseThrow();\n        e.setStatus(\"PROCESSED\");\n        repository.save(e);\n    });\n    // Method continues to perform a long-running external API call\n    remoteClient.callExternalSystem();\n}\n",
-      "question": "Why does memory usage remain high during the `remoteClient.callExternalSystem()` call?",
+      "scenario": "A pharmaceutical research lab is using a heuristic-driven search to navigate a high-dimensional chemical property space for molecular docking. The state space is massive and the branching factor is high. The current Best-First Search implementation quickly exhausts the 256GB system RAM because it maintains all generated nodes in the OPEN list, even those with poor heuristic scores, before it can find a goal state.",
+      "question": "Which search strategy should be implemented to handle this high-dimensional search space while operating within strict memory constraints?",
       "options": [
-        "A) The Spring `TransactionManager` caches all `save` calls in a local `List` before flushing.",
-        "B) The `PersistenceContext` (L1 Cache) keeps all managed entities in memory until the transaction completes after the external API call.",
-        "C) The entities are being stored in the JVM `Metaspace` because they are marked as 'PROCESSED'.",
-        "D) The `findById` method creates a new `Proxy` for every iteration, which is not eligible for GC until the method returns."
+        "A) Uniform Cost Search (UCS), as it guarantees optimality by expanding the lowest-cost nodes first.",
+        "B) Iterative Deepening A* (IDA*), as it combines the space-efficiency of Depth-First Search with the optimality of A*.",
+        "C) Breadth-First Search (BFS), because it is guaranteed to find the shallowest goal in a high-dimensional space.",
+        "D) Greedy Best-First Search, to minimize the time taken to find any solution, regardless of memory consumption."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `PersistenceContext` (L1 Cache) keeps all managed entities in memory until the transaction completes after the external API call.",
-      "explanation": "In Spring's `@Transactional` scope, the Hibernate `Session` (and its Level 1 Cache) stays open for the duration of the method. Every entity loaded via `findById` becomes 'managed' and is stored in the `PersistenceContext`. These entities cannot be garbage collected as long as the `Session` is alive. Because the transaction spans the long-running `remoteClient.callExternalSystem()`, all entities processed in the loop stay in memory, causing a memory spike. The solution is to use `EntityManager.clear()` or reduce the transaction scope."
+      "correct_answer_text": "B) Iterative Deepening A* (IDA*), as it combines the space-efficiency of Depth-First Search with the optimality of A*.",
+      "explanation": "Standard A* and Best-First Search have a memory complexity of O(b^d) because they store all nodes in the OPEN/CLOSED lists. In high-dimensional spaces like molecular docking, this leads to memory exhaustion. IDA* solves this by using a depth-first approach with a heuristic-based 'f-limit'. It only requires O(d) memory, where d is the depth of the search, making it suitable for memory-constrained environments while still being optimal and complete if the heuristic is admissible."
     }
   ]
 }
