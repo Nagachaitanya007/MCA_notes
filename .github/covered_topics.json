@@ -53,7 +53,8 @@
     "S3 Metadata Management & Data Durability: The Brain and Body of Storage"
   ],
   "Database Sharding & Replication Strategies": [
-    "Horizontal Sharding: Scaling Out Your Data"
+    "Horizontal Sharding: Scaling Out Your Data",
+    "Database Scaling Strategies: Sharding Architectures & Replication Models"
   ],
   "Design a Notification System (Kafka + SQS + Webhooks)": [
     "Designing a Scalable Notification System (Kafka + SQS + Webhooks)"
