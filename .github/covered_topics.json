@@ -22,7 +22,8 @@
     "The LRU Cache: Mastering Custom Hybrid Collections",
     "The ConcurrentHashMap: Mastering Lock Striping & Non-Blocking Scalability",
     "The Binary Heap: Mastering Custom Priority Logic",
-    "The Ring Buffer: Mastering Circular Memory & Zero-Allocation Queues"
+    "The Ring Buffer: Mastering Circular Memory & Zero-Allocation Queues",
+    "The Trie (Prefix Tree): Mastering High-Performance String Searching"
   ],
   "JVM Internals (Memory Model, G1/ZGC, Class Loading)": [
     "JVM Internals: The Lifecycle of a Java Object",
