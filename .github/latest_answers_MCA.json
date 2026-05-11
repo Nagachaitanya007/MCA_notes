@@ -1,48 +1,48 @@
 {
-  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A global logistics firm is deploying autonomous warehouse robots that utilize A* search for pathfinding. The environment is a 2D grid with static obstacles. The current implementation uses the Manhattan distance as a heuristic h(n). However, engineers observe that while the paths are valid, the robots frequently take 'zig-zag' routes that are longer than the straight-line distance, leading to inefficient battery consumption in open floor sections. The system requires optimal paths with the least number of nodes expanded in a high-concurrency environment.",
-      "question": "Which adjustment to the heuristic or algorithm would best resolve the sub-optimal pathing while maintaining the admissibility required for A*?",
+      "scenario": "A global logistics firm is deploying a multilingual Transformer-based model to categorize shipping manifests containing a mix of technical jargon, alphanumeric serial codes, and diverse languages (German, Mandarin, and Arabic). During initial testing, the engineering team observes that the model frequently generates '[UNK]' tokens for rare chemical names and fails to capture the semantic relationship between compound words in German, leading to poor classification accuracy.",
+      "question": "Which tokenization strategy would be most effective to mitigate these issues while maintaining a manageable vocabulary size and ensuring morphological integrity?",
       "options": [
-        "A) Switch the heuristic to Euclidean distance to provide a more accurate lower bound on the actual path length in a 2D space.",
-        "B) Multiply the Manhattan distance by a weight (w > 1) to create an 'Epsilon-Admissible' search for faster convergence.",
-        "C) Implement Dijkstra\u2019s algorithm instead to ensure that the search is not biased by a potentially misleading heuristic.",
-        "D) Increase the edge cost of diagonal movements to infinity to force the robot to follow the grid-aligned Manhattan paths strictly."
+        "A) Implementing a Word-level tokenizer with a large 500k vocabulary and a secondary dictionary for serial codes.",
+        "B) Utilizing Byte-level Byte Pair Encoding (BBPE) to treat the text as a sequence of bytes rather than Unicode characters.",
+        "C) Applying a Character-level CNN tokenizer to eliminate OOV issues, regardless of the sequence length increase.",
+        "D) Using a Unigram Language Model tokenizer based on a subword regularization approach to handle technical jargon."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Switch the heuristic to Euclidean distance to provide a more accurate lower bound on the actual path length in a 2D space.",
-      "explanation": "In a 2D grid where movement isn't strictly restricted to 4-cardinal directions (or where straight lines are physically possible), Euclidean distance (L2 norm) provides a tighter, yet still admissible, lower bound compared to Manhattan distance (L1 norm). Manhattan distance often overestimates the cost if diagonal or 'true' straight-line movement is possible, or it creates a 'tie-breaking' issue where many paths have the same cost, leading to the zig-zag behavior. Euclidean distance helps the algorithm prioritize nodes that lie closer to the direct line of sight to the goal."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Utilizing Byte-level Byte Pair Encoding (BBPE) to treat the text as a sequence of bytes rather than Unicode characters.",
+      "explanation": "Byte-level BPE (used in GPT-2 and RoBERTa) is superior for multilingual and technical domains because it ensures that no 'Out-of-Vocabulary' (OOV) tokens occur by falling back to individual bytes. Unlike standard BPE or WordPiece, it efficiently handles diverse scripts and rare alphanumeric strings without the memory explosion associated with character-level models or the fixed-vocabulary limitations of word-level models."
     },
     {
       "id": 2,
-      "scenario": "A financial technology company uses a Min-Max search tree with Alpha-Beta pruning to simulate market 'adversary' movements for high-frequency trading risk assessment. During high-volatility periods, the search depth must be limited to meet a 10ms response time. Developers notice that despite Alpha-Beta pruning, the number of nodes pruned is inconsistent, often reverting to near-standard Min-Max performance, causing the system to miss the latency window.",
-      "question": "In this real-time constraint scenario, what is the most likely reason for the failure of Alpha-Beta pruning to significantly reduce the search space?",
+      "scenario": "A legal tech startup is building a summarization tool for court transcripts that often exceed 40,000 tokens. When using the standard 'Vanilla Transformer' architecture (e.g., BERT-large or GPT-3), the system crashes with 'Out of Memory' (OOM) errors on high-end NVIDIA A100 GPUs, even with a batch size of 1. The CTO identifies that the memory requirement scales quadratically with the sequence length.",
+      "question": "To process these long-form documents within hardware constraints without losing long-range dependencies, which architectural modification should be prioritized?",
       "options": [
-        "A) The branching factor of the market state tree is too low for pruning to be mathematically effective.",
-        "B) The 'Horizon Effect' is causing the algorithm to evaluate nodes that are irrelevant to the current market state.",
-        "C) The moves are being evaluated in a suboptimal order, where the best moves are explored last in the search tree.",
-        "D) Alpha-Beta pruning is only effective in zero-sum games, and market dynamics are inherently non-zero-sum."
+        "A) Replacing the standard Softmax-based Self-Attention with Linear Attention (O(N) complexity) or Sparse Attention mechanisms.",
+        "B) Implementing Gradient Checkpointing and reducing the number of hidden layers by half.",
+        "C) Utilizing a Sliding Window Attention where each token only attends to its immediate neighbors to reduce computation.",
+        "D) Increasing the internal d_model size while drastically reducing the number of attention heads."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The moves are being evaluated in a suboptimal order, where the best moves are explored last in the search tree.",
-      "explanation": "The efficiency of Alpha-Beta pruning is highly dependent on 'Move Ordering'. In the worst-case scenario, where moves are ordered such that the best moves (those that would cause a cutoff) are evaluated last, Alpha-Beta pruning performs no better than a standard Min-Max search (O(b^d)). To optimize this for real-time constraints, the company should implement move-ordering heuristics or iterative deepening to ensure high-quality branches are pruned early."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Replacing the standard Softmax-based Self-Attention with Linear Attention (O(N) complexity) or Sparse Attention mechanisms.",
+      "explanation": "The standard Scaled Dot-Product Attention has an O(N^2) time and space complexity relative to sequence length N. For 40,000 tokens, N^2 becomes prohibitive. Linear Attention (approximating the kernel) or Sparse Attention (like BigBird or Longformer) reduces this complexity to O(N) or O(N log N), allowing the model to handle massive contexts that are otherwise impossible on current GPU memory architectures."
     },
     {
       "id": 3,
-      "scenario": "A pharmaceutical research lab is using a heuristic-driven search to navigate a high-dimensional chemical property space for molecular docking. The state space is massive and the branching factor is high. The current Best-First Search implementation quickly exhausts the 256GB system RAM because it maintains all generated nodes in the OPEN list, even those with poor heuristic scores, before it can find a goal state.",
-      "question": "Which search strategy should be implemented to handle this high-dimensional search space while operating within strict memory constraints?",
+      "scenario": "An AI-powered financial news aggregator uses a Transformer model for real-time sentiment analysis. The model must process 500 news snippets per second to meet low-latency SLAs. While the model is accurate, the inference speed is bottlenecked by the repetitive calculation of key-value pairs for previous tokens during the autoregressive generation phase of the decoder.",
+      "question": "Which technique should be implemented to optimize the inference throughput of this Transformer model without retraining it?",
       "options": [
-        "A) Uniform Cost Search (UCS), as it guarantees optimality by expanding the lowest-cost nodes first.",
-        "B) Iterative Deepening A* (IDA*), as it combines the space-efficiency of Depth-First Search with the optimality of A*.",
-        "C) Breadth-First Search (BFS), because it is guaranteed to find the shallowest goal in a high-dimensional space.",
-        "D) Greedy Best-First Search, to minimize the time taken to find any solution, regardless of memory consumption."
+        "A) Applying 8-bit quantization to the model weights to reduce the precision of floating-point operations.",
+        "B) Implementing Key-Value (KV) Caching to store and reuse previous keys and values during the decoding steps.",
+        "C) Switching from Absolute Positional Encodings to Rotary Positional Embeddings (RoPE).",
+        "D) Pruning 20% of the attention heads that demonstrate low activation scores during the validation phase."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Iterative Deepening A* (IDA*), as it combines the space-efficiency of Depth-First Search with the optimality of A*.",
-      "explanation": "Standard A* and Best-First Search have a memory complexity of O(b^d) because they store all nodes in the OPEN/CLOSED lists. In high-dimensional spaces like molecular docking, this leads to memory exhaustion. IDA* solves this by using a depth-first approach with a heuristic-based 'f-limit'. It only requires O(d) memory, where d is the depth of the search, making it suitable for memory-constrained environments while still being optimal and complete if the heuristic is admissible."
+      "correct_answer_text": "B) Implementing Key-Value (KV) Caching to store and reuse previous keys and values during the decoding steps.",
+      "explanation": "In autoregressive decoding, each new token generated must attend to all previous tokens. Without KV Caching, the model redundantly recomputes the Key and Value matrices for all preceding tokens at every step. KV Caching stores these intermediate states in memory, drastically reducing the computational overhead per token from O(N^2) to O(N) during the inference phase, which is critical for meeting real-time latency requirements."
     }
   ]
 }
