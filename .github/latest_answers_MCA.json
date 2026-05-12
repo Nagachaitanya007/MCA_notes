@@ -1,48 +1,48 @@
 {
-  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A global logistics firm is deploying a multilingual Transformer-based model to categorize shipping manifests containing a mix of technical jargon, alphanumeric serial codes, and diverse languages (German, Mandarin, and Arabic). During initial testing, the engineering team observes that the model frequently generates '[UNK]' tokens for rare chemical names and fails to capture the semantic relationship between compound words in German, leading to poor classification accuracy.",
-      "question": "Which tokenization strategy would be most effective to mitigate these issues while maintaining a manageable vocabulary size and ensuring morphological integrity?",
+      "scenario": "A logistics tech startup is designing a routing engine for autonomous delivery drones in a dense urban environment. They utilize the A* algorithm with a heuristic function h(n) that calculates the 'Manhattan Distance' plus a 'Safety Penalty' based on wind turbulence data. During testing, it was observed that the drone occasionally takes a significantly longer route than the physical shortest path, even when turbulence is low. The lead engineer realizes that the 'Safety Penalty' sometimes causes the heuristic to overestimate the actual cost to reach the goal.",
+      "question": "Which of the following is the most likely mathematical consequence of this heuristic design on the A* algorithm's performance?",
       "options": [
-        "A) Implementing a Word-level tokenizer with a large 500k vocabulary and a secondary dictionary for serial codes.",
-        "B) Utilizing Byte-level Byte Pair Encoding (BBPE) to treat the text as a sequence of bytes rather than Unicode characters.",
-        "C) Applying a Character-level CNN tokenizer to eliminate OOV issues, regardless of the sequence length increase.",
-        "D) Using a Unigram Language Model tokenizer based on a subword regularization approach to handle technical jargon."
+        "A) The algorithm will lose its completeness and may fail to find any path to the destination.",
+        "B) The algorithm will no longer be guaranteed to return the optimal (shortest) path.",
+        "C) The search space will expand exponentially, leading to a 'Memory Overflow' error.",
+        "D) The algorithm will revert to a Breadth-First Search behavior, ignoring the heuristic entirely."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Utilizing Byte-level Byte Pair Encoding (BBPE) to treat the text as a sequence of bytes rather than Unicode characters.",
-      "explanation": "Byte-level BPE (used in GPT-2 and RoBERTa) is superior for multilingual and technical domains because it ensures that no 'Out-of-Vocabulary' (OOV) tokens occur by falling back to individual bytes. Unlike standard BPE or WordPiece, it efficiently handles diverse scripts and rare alphanumeric strings without the memory explosion associated with character-level models or the fixed-vocabulary limitations of word-level models."
+      "correct_answer_text": "B) The algorithm will no longer be guaranteed to return the optimal (shortest) path.",
+      "explanation": "For the A* algorithm to be optimal, the heuristic function must be 'admissible,' meaning it must never overestimate the true cost to reach the goal. By adding a 'Safety Penalty' that causes h(n) to exceed the actual cost (h*(n)), the heuristic becomes non-admissible. While the algorithm remains complete (it will find a path), it may settle on a sub-optimal path because the overestimation makes the optimal path look less attractive during the search process."
     },
     {
       "id": 2,
-      "scenario": "A legal tech startup is building a summarization tool for court transcripts that often exceed 40,000 tokens. When using the standard 'Vanilla Transformer' architecture (e.g., BERT-large or GPT-3), the system crashes with 'Out of Memory' (OOM) errors on high-end NVIDIA A100 GPUs, even with a batch size of 1. The CTO identifies that the memory requirement scales quadratically with the sequence length.",
-      "question": "To process these long-form documents within hardware constraints without losing long-range dependencies, which architectural modification should be prioritized?",
+      "scenario": "A FinTech company is developing an AI-driven automated trading agent that uses a Min-Max search tree to anticipate market moves by 'Competitive Liquidity Providers.' The state-space tree is extremely deep, and the agent must make a decision within a 20ms window to capitalize on arbitrage opportunities. The current implementation evaluates every single node up to depth 'D', which is causing the system to exceed the latency budget.",
+      "question": "Which optimization strategy should be prioritized to reduce the number of nodes evaluated without changing the final decision of the Min-Max algorithm?",
       "options": [
-        "A) Replacing the standard Softmax-based Self-Attention with Linear Attention (O(N) complexity) or Sparse Attention mechanisms.",
-        "B) Implementing Gradient Checkpointing and reducing the number of hidden layers by half.",
-        "C) Utilizing a Sliding Window Attention where each token only attends to its immediate neighbors to reduce computation.",
-        "D) Increasing the internal d_model size while drastically reducing the number of attention heads."
+        "A) Implementing Alpha-Beta Pruning to eliminate branches that cannot influence the final decision.",
+        "B) Switching to a Greedy Best-First Search to prioritize the most profitable immediate trades.",
+        "C) Applying a Stochastic Gradient Descent to the evaluation function to predict opponent moves.",
+        "D) Increasing the search depth 'D' while reducing the branching factor using a heuristic filter."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Replacing the standard Softmax-based Self-Attention with Linear Attention (O(N) complexity) or Sparse Attention mechanisms.",
-      "explanation": "The standard Scaled Dot-Product Attention has an O(N^2) time and space complexity relative to sequence length N. For 40,000 tokens, N^2 becomes prohibitive. Linear Attention (approximating the kernel) or Sparse Attention (like BigBird or Longformer) reduces this complexity to O(N) or O(N log N), allowing the model to handle massive contexts that are otherwise impossible on current GPU memory architectures."
+      "correct_answer_text": "A) Implementing Alpha-Beta Pruning to eliminate branches that cannot influence the final decision.",
+      "explanation": "Alpha-Beta pruning is the standard optimization for Min-Max that reduces the search space significantly by not evaluating branches that are mathematically proven to be worse than a previously examined branch. Crucially, it returns the exact same move as a full Min-Max search, making it ideal for real-time constraints where optimality relative to the search depth must be maintained."
     },
     {
       "id": 3,
-      "scenario": "An AI-powered financial news aggregator uses a Transformer model for real-time sentiment analysis. The model must process 500 news snippets per second to meet low-latency SLAs. While the model is accurate, the inference speed is bottlenecked by the repetitive calculation of key-value pairs for previous tokens during the autoregressive generation phase of the decoder.",
-      "question": "Which technique should be implemented to optimize the inference throughput of this Transformer model without retraining it?",
+      "scenario": "A pharmaceutical research lab is using heuristic search to find stable molecular configurations for a new drug. The search space is high-dimensional with a branching factor of over 1,000. The standard A* algorithm is failing because the 'Open List' (frontier) consumes all available 128GB of RAM within minutes of execution. The team needs a memory-efficient search that still utilizes the heuristic to guide the process towards a solution.",
+      "question": "Which algorithm is best suited to handle this high-dimensional search under strict memory constraints while attempting to maintain a balance between completeness and space complexity?",
       "options": [
-        "A) Applying 8-bit quantization to the model weights to reduce the precision of floating-point operations.",
-        "B) Implementing Key-Value (KV) Caching to store and reuse previous keys and values during the decoding steps.",
-        "C) Switching from Absolute Positional Encodings to Rotary Positional Embeddings (RoPE).",
-        "D) Pruning 20% of the attention heads that demonstrate low activation scores during the validation phase."
+        "A) Depth-First Search (DFS)",
+        "B) Iterative Deepening A* (IDA*)",
+        "C) Uniform Cost Search (UCS)",
+        "D) Bidirectional Breadth-First Search"
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Implementing Key-Value (KV) Caching to store and reuse previous keys and values during the decoding steps.",
-      "explanation": "In autoregressive decoding, each new token generated must attend to all previous tokens. Without KV Caching, the model redundantly recomputes the Key and Value matrices for all preceding tokens at every step. KV Caching stores these intermediate states in memory, drastically reducing the computational overhead per token from O(N^2) to O(N) during the inference phase, which is critical for meeting real-time latency requirements."
+      "correct_answer_text": "B) Iterative Deepening A* (IDA*)",
+      "explanation": "IDA* (Iterative Deepening A*) is designed specifically to address the memory limitations of A*. While A* stores all generated nodes in memory (O(b^d)), IDA* only stores the current path, resulting in linear space complexity (O(d)). It uses the f-limit (g+h) to prune branches and iteratively increases this limit, combining the space efficiency of Depth-First Search with the heuristic guidance of A*."
     }
   ]
 }

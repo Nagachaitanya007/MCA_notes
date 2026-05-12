@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
-  "mode": "Java",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `Spring Boot` service is failing to persist audit logs. The code looks like this:\n\njava\n@Service\npublic class OrderService {\n    @Autowired private OrderRepository repository;\n\n    public void placeOrder(Order order) {\n        // Business logic\n        repository.save(order);\n        this.logTransaction(order);\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void logTransaction(Order order) {\n        // Audit logging logic\n    }\n}\n\nEven though `placeOrder` completes, if a subsequent failure occurs, the `logTransaction` is rolled back or never starts its own transaction.",
-      "question": "What is the primary cause of this behavior regarding JVM-level proxies and Spring's architecture?",
+      "scenario": "A logistics tech startup is designing a routing engine for autonomous delivery drones in a dense urban environment. They utilize the A* algorithm with a heuristic function h(n) that calculates the 'Manhattan Distance' plus a 'Safety Penalty' based on wind turbulence data. During testing, it was observed that the drone occasionally takes a significantly longer route than the physical shortest path, even when turbulence is low. The lead engineer realizes that the 'Safety Penalty' sometimes causes the heuristic to overestimate the actual cost to reach the goal.",
+      "question": "Which of the following is the most likely mathematical consequence of this heuristic design on the A* algorithm's performance?",
       "options": [
-        "A) The `logTransaction` method is private, preventing the `CGLIB` proxy from overriding it.",
-        "B) Self-invocation of a method within the same class bypasses the Spring AOP proxy, executing the call on `this` instead of the proxy instance.",
-        "C) The `JVM Memory Model` prevents the `Propagation.REQUIRES_NEW` flag from being visible to the thread-local `TransactionContext`.",
-        "D) The `ClassLoader` has loaded `OrderService` twice, causing a mismatch in the proxy's method signature."
+        "A) The algorithm will lose its completeness and may fail to find any path to the destination.",
+        "B) The algorithm will no longer be guaranteed to return the optimal (shortest) path.",
+        "C) The search space will expand exponentially, leading to a 'Memory Overflow' error.",
+        "D) The algorithm will revert to a Breadth-First Search behavior, ignoring the heuristic entirely."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Self-invocation of a method within the same class bypasses the Spring AOP proxy, executing the call on `this` instead of the proxy instance.",
-      "explanation": "Spring's declarative transaction management uses either `JDK Dynamic Proxies` or `CGLIB`. When `placeOrder` calls `this.logTransaction(order)`, it is an internal call on the raw object, not the proxy. Consequently, the `@Transactional` interceptor is never triggered. To fix this, one must move the logged method to a separate service or inject the service into itself via `ObjectProvider` or `@Lazy` to trigger the proxy."
+      "correct_answer_text": "B) The algorithm will no longer be guaranteed to return the optimal (shortest) path.",
+      "explanation": "For the A* algorithm to be optimal, the heuristic function must be 'admissible,' meaning it must never overestimate the true cost to reach the goal. By adding a 'Safety Penalty' that causes h(n) to exceed the actual cost (h*(n)), the heuristic becomes non-admissible. While the algorithm remains complete (it will find a path), it may settle on a sub-optimal path because the overestimation makes the optimal path look less attractive during the search process."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a high-throughput application using the `G1 GC` is experiencing frequent 'To-space exhausted' events and sudden spikes in Full GC pauses. Profiling shows that the application frequently allocates large `byte[]` arrays (around 5MB each) to process incoming image uploads. The total heap size is 16GB, and the default `-XX:G1HeapRegionSize` is 4MB.",
-      "question": "What is the JVM-specific cause for this performance degradation?",
+      "scenario": "A FinTech company is developing an AI-driven automated trading agent that uses a Min-Max search tree to anticipate market moves by 'Competitive Liquidity Providers.' The state-space tree is extremely deep, and the agent must make a decision within a 20ms window to capitalize on arbitrage opportunities. The current implementation evaluates every single node up to depth 'D', which is causing the system to exceed the latency budget.",
+      "question": "Which optimization strategy should be prioritized to reduce the number of nodes evaluated without changing the final decision of the Min-Max algorithm?",
       "options": [
-        "A) The objects are being allocated in the `Survivor` space and immediately promoted to `Old Gen`, causing fragmentation.",
-        "B) The 5MB arrays are considered 'Humongous Objects' (larger than 50% of the region size) and are allocated directly in the `Old Generation` humongous regions, triggering frequent concurrent cycles.",
-        "C) The `ZGC` color-mapping technique is misinterpreting the large byte arrays as metadata.",
-        "D) The `ClassLoader` is unable to deallocate the anonymous classes created during byte array processing."
+        "A) Implementing Alpha-Beta Pruning to eliminate branches that cannot influence the final decision.",
+        "B) Switching to a Greedy Best-First Search to prioritize the most profitable immediate trades.",
+        "C) Applying a Stochastic Gradient Descent to the evaluation function to predict opponent moves.",
+        "D) Increasing the search depth 'D' while reducing the branching factor using a heuristic filter."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The 5MB arrays are considered 'Humongous Objects' (larger than 50% of the region size) and are allocated directly in the `Old Generation` humongous regions, triggering frequent concurrent cycles.",
-      "explanation": "In `G1 GC`, any object larger than 50% of the `G1HeapRegionSize` is treated as a Humongous Object. These are allocated in a contiguous set of regions in the `Old Generation`. Frequent allocation of these objects can lead to heap fragmentation and trigger aggressive concurrent cycles or Full GCs if the `G1` cannot find enough contiguous regions. Increasing `-XX:G1HeapRegionSize` to 16MB or 32MB would treat these 5MB arrays as regular objects in the `Young Generation`."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Implementing Alpha-Beta Pruning to eliminate branches that cannot influence the final decision.",
+      "explanation": "Alpha-Beta pruning is the standard optimization for Min-Max that reduces the search space significantly by not evaluating branches that are mathematically proven to be worse than a previously examined branch. Crucially, it returns the exact same move as a full Min-Max search, making it ideal for real-time constraints where optimality relative to the search depth must be maintained."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a multi-threaded application sporadically hangs. A background 'cleanup' thread checks a boolean flag `keepRunning`. The main thread sets `keepRunning = false` after 10 minutes, but the cleanup thread continues to loop forever in a production environment (JDK 17 with `-server` JIT compiler optimizations), although it works fine in local dev environments.",
-      "question": "Which aspect of the Java Memory Model (JMM) and JIT optimization is responsible for this?",
+      "scenario": "A pharmaceutical research lab is using heuristic search to find stable molecular configurations for a new drug. The search space is high-dimensional with a branching factor of over 1,000. The standard A* algorithm is failing because the 'Open List' (frontier) consumes all available 128GB of RAM within minutes of execution. The team needs a memory-efficient search that still utilizes the heuristic to guide the process towards a solution.",
+      "question": "Which algorithm is best suited to handle this high-dimensional search under strict memory constraints while attempting to maintain a balance between completeness and space complexity?",
       "options": [
-        "A) Memory barriers are preventing the `L1 Cache` from flushing to the `L3 Cache`.",
-        "B) The `Class Loading` hierarchy has isolated the static flag between the two threads.",
-        "C) The JIT compiler performed 'Hoisting', moving the read of the non-volatile `keepRunning` flag outside the loop because it assumed the value would not change.",
-        "D) The `G1 GC` moved the object containing the flag, and the background thread is still pointing to the stale memory address."
+        "A) Depth-First Search (DFS)",
+        "B) Iterative Deepening A* (IDA*)",
+        "C) Uniform Cost Search (UCS)",
+        "D) Bidirectional Breadth-First Search"
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The JIT compiler performed 'Hoisting', moving the read of the non-volatile `keepRunning` flag outside the loop because it assumed the value would not change.",
-      "explanation": "Without the `volatile` keyword, the `Java Memory Model` does not guarantee a 'happens-before' relationship between the write in the main thread and the read in the cleanup thread. Under the `-server` JIT compiler, the compiler may optimize the code by 'hoisting' the variable read out of the loop (transforming `while(keepRunning)` into `if(keepRunning) while(true)`) because it detects that `keepRunning` is not modified within the loop's local scope."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Iterative Deepening A* (IDA*)",
+      "explanation": "IDA* (Iterative Deepening A*) is designed specifically to address the memory limitations of A*. While A* stores all generated nodes in memory (O(b^d)), IDA* only stores the current path, resulting in linear space complexity (O(d)). It uses the f-limit (g+h) to prune branches and iteratively increases this limit, combining the space efficiency of Depth-First Search with the heuristic guidance of A*."
     }
   ]
 }
