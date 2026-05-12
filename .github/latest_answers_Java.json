@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Java 17 microservice recently switched its Garbage Collector from `G1` to `ZGC`. While the P99 latency has dropped to sub-millisecond levels, the application's overall throughput has decreased by 15%, and the CPU utilization has increased by 20%. The heap size is 64GB.",
-      "question": "Which characteristic of the `ZGC` implementation in Java 17 most likely explains this trade-off?",
+      "scenario": "You are debugging a production issue where a `Spring Boot` service is failing to persist audit logs. The code looks like this:\n\njava\n@Service\npublic class OrderService {\n    @Autowired private OrderRepository repository;\n\n    public void placeOrder(Order order) {\n        // Business logic\n        repository.save(order);\n        this.logTransaction(order);\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void logTransaction(Order order) {\n        // Audit logging logic\n    }\n}\n\nEven though `placeOrder` completes, if a subsequent failure occurs, the `logTransaction` is rolled back or never starts its own transaction.",
+      "question": "What is the primary cause of this behavior regarding JVM-level proxies and Spring's architecture?",
       "options": [
-        "A) ZGC performs all compacting work in Stop-The-World (STW) pauses, causing CPU spikes.",
-        "B) The lack of a 'Generational' design in Java 17 ZGC requires the collector to scan the entire heap more frequently, increasing CPU overhead.",
-        "C) ZGC uses 'Store Barriers' which are significantly more expensive than the 'Load Barriers' used by G1.",
-        "D) ZGC requires 'Thread Local Allocation Buffers' (TLABs) to be disabled, leading to contention in the shared heap space."
+        "A) The `logTransaction` method is private, preventing the `CGLIB` proxy from overriding it.",
+        "B) Self-invocation of a method within the same class bypasses the Spring AOP proxy, executing the call on `this` instead of the proxy instance.",
+        "C) The `JVM Memory Model` prevents the `Propagation.REQUIRES_NEW` flag from being visible to the thread-local `TransactionContext`.",
+        "D) The `ClassLoader` has loaded `OrderService` twice, causing a mismatch in the proxy's method signature."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The lack of a 'Generational' design in Java 17 ZGC requires the collector to scan the entire heap more frequently, increasing CPU overhead.",
-      "explanation": "In Java 17, `ZGC` is non-generational. Unlike `G1`, which divides the heap into young and old generations to exploit the weak generational hypothesis (most objects die young), non-generational `ZGC` must process the entire heap to reclaim memory. This results in higher CPU consumption and lower throughput because the collector spends more cycles tracking long-lived objects alongside short-lived ones. Generational `ZGC` was only introduced later in JDK 21 to address this specific overhead."
+      "correct_answer_text": "B) Self-invocation of a method within the same class bypasses the Spring AOP proxy, executing the call on `this` instead of the proxy instance.",
+      "explanation": "Spring's declarative transaction management uses either `JDK Dynamic Proxies` or `CGLIB`. When `placeOrder` calls `this.logTransaction(order)`, it is an internal call on the raw object, not the proxy. Consequently, the `@Transactional` interceptor is never triggered. To fix this, one must move the logged method to a separate service or inject the service into itself via `ObjectProvider` or `@Lazy` to trigger the proxy."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a financial transaction service is failing to roll back database changes during an exception. You find the following code snippet:\n\njava\n@Service\npublic class AuditService {\n    @Transactional\n    public void processAudit(Transaction tx) {\n        try {\n            saveRecord(tx);\n        } catch (Exception e) {\n            log.error(\"Audit failed\", e);\n            throw e;\n        }\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void saveRecord(Transaction tx) {\n        // JDBC Logic to insert record\n    }\n}\n",
-      "question": "Why does the `saveRecord` method fail to start a new independent transaction, instead joining the existing transaction or running without one?",
+      "scenario": "You are debugging a production issue where a high-throughput application using the `G1 GC` is experiencing frequent 'To-space exhausted' events and sudden spikes in Full GC pauses. Profiling shows that the application frequently allocates large `byte[]` arrays (around 5MB each) to process incoming image uploads. The total heap size is 16GB, and the default `-XX:G1HeapRegionSize` is 4MB.",
+      "question": "What is the JVM-specific cause for this performance degradation?",
       "options": [
-        "A) The JVM ClassLoader delegates the `AuditService` to the Bootstrap ClassLoader, bypassing the Spring Proxy.",
-        "B) Spring's `@Transactional` annotation is not compatible with the `REQUIRES_NEW` propagation when using `CGLIB` proxies.",
-        "C) The internal call to `saveRecord` bypasses the Spring AOP proxy, meaning the interceptor logic for `Propagation.REQUIRES_NEW` is never executed.",
-        "D) The `G1` Garbage Collector reclaims the transaction metadata because it is stored in the 'Survivor' space."
+        "A) The objects are being allocated in the `Survivor` space and immediately promoted to `Old Gen`, causing fragmentation.",
+        "B) The 5MB arrays are considered 'Humongous Objects' (larger than 50% of the region size) and are allocated directly in the `Old Generation` humongous regions, triggering frequent concurrent cycles.",
+        "C) The `ZGC` color-mapping technique is misinterpreting the large byte arrays as metadata.",
+        "D) The `ClassLoader` is unable to deallocate the anonymous classes created during byte array processing."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The internal call to `saveRecord` bypasses the Spring AOP proxy, meaning the interceptor logic for `Propagation.REQUIRES_NEW` is never executed.",
-      "explanation": "Spring `@Transactional` works via AOP proxies. When one method calls another method within the same class (self-invocation), the call is made on the `this` reference rather than the proxy object. Consequently, the Spring interceptor that handles the `Propagation.REQUIRES_NEW` logic is never invoked. To fix this, `saveRecord` should be in a separate service or the bean should be self-injected (though the latter is a code smell)."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The 5MB arrays are considered 'Humongous Objects' (larger than 50% of the region size) and are allocated directly in the `Old Generation` humongous regions, triggering frequent concurrent cycles.",
+      "explanation": "In `G1 GC`, any object larger than 50% of the `G1HeapRegionSize` is treated as a Humongous Object. These are allocated in a contiguous set of regions in the `Old Generation`. Frequent allocation of these objects can lead to heap fragmentation and trigger aggressive concurrent cycles or Full GCs if the `G1` cannot find enough contiguous regions. Increasing `-XX:G1HeapRegionSize` to 16MB or 32MB would treat these 5MB arrays as regular objects in the `Young Generation`."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a modular application server throws a `java.lang.LinkageError` with the message: 'loader constraint violation: loader ... wants to load class com.util.Parser, but that class has already been loaded by a different loader'. This occurs when a plugin attempts to pass a `Parser` object to the core system.",
-      "question": "What fundamental JVM Class Loading principle is being violated here?",
+      "scenario": "You are debugging a production issue where a multi-threaded application sporadically hangs. A background 'cleanup' thread checks a boolean flag `keepRunning`. The main thread sets `keepRunning = false` after 10 minutes, but the cleanup thread continues to loop forever in a production environment (JDK 17 with `-server` JIT compiler optimizations), although it works fine in local dev environments.",
+      "question": "Which aspect of the Java Memory Model (JMM) and JIT optimization is responsible for this?",
       "options": [
-        "A) The Visibility Principle: A child ClassLoader cannot see classes loaded by a parent ClassLoader.",
-        "B) The Uniqueness Principle: A class is uniquely identified by its fully qualified name AND its defining ClassLoader instance.",
-        "C) The Delegation Principle: The Bootstrap ClassLoader must always load classes from the 'ext' directory before the 'app' directory.",
-        "D) The Garbage Collection Principle: Classes cannot be unloaded if their ClassLoader is still reachable."
+        "A) Memory barriers are preventing the `L1 Cache` from flushing to the `L3 Cache`.",
+        "B) The `Class Loading` hierarchy has isolated the static flag between the two threads.",
+        "C) The JIT compiler performed 'Hoisting', moving the read of the non-volatile `keepRunning` flag outside the loop because it assumed the value would not change.",
+        "D) The `G1 GC` moved the object containing the flag, and the background thread is still pointing to the stale memory address."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The Uniqueness Principle: A class is uniquely identified by its fully qualified name AND its defining ClassLoader instance.",
-      "explanation": "In the JVM, the identity of a class is defined by the pair of its fully qualified name and the instance of the `ClassLoader` that loaded it. If `ClassLoaderA` and `ClassLoaderB` both load `com.util.Parser`, the JVM treats them as two completely different and incompatible types. Passing an instance of one to a method expecting the other results in a `LinkageError` or `ClassCastException` because the types do not match in the JVM's internal runtime constant pool."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) The JIT compiler performed 'Hoisting', moving the read of the non-volatile `keepRunning` flag outside the loop because it assumed the value would not change.",
+      "explanation": "Without the `volatile` keyword, the `Java Memory Model` does not guarantee a 'happens-before' relationship between the write in the main thread and the read in the cleanup thread. Under the `-server` JIT compiler, the compiler may optimize the code by 'hoisting' the variable read out of the loop (transforming `while(keepRunning)` into `if(keepRunning) while(true)`) because it detects that `keepRunning` is not modified within the loop's local scope."
     }
   ]
 }
