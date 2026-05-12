@@ -68,7 +68,8 @@
   ],
   "Design a Distributed Cache (Consistent Hashing, LRU)": [
     "Distributed Cache Design: Consistent Hashing & LRU",
-    "Distributed Cache: Scaling & Data Integrity with Consistent Hashing"
+    "Distributed Cache: Scaling & Data Integrity with Consistent Hashing",
+    "Distributed Cache: Balancing Load with Consistent Hashing and LRU"
   ],
   "Design a Distributed ID Generator (Snowflake ID)": [
     "Design a Distributed ID Generator (Snowflake ID)",
