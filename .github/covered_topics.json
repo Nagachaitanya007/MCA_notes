@@ -40,7 +40,8 @@
     "Java Memory Management & Garbage Collection Tuning",
     "Generational Garbage Collection & The \"Stop-The-World\" Problem",
     "Garbage Collection Tuning: Throughput vs. Latency Optimization",
-    "Memory Allocation Strategies & The Fragmentation Problem"
+    "Memory Allocation Strategies & The Fragmentation Problem",
+    "Heap Profiling & Memory Leak Detection"
   ],
   "Design a URL Shortener (Key Generation Service, Sharding)": [
     "URL Shortener: Key Generation Service (KGS) & Sharding",
