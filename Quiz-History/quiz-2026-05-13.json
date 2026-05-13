@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput microservice running on JDK 17 with `G1GC` is experiencing frequent 'Full GC' events and 'Allocation Failure' messages. After profiling, you notice that the application frequently allocates large `byte[]` arrays (around 4MB each), while the `G1RegionSize` is set to the default of 2MB.",
-      "question": "What is the primary cause of the performance degradation and frequent Full GCs?",
+      "scenario": "You are debugging a production issue in a Spring Boot application. A service method intended to run in a separate transaction is failing to do so. The code looks like this: \n\n`@Service` \n`public class AuditService {` \n`  @Transactional` \n`  public void processData() {` \n`    // ... logic` \n`    logAudit();` \n`  }` \n\n`  @Transactional(propagation = Propagation.REQUIRES_NEW)` \n`  public void logAudit() {` \n`    // ... db insert` \n`  }` \n`}` \n\nObservations show that when `logAudit()` fails, the entire `processData()` transaction rolls back, and no separate transaction is ever started for the audit log.",
+      "question": "What is the primary cause of this behavior regarding Spring Proxies and JVM execution?",
       "options": [
-        "A) The arrays are being allocated in the Young Generation and causing immediate Promotion Failure.",
-        "B) The arrays are treated as 'Humongous Objects', allocated directly in the Old Generation, causing premature heap fragmentation and triggering Full GCs.",
-        "C) G1 cannot use 'Compact' phase on humongous regions, leading to a Memory Leak in the Metaspace.",
-        "D) The `MaxGCPauseMillis` is set too low, forcing G1 to bypass the 'Concurrent Marking' phase and jump to 'Full GC'."
+        "A) The JVM `ClassLoader` has loaded multiple instances of the `AuditService`.",
+        "B) Spring's default AOP utilizes CGLIB or Dynamic Proxies, and self-invocation bypasses the proxy wrapper.",
+        "C) The `Propagation.REQUIRES_NEW` attribute is only compatible with the ZGC collector.",
+        "D) The `TransactionManager` is not thread-safe and is being blocked by the JVM's SafePoint."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The arrays are treated as 'Humongous Objects', allocated directly in the Old Generation, causing premature heap fragmentation and triggering Full GCs.",
-      "explanation": "In `G1GC`, any object larger than 50% of the `G1RegionSize` is considered a 'Humongous Object'. These are allocated in a contiguous set of regions in the Old Generation. Frequent allocation of such objects leads to heap fragmentation and can trigger a 'Concurrent Marking' cycle or, if contiguous space isn't found, a 'Full GC'. Since the arrays are 4MB and the region size is 2MB, they are 200% of the region size, necessitating multiple contiguous regions."
+      "correct_answer_text": "B) Spring's default AOP utilizes CGLIB or Dynamic Proxies, and self-invocation bypasses the proxy wrapper.",
+      "explanation": "Spring's `@Transactional` works by creating a proxy (via CGLIB or JDK Dynamic Proxies) around the bean. When `processData()` is called from outside the class, it goes through the proxy. However, the call to `logAudit()` is an internal 'this' call. This bypasses the proxy, meaning the interceptor logic for `REQUIRES_NEW` is never executed, and the call runs within the physical scope of the existing transaction."
     },
     {
       "id": 2,
-      "scenario": "Bug Hunter Scenario: You encounter the following Spring `@Service` bean. Users report that when `updateInventory` fails with a `RuntimeException`, the database changes made in `updateStockCount` are NOT rolled back, even though the method is marked as `@Transactional`.\n\njava\n@Service\npublic class InventoryService {\n\n    public void updateInventory(Long id, int quantity) {\n        // Business logic\n        updateStockCount(id, quantity);\n    }\n\n    @Transactional\n    public void updateStockCount(Long id, int quantity) {\n        // Database update logic\n        if (quantity < 0) throw new RuntimeException(\"Invalid quantity\");\n    }\n}\n",
-      "question": "Why is the transaction failing to roll back the changes?",
+      "scenario": "You are monitoring a high-throughput Java 17 application using the `G1` Garbage Collector. You notice frequent 'Full GC' events and 'Humongous Allocation' warnings in the logs. The application frequently processes large `byte[]` arrays (around 4MB each), while the total heap is 16GB with default G1 settings.",
+      "question": "Which JVM tuning strategy is most effective for resolving these latency spikes?",
       "options": [
-        "A) Spring Transaction Management does not support `RuntimeException` by default.",
-        "B) The `@Transactional` annotation must be placed on the class level, not the method level, for CGLIB proxies.",
-        "C) The internal call to `updateStockCount` bypasses the Spring Proxy, meaning the transaction interceptor is never invoked.",
-        "D) The `updateInventory` method is not `public`, preventing the Proxy from intercepting the call."
+        "A) Decrease the `-Xms` value to allow the heap to shrink more aggressively.",
+        "B) Increase the `-XX:G1HeapRegionSize` to 8MB or 16MB to prevent objects from being classified as Humongous.",
+        "C) Switch to `ParallelGC` to improve the throughput of large object copying.",
+        "D) Set `-XX:MaxTenuringThreshold=0` to move large arrays directly to the Old Generation."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The internal call to `updateStockCount` bypasses the Spring Proxy, meaning the transaction interceptor is never invoked.",
-      "explanation": "Spring AOP uses proxies (JDK Dynamic or CGLIB) to wrap beans. The `@Transactional` logic is implemented in a proxy wrapper. When `updateInventory` is called, the proxy is invoked, but since `updateInventory` itself is not transactional, no transaction starts. When it calls `this.updateStockCount` internally, it bypasses the proxy and calls the raw object's method directly. Therefore, no transaction interceptor is triggered for `updateStockCount`."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Increase the `-XX:G1HeapRegionSize` to 8MB or 16MB to prevent objects from being classified as Humongous.",
+      "explanation": "In G1, an object is 'Humongous' if it exceeds 50% of the `G1HeapRegionSize`. Humongous objects are allocated in the Old Generation in contiguous regions, leading to premature Full GCs and fragmentation. By increasing the region size, these 4MB arrays will fit into standard regions, allowing the collector to manage them more efficiently during normal Young or Mixed collections."
     },
     {
       "id": 3,
-      "scenario": "You are migrating a low-latency trading application from `G1GC` to `ZGC`. After deployment, you observe that the virtual memory (VIRT) usage reported by the OS is significantly higher (sometimes 3x higher) than the configured `-Xmx` heap size, while the resident set size (RSS) remains within expected limits.",
-      "question": "What JVM internal mechanism explains this observation in `ZGC`?",
+      "scenario": "You are investigating a race condition where a configuration flag `private boolean enabled = false;` is updated by a background thread but never seen as `true` by a worker thread, causing an infinite loop. The worker thread is running on a high-core count ARM-based server.",
+      "question": "According to the Java Memory Model (JMM), which mechanism ensures that the update to 'enabled' is visible to the worker thread?",
       "options": [
-        "A) ZGC uses 'Memory Overcommit' to reserve space for the 'Generation Z' nursery.",
-        "B) ZGC employs 'Colored Pointers' and multi-mapping, where it maps the same physical heap memory to three different virtual address ranges.",
-        "C) The 'Load Barrier' mechanism requires a secondary virtual heap for metadata storage.",
-        "D) ZGC does not support 64-bit compressed OOPs, leading to a massive increase in pointer size in the virtual address space."
+        "A) Increasing the `ReservedCodeCacheSize` in the JVM flags.",
+        "B) Using the `synchronized` keyword or declaring the variable as `volatile` to establish a 'happens-before' relationship.",
+        "C) Implementing `Cloneable` on the service to ensure thread-local copies.",
+        "D) Forcing a `System.gc()` call to flush the CPU L1/L2 caches."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) ZGC employs 'Colored Pointers' and multi-mapping, where it maps the same physical heap memory to three different virtual address ranges.",
-      "explanation": "ZGC uses 'Colored Pointers' to store metadata about an object's state (marked, remapped, etc.) directly in the pointer bits. To make this efficient, ZGC uses a technique called 'multi-mapping', where three different virtual address ranges (Marked0, Marked1, and Remapped) all point to the same physical memory. As a result, the OS reports the virtual memory (VIRT) as roughly 3x the actual physical heap usage, though physical memory consumption (RSS) is not tripled."
+      "correct_answer_text": "B) Using the `synchronized` keyword or declaring the variable as `volatile` to establish a 'happens-before' relationship.",
+      "explanation": "Without `volatile` or synchronization, the JMM allows compilers and CPUs to cache variables in registers or local caches indefinitely for optimization. Marking the variable `volatile` ensures a 'happens-before' relationship, forcing the thread to read the value from main memory and preventing the JIT compiler from optimizing the loop into an infinite one based on a stale local value."
     }
   ]
 }
