@@ -1,48 +1,48 @@
 {
-  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A logistics tech startup is designing a routing engine for autonomous delivery drones in a dense urban environment. They utilize the A* algorithm with a heuristic function h(n) that calculates the 'Manhattan Distance' plus a 'Safety Penalty' based on wind turbulence data. During testing, it was observed that the drone occasionally takes a significantly longer route than the physical shortest path, even when turbulence is low. The lead engineer realizes that the 'Safety Penalty' sometimes causes the heuristic to overestimate the actual cost to reach the goal.",
-      "question": "Which of the following is the most likely mathematical consequence of this heuristic design on the A* algorithm's performance?",
+      "scenario": "An autonomous vehicle startup is deploying a pedestrian detection system on an edge computing module with strict power consumption limits and a requirement for a minimum of 30 frames per second (FPS). The initial model using a standard ResNet-101 architecture achieves high accuracy but only reaches 5 FPS and consumes excessive memory, leading to thermal throttling on the hardware.",
+      "question": "Which architectural modification and optimization strategy would be most effective to meet the real-time constraints without a catastrophic loss in mAP (mean Average Precision)?",
       "options": [
-        "A) The algorithm will lose its completeness and may fail to find any path to the destination.",
-        "B) The algorithm will no longer be guaranteed to return the optimal (shortest) path.",
-        "C) The search space will expand exponentially, leading to a 'Memory Overflow' error.",
-        "D) The algorithm will revert to a Breadth-First Search behavior, ignoring the heuristic entirely."
+        "A) Replacing standard convolutions with Depthwise Separable Convolutions and applying Post-Training Quantization (PTQ) to INT8.",
+        "B) Increasing the stride of the initial Max Pooling layers and using a Dropout rate of 0.5 to reduce the number of parameters.",
+        "C) Switching to a Dilated Convolutional network to expand the receptive field while reducing the total number of layers.",
+        "D) Utilizing a Global Average Pooling layer instead of Fully Connected layers to eliminate the bottleneck in the final stage."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The algorithm will no longer be guaranteed to return the optimal (shortest) path.",
-      "explanation": "For the A* algorithm to be optimal, the heuristic function must be 'admissible,' meaning it must never overestimate the true cost to reach the goal. By adding a 'Safety Penalty' that causes h(n) to exceed the actual cost (h*(n)), the heuristic becomes non-admissible. While the algorithm remains complete (it will find a path), it may settle on a sub-optimal path because the overestimation makes the optimal path look less attractive during the search process."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Replacing standard convolutions with Depthwise Separable Convolutions and applying Post-Training Quantization (PTQ) to INT8.",
+      "explanation": "Depthwise Separable Convolutions (used in MobileNet) significantly reduce the number of parameters and floating-point operations (FLOPs) by splitting spatial and channel-wise convolutions. Combined with INT8 quantization, this optimizes memory bandwidth and computation speed on edge hardware, directly addressing the latency and power constraints while maintaining competitive accuracy."
     },
     {
       "id": 2,
-      "scenario": "A FinTech company is developing an AI-driven automated trading agent that uses a Min-Max search tree to anticipate market moves by 'Competitive Liquidity Providers.' The state-space tree is extremely deep, and the agent must make a decision within a 20ms window to capitalize on arbitrage opportunities. The current implementation evaluates every single node up to depth 'D', which is causing the system to exceed the latency budget.",
-      "question": "Which optimization strategy should be prioritized to reduce the number of nodes evaluated without changing the final decision of the Min-Max algorithm?",
+      "scenario": "A financial institution is building a model to predict stock market trends based on the last 10 years of daily historical data. During training of a standard Recurrent Neural Network (RNN), the data science team observes that the gradient values are becoming extremely small (approaching zero) as they propagate back through the initial time steps, preventing the model from learning long-term dependencies.",
+      "question": "Which of the following approaches is the most robust solution for mitigating this vanishing gradient problem in the context of high-frequency temporal sequences?",
       "options": [
-        "A) Implementing Alpha-Beta Pruning to eliminate branches that cannot influence the final decision.",
-        "B) Switching to a Greedy Best-First Search to prioritize the most profitable immediate trades.",
-        "C) Applying a Stochastic Gradient Descent to the evaluation function to predict opponent moves.",
-        "D) Increasing the search depth 'D' while reducing the branching factor using a heuristic filter."
+        "A) Implementing Gradient Clipping to cap the maximum value of gradients during backpropagation.",
+        "B) Switching to an LSTM (Long Short-Term Memory) architecture and initializing the forget gate bias to a high value.",
+        "C) Reducing the sequence length using a sliding window approach to keep the temporal depth below 50 steps.",
+        "D) Replacing the hyperbolic tangent (tanh) activation function with a Softmax function in the hidden layers."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Implementing Alpha-Beta Pruning to eliminate branches that cannot influence the final decision.",
-      "explanation": "Alpha-Beta pruning is the standard optimization for Min-Max that reduces the search space significantly by not evaluating branches that are mathematically proven to be worse than a previously examined branch. Crucially, it returns the exact same move as a full Min-Max search, making it ideal for real-time constraints where optimality relative to the search depth must be maintained."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Switching to an LSTM (Long Short-Term Memory) architecture and initializing the forget gate bias to a high value.",
+      "explanation": "LSTMs use an internal 'cell state' and gating mechanisms (input, forget, and output gates) to regulate information flow. Initializing the forget gate bias to a high value (e.g., 1.0) ensures that the network retains information from early time steps by default, effectively combating the vanishing gradient problem and allowing the model to capture long-term dependencies in historical financial data."
     },
     {
       "id": 3,
-      "scenario": "A pharmaceutical research lab is using heuristic search to find stable molecular configurations for a new drug. The search space is high-dimensional with a branching factor of over 1,000. The standard A* algorithm is failing because the 'Open List' (frontier) consumes all available 128GB of RAM within minutes of execution. The team needs a memory-efficient search that still utilizes the heuristic to guide the process towards a solution.",
-      "question": "Which algorithm is best suited to handle this high-dimensional search under strict memory constraints while attempting to maintain a balance between completeness and space complexity?",
+      "scenario": "A logistics company uses a CNN-based system to monitor warehouse security footage for unauthorized access. However, the dataset is highly skewed: 99% of the frames show normal operations, while only 1% contain security breaches. The model is currently achieving 99% accuracy but fails to detect 80% of the actual breaches (High False Negative Rate).",
+      "question": "Which combination of loss function and data strategy should be implemented to improve the detection of the minority class in this high-dimensional image sequence?",
       "options": [
-        "A) Depth-First Search (DFS)",
-        "B) Iterative Deepening A* (IDA*)",
-        "C) Uniform Cost Search (UCS)",
-        "D) Bidirectional Breadth-First Search"
+        "A) Use Mean Squared Error (MSE) loss and apply Random Cropping to increase spatial variability.",
+        "B) Implement a Weighted Cross-Entropy loss or Focal Loss combined with over-sampling of the minority class frames.",
+        "C) Apply Batch Normalization to every layer and increase the learning rate to escape local minima faster.",
+        "D) Convert the CNN into a Siamese Network architecture and use Contrastive Loss for one-shot learning."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Iterative Deepening A* (IDA*)",
-      "explanation": "IDA* (Iterative Deepening A*) is designed specifically to address the memory limitations of A*. While A* stores all generated nodes in memory (O(b^d)), IDA* only stores the current path, resulting in linear space complexity (O(d)). It uses the f-limit (g+h) to prune branches and iteratively increases this limit, combining the space efficiency of Depth-First Search with the heuristic guidance of A*."
+      "correct_answer_text": "B) Implement a Weighted Cross-Entropy loss or Focal Loss combined with over-sampling of the minority class frames.",
+      "explanation": "In highly imbalanced scenarios, standard accuracy is a misleading metric. Focal Loss is specifically designed to down-weight easy examples (majority class) and focus the training on hard, misclassified examples (minority class). Combining this with over-sampling ensures the model sees enough instances of security breaches to learn the features relevant to detection, thereby reducing the False Negative Rate."
     }
   ]
 }

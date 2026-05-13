@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
-  "mode": "Java",
+  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue in a Spring Boot application. A service method intended to run in a separate transaction is failing to do so. The code looks like this: \n\n`@Service` \n`public class AuditService {` \n`  @Transactional` \n`  public void processData() {` \n`    // ... logic` \n`    logAudit();` \n`  }` \n\n`  @Transactional(propagation = Propagation.REQUIRES_NEW)` \n`  public void logAudit() {` \n`    // ... db insert` \n`  }` \n`}` \n\nObservations show that when `logAudit()` fails, the entire `processData()` transaction rolls back, and no separate transaction is ever started for the audit log.",
-      "question": "What is the primary cause of this behavior regarding Spring Proxies and JVM execution?",
+      "scenario": "An autonomous vehicle startup is deploying a pedestrian detection system on an edge computing module with strict power consumption limits and a requirement for a minimum of 30 frames per second (FPS). The initial model using a standard ResNet-101 architecture achieves high accuracy but only reaches 5 FPS and consumes excessive memory, leading to thermal throttling on the hardware.",
+      "question": "Which architectural modification and optimization strategy would be most effective to meet the real-time constraints without a catastrophic loss in mAP (mean Average Precision)?",
       "options": [
-        "A) The JVM `ClassLoader` has loaded multiple instances of the `AuditService`.",
-        "B) Spring's default AOP utilizes CGLIB or Dynamic Proxies, and self-invocation bypasses the proxy wrapper.",
-        "C) The `Propagation.REQUIRES_NEW` attribute is only compatible with the ZGC collector.",
-        "D) The `TransactionManager` is not thread-safe and is being blocked by the JVM's SafePoint."
+        "A) Replacing standard convolutions with Depthwise Separable Convolutions and applying Post-Training Quantization (PTQ) to INT8.",
+        "B) Increasing the stride of the initial Max Pooling layers and using a Dropout rate of 0.5 to reduce the number of parameters.",
+        "C) Switching to a Dilated Convolutional network to expand the receptive field while reducing the total number of layers.",
+        "D) Utilizing a Global Average Pooling layer instead of Fully Connected layers to eliminate the bottleneck in the final stage."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Spring's default AOP utilizes CGLIB or Dynamic Proxies, and self-invocation bypasses the proxy wrapper.",
-      "explanation": "Spring's `@Transactional` works by creating a proxy (via CGLIB or JDK Dynamic Proxies) around the bean. When `processData()` is called from outside the class, it goes through the proxy. However, the call to `logAudit()` is an internal 'this' call. This bypasses the proxy, meaning the interceptor logic for `REQUIRES_NEW` is never executed, and the call runs within the physical scope of the existing transaction."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Replacing standard convolutions with Depthwise Separable Convolutions and applying Post-Training Quantization (PTQ) to INT8.",
+      "explanation": "Depthwise Separable Convolutions (used in MobileNet) significantly reduce the number of parameters and floating-point operations (FLOPs) by splitting spatial and channel-wise convolutions. Combined with INT8 quantization, this optimizes memory bandwidth and computation speed on edge hardware, directly addressing the latency and power constraints while maintaining competitive accuracy."
     },
     {
       "id": 2,
-      "scenario": "You are monitoring a high-throughput Java 17 application using the `G1` Garbage Collector. You notice frequent 'Full GC' events and 'Humongous Allocation' warnings in the logs. The application frequently processes large `byte[]` arrays (around 4MB each), while the total heap is 16GB with default G1 settings.",
-      "question": "Which JVM tuning strategy is most effective for resolving these latency spikes?",
+      "scenario": "A financial institution is building a model to predict stock market trends based on the last 10 years of daily historical data. During training of a standard Recurrent Neural Network (RNN), the data science team observes that the gradient values are becoming extremely small (approaching zero) as they propagate back through the initial time steps, preventing the model from learning long-term dependencies.",
+      "question": "Which of the following approaches is the most robust solution for mitigating this vanishing gradient problem in the context of high-frequency temporal sequences?",
       "options": [
-        "A) Decrease the `-Xms` value to allow the heap to shrink more aggressively.",
-        "B) Increase the `-XX:G1HeapRegionSize` to 8MB or 16MB to prevent objects from being classified as Humongous.",
-        "C) Switch to `ParallelGC` to improve the throughput of large object copying.",
-        "D) Set `-XX:MaxTenuringThreshold=0` to move large arrays directly to the Old Generation."
+        "A) Implementing Gradient Clipping to cap the maximum value of gradients during backpropagation.",
+        "B) Switching to an LSTM (Long Short-Term Memory) architecture and initializing the forget gate bias to a high value.",
+        "C) Reducing the sequence length using a sliding window approach to keep the temporal depth below 50 steps.",
+        "D) Replacing the hyperbolic tangent (tanh) activation function with a Softmax function in the hidden layers."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Increase the `-XX:G1HeapRegionSize` to 8MB or 16MB to prevent objects from being classified as Humongous.",
-      "explanation": "In G1, an object is 'Humongous' if it exceeds 50% of the `G1HeapRegionSize`. Humongous objects are allocated in the Old Generation in contiguous regions, leading to premature Full GCs and fragmentation. By increasing the region size, these 4MB arrays will fit into standard regions, allowing the collector to manage them more efficiently during normal Young or Mixed collections."
+      "correct_answer_text": "B) Switching to an LSTM (Long Short-Term Memory) architecture and initializing the forget gate bias to a high value.",
+      "explanation": "LSTMs use an internal 'cell state' and gating mechanisms (input, forget, and output gates) to regulate information flow. Initializing the forget gate bias to a high value (e.g., 1.0) ensures that the network retains information from early time steps by default, effectively combating the vanishing gradient problem and allowing the model to capture long-term dependencies in historical financial data."
     },
     {
       "id": 3,
-      "scenario": "You are investigating a race condition where a configuration flag `private boolean enabled = false;` is updated by a background thread but never seen as `true` by a worker thread, causing an infinite loop. The worker thread is running on a high-core count ARM-based server.",
-      "question": "According to the Java Memory Model (JMM), which mechanism ensures that the update to 'enabled' is visible to the worker thread?",
+      "scenario": "A logistics company uses a CNN-based system to monitor warehouse security footage for unauthorized access. However, the dataset is highly skewed: 99% of the frames show normal operations, while only 1% contain security breaches. The model is currently achieving 99% accuracy but fails to detect 80% of the actual breaches (High False Negative Rate).",
+      "question": "Which combination of loss function and data strategy should be implemented to improve the detection of the minority class in this high-dimensional image sequence?",
       "options": [
-        "A) Increasing the `ReservedCodeCacheSize` in the JVM flags.",
-        "B) Using the `synchronized` keyword or declaring the variable as `volatile` to establish a 'happens-before' relationship.",
-        "C) Implementing `Cloneable` on the service to ensure thread-local copies.",
-        "D) Forcing a `System.gc()` call to flush the CPU L1/L2 caches."
+        "A) Use Mean Squared Error (MSE) loss and apply Random Cropping to increase spatial variability.",
+        "B) Implement a Weighted Cross-Entropy loss or Focal Loss combined with over-sampling of the minority class frames.",
+        "C) Apply Batch Normalization to every layer and increase the learning rate to escape local minima faster.",
+        "D) Convert the CNN into a Siamese Network architecture and use Contrastive Loss for one-shot learning."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Using the `synchronized` keyword or declaring the variable as `volatile` to establish a 'happens-before' relationship.",
-      "explanation": "Without `volatile` or synchronization, the JMM allows compilers and CPUs to cache variables in registers or local caches indefinitely for optimization. Marking the variable `volatile` ensures a 'happens-before' relationship, forcing the thread to read the value from main memory and preventing the JIT compiler from optimizing the loop into an infinite one based on a stale local value."
+      "correct_answer_text": "B) Implement a Weighted Cross-Entropy loss or Focal Loss combined with over-sampling of the minority class frames.",
+      "explanation": "In highly imbalanced scenarios, standard accuracy is a misleading metric. Focal Loss is specifically designed to down-weight easy examples (majority class) and focus the training on hard, misclassified examples (minority class). Combining this with over-sampling ensures the model sees enough instances of security breaches to learn the features relevant to detection, thereby reducing the False Negative Rate."
     }
   ]
 }
