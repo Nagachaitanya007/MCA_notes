@@ -30,7 +30,8 @@
     "JVM Internals: The Lifecycle of a Java Object",
     "JVM Architecture: The Engine, The Warehouse, and The Janitors",
     "JVM Internals: The Blueprint, The Safety Protocol, and the Elite Cleaners",
-    "JVM Internals: The Memory Laws, Modern Cleaners, and the Dynamic Loader"
+    "JVM Internals: The Memory Laws, Modern Cleaners, and the Dynamic Loader",
+    "JVM Performance & Stability: Memory Consistency, Evolution of GC, and Dynamic Linking"
   ],
   "Design a Real-time Chat System (WebSockets, Redis Pub/Sub)": [
     "Scalable Real-time Chat: WebSockets & Redis Pub/Sub",
