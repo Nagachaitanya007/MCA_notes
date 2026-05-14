@@ -1,48 +1,48 @@
 {
-  "topic": "Exception Handling Strategies in Distributed Systems",
-  "mode": "Java",
+  "topic": "Clustering Scenarios: K-Means vs DBSCAN vs Hierarchical",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `PaymentService` is failing to roll back database changes. The code snippet is as follows: \n\njava\n@Service\npublic class PaymentService {\n    @Autowired\n    private AccountRepository accountRepo;\n\n    public void processPayment(Long id, Double amount) {\n        try {\n            updateBalance(id, amount);\n        } catch (Exception e) {\n            // Log error\n        }\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void updateBalance(Long id, Double amount) {\n        Account acc = accountRepo.findById(id).orElseThrow();\n        acc.setBalance(acc.getBalance() - amount);\n        accountRepo.save(acc);\n        if (amount > 1000) throw new RuntimeException(\"Limit exceeded\");\n    }\n}\n\nEven when the `RuntimeException` is thrown, the balance update is still committed to the database.",
-      "question": "What is the primary cause of this behavior?",
+      "scenario": "A logistics tech company is analyzing GPS coordinates of delivery vehicles to identify 'high-traffic bottlenecks' in a metropolitan area. The data reveals that traffic congestion forms elongated, non-spherical patterns along major highways. When the team uses an algorithm that minimizes the within-cluster sum of squares (WCSS), the long highway clusters are incorrectly fragmented into multiple circular segments, leading to inaccurate traffic predictions.",
+      "question": "Which clustering approach would best resolve this fragmentation issue while naturally identifying vehicles not caught in traffic as noise?",
       "options": [
-        "A) The `RuntimeException` is caught in the `processPayment` method, preventing the rollback.",
-        "B) Spring Proxies: The call to `updateBalance` is a self-invocation within the same class, bypassing the transactional interceptor.",
-        "C) The `Propagation.REQUIRES_NEW` attribute forces a commit regardless of exceptions.",
-        "D) The `AccountRepository` is using an auto-commit mode that overrides Spring's transaction manager."
+        "A) K-Means++ with a higher value of K to capture sub-segments.",
+        "B) DBSCAN using an appropriate epsilon (eps) and minimum samples (min_samples).",
+        "C) Agglomerative Hierarchical Clustering using Ward's linkage to minimize variance.",
+        "D) K-Medoids to reduce the influence of spatial outliers along the highway."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Spring Proxies: The call to `updateBalance` is a self-invocation within the same class, bypassing the transactional interceptor.",
-      "explanation": "In Spring, `@Transactional` is implemented via AOP proxies. When a method calls another method within the same class (`this.updateBalance(...)`), it bypasses the proxy and calls the underlying method directly. Consequently, the transaction management logic (the 'around' advice) is never executed, and no transaction is actually started or managed for `updateBalance`. To fix this, the method should be moved to a separate bean or accessed via self-injection."
+      "correct_answer_text": "B) DBSCAN using an appropriate epsilon (eps) and minimum samples (min_samples).",
+      "explanation": "K-Means and Ward's linkage Hierarchical clustering both tend to produce spherical clusters because they are based on distance-from-centroid or variance minimization. DBSCAN (Density-Based Spatial Clustering of Applications with Noise) is specifically designed to discover clusters of arbitrary shapes by connecting high-density reachable points. Furthermore, DBSCAN identifies points in low-density regions as outliers (noise), which satisfies the requirement to exclude vehicles not in traffic."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a high-throughput distributed gateway using `CompletableFuture` to aggregate microservice responses is intermittently 'hanging' or losing exception context. The code looks like this:\n\njava\npublic CompletableFuture<Response> fetchAsync(Request req) {\n    return CompletableFuture.supplyAsync(() -> client.call(req), customExecutor)\n        .thenApply(res -> transform(res))\n        .whenComplete((result, ex) -> {\n            if (ex != null) log.error(\"Failed\", ex);\n        });\n}\n\nDuring heavy load, some requests never return a response to the caller, and no error logs appear.",
-      "question": "Why does the client never receive a response or an error notification?",
+      "scenario": "A pharmaceutical research lab is working with a high-dimensional dataset of 450 distinct viral protein sequences. The lead researcher needs to visualize the 'evolutionary lineage' of these proteins to understand how sub-strains branch off from major families. The dataset is small but the primary requirement is to explore the data at different levels of granularity without re-running the model for different cluster counts (K).",
+      "question": "Which clustering technique is most suitable for this 'exploratory branching' requirement?",
       "options": [
-        "A) `whenComplete` consumes the exception and prevents it from propagating to the next stage.",
-        "B) The `customExecutor` is throwing a `RejectedExecutionException` which is not handled by the `CompletableFuture` chain.",
-        "C) The `whenComplete` block itself might be throwing an exception during logging, which swallows the original exception and hangs the chain.",
-        "D) If `transform(res)` throws a `RuntimeException`, the exception is only surfaced when `get()` or `join()` is called; otherwise, it remains encapsulated in the returned future."
+        "A) Mini-Batch K-Means for efficient processing of sequence dimensions.",
+        "B) DBSCAN, as it does not require the number of clusters to be specified.",
+        "C) Divisive Hierarchical Clustering (DIANA) visualizing results via a dendrogram.",
+        "D) K-Means with the Silhouette Method to determine the optimal cluster count."
       ],
-      "correct_answer_letter": "D",
-      "correct_answer_text": "D) If `transform(res)` throws a `RuntimeException`, the exception is only surfaced when `get()` or `join()` is called; otherwise, it remains encapsulated in the returned future.",
-      "explanation": "In a `CompletableFuture` pipeline, exceptions are stored in the future's result. If the downstream consumer does not call `.get()`, `.join()`, or attach an `.exceptionally()` / `.handle()` block to return a fallback value, the calling thread (or the event loop) will never be notified of the failure. The `whenComplete` method allows for side effects (like logging) but does not resolve the future's state into a usable 'error response' for the original caller, leading to a perceived hang at the API boundary."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Divisive Hierarchical Clustering (DIANA) visualizing results via a dendrogram.",
+      "explanation": "Hierarchical clustering (both Agglomerative and Divisive) produces a dendrogram, which is a tree-like diagram representing the nested groupings of data. This allows researchers to visualize relationships at any level of granularity (the 'branching' effect) without pre-defining K. While DBSCAN doesn't require K, it does not provide a hierarchical taxonomy of the data, and K-Means requires a fixed K for every execution."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue in a legacy Spring Boot application where a service handling external CSV imports is failing to roll back. The method is marked `@Transactional`. When a `IOException` occurs during file processing, the database records already created in that session are NOT being rolled back.",
-      "question": "What is the most likely reason the transaction is not rolling back?",
+      "scenario": "A global banking institution is deploying a real-time transaction monitoring system to segment millions of transactions per hour. The system must run on a distributed Spark cluster. The data is largely well-separated but contains significant high-frequency noise. The computational budget is tight, requiring an algorithm with linear time complexity O(n) that can scale horizontally across multiple nodes.",
+      "question": "Considering the trade-offs between computational complexity and scalability, which algorithm should the bank implement?",
       "options": [
-        "A) The database engine being used is MyISAM, which does not support transactions.",
-        "B) By default, Spring's `@Transactional` only rolls back on `Unchecked Exceptions` (RuntimeException and Error), not `Checked Exceptions` like `IOException`.",
-        "C) The `PlatformTransactionManager` is not configured for distributed file system operations.",
-        "D) The JVM's default exception handler is catching the `IOException` before the Spring Aspect can intercept it."
+        "A) Agglomerative Hierarchical Clustering with Single Linkage.",
+        "B) DBSCAN using a KD-Tree index for spatial queries.",
+        "C) K-Means with an optimized distributed implementation.",
+        "D) BIRCH (Balanced Iterative Reducing and Clustering using Hierarchies)."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) By default, Spring's `@Transactional` only rolls back on `Unchecked Exceptions` (RuntimeException and Error), not `Checked Exceptions` like `IOException`.",
-      "explanation": "Spring's transaction management follows EJB conventions: transactions are automatically rolled back for unchecked exceptions (`RuntimeException` and its subclasses) and `Error`. Checked exceptions (those extending `Exception` but not `RuntimeException`) do not trigger a rollback unless explicitly configured via `@Transactional(rollbackFor = Exception.class)`. Since `IOException` is a checked exception, the transaction manager commits the transaction upon completion of the method despite the exception."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) K-Means with an optimized distributed implementation.",
+      "explanation": "In large-scale industrial applications where O(n) complexity and horizontal scalability are required, K-Means is the industry standard. Hierarchical clustering has a complexity of O(n^2) or O(n^3), making it unusable for millions of records. While DBSCAN is effective for noise, its standard implementation is difficult to parallelize across distributed nodes compared to the centroid-based approach of K-Means, which is natively supported by frameworks like Apache Spark's MLlib."
     }
   ]
 }

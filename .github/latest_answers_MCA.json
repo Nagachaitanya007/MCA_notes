@@ -1,48 +1,48 @@
 {
-  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
+  "topic": "Clustering Scenarios: K-Means vs DBSCAN vs Hierarchical",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "An autonomous vehicle startup is deploying a pedestrian detection system on an edge computing module with strict power consumption limits and a requirement for a minimum of 30 frames per second (FPS). The initial model using a standard ResNet-101 architecture achieves high accuracy but only reaches 5 FPS and consumes excessive memory, leading to thermal throttling on the hardware.",
-      "question": "Which architectural modification and optimization strategy would be most effective to meet the real-time constraints without a catastrophic loss in mAP (mean Average Precision)?",
+      "scenario": "A logistics tech company is analyzing GPS coordinates of delivery vehicles to identify 'high-traffic bottlenecks' in a metropolitan area. The data reveals that traffic congestion forms elongated, non-spherical patterns along major highways. When the team uses an algorithm that minimizes the within-cluster sum of squares (WCSS), the long highway clusters are incorrectly fragmented into multiple circular segments, leading to inaccurate traffic predictions.",
+      "question": "Which clustering approach would best resolve this fragmentation issue while naturally identifying vehicles not caught in traffic as noise?",
       "options": [
-        "A) Replacing standard convolutions with Depthwise Separable Convolutions and applying Post-Training Quantization (PTQ) to INT8.",
-        "B) Increasing the stride of the initial Max Pooling layers and using a Dropout rate of 0.5 to reduce the number of parameters.",
-        "C) Switching to a Dilated Convolutional network to expand the receptive field while reducing the total number of layers.",
-        "D) Utilizing a Global Average Pooling layer instead of Fully Connected layers to eliminate the bottleneck in the final stage."
+        "A) K-Means++ with a higher value of K to capture sub-segments.",
+        "B) DBSCAN using an appropriate epsilon (eps) and minimum samples (min_samples).",
+        "C) Agglomerative Hierarchical Clustering using Ward's linkage to minimize variance.",
+        "D) K-Medoids to reduce the influence of spatial outliers along the highway."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Replacing standard convolutions with Depthwise Separable Convolutions and applying Post-Training Quantization (PTQ) to INT8.",
-      "explanation": "Depthwise Separable Convolutions (used in MobileNet) significantly reduce the number of parameters and floating-point operations (FLOPs) by splitting spatial and channel-wise convolutions. Combined with INT8 quantization, this optimizes memory bandwidth and computation speed on edge hardware, directly addressing the latency and power constraints while maintaining competitive accuracy."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) DBSCAN using an appropriate epsilon (eps) and minimum samples (min_samples).",
+      "explanation": "K-Means and Ward's linkage Hierarchical clustering both tend to produce spherical clusters because they are based on distance-from-centroid or variance minimization. DBSCAN (Density-Based Spatial Clustering of Applications with Noise) is specifically designed to discover clusters of arbitrary shapes by connecting high-density reachable points. Furthermore, DBSCAN identifies points in low-density regions as outliers (noise), which satisfies the requirement to exclude vehicles not in traffic."
     },
     {
       "id": 2,
-      "scenario": "A financial institution is building a model to predict stock market trends based on the last 10 years of daily historical data. During training of a standard Recurrent Neural Network (RNN), the data science team observes that the gradient values are becoming extremely small (approaching zero) as they propagate back through the initial time steps, preventing the model from learning long-term dependencies.",
-      "question": "Which of the following approaches is the most robust solution for mitigating this vanishing gradient problem in the context of high-frequency temporal sequences?",
+      "scenario": "A pharmaceutical research lab is working with a high-dimensional dataset of 450 distinct viral protein sequences. The lead researcher needs to visualize the 'evolutionary lineage' of these proteins to understand how sub-strains branch off from major families. The dataset is small but the primary requirement is to explore the data at different levels of granularity without re-running the model for different cluster counts (K).",
+      "question": "Which clustering technique is most suitable for this 'exploratory branching' requirement?",
       "options": [
-        "A) Implementing Gradient Clipping to cap the maximum value of gradients during backpropagation.",
-        "B) Switching to an LSTM (Long Short-Term Memory) architecture and initializing the forget gate bias to a high value.",
-        "C) Reducing the sequence length using a sliding window approach to keep the temporal depth below 50 steps.",
-        "D) Replacing the hyperbolic tangent (tanh) activation function with a Softmax function in the hidden layers."
+        "A) Mini-Batch K-Means for efficient processing of sequence dimensions.",
+        "B) DBSCAN, as it does not require the number of clusters to be specified.",
+        "C) Divisive Hierarchical Clustering (DIANA) visualizing results via a dendrogram.",
+        "D) K-Means with the Silhouette Method to determine the optimal cluster count."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Switching to an LSTM (Long Short-Term Memory) architecture and initializing the forget gate bias to a high value.",
-      "explanation": "LSTMs use an internal 'cell state' and gating mechanisms (input, forget, and output gates) to regulate information flow. Initializing the forget gate bias to a high value (e.g., 1.0) ensures that the network retains information from early time steps by default, effectively combating the vanishing gradient problem and allowing the model to capture long-term dependencies in historical financial data."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Divisive Hierarchical Clustering (DIANA) visualizing results via a dendrogram.",
+      "explanation": "Hierarchical clustering (both Agglomerative and Divisive) produces a dendrogram, which is a tree-like diagram representing the nested groupings of data. This allows researchers to visualize relationships at any level of granularity (the 'branching' effect) without pre-defining K. While DBSCAN doesn't require K, it does not provide a hierarchical taxonomy of the data, and K-Means requires a fixed K for every execution."
     },
     {
       "id": 3,
-      "scenario": "A logistics company uses a CNN-based system to monitor warehouse security footage for unauthorized access. However, the dataset is highly skewed: 99% of the frames show normal operations, while only 1% contain security breaches. The model is currently achieving 99% accuracy but fails to detect 80% of the actual breaches (High False Negative Rate).",
-      "question": "Which combination of loss function and data strategy should be implemented to improve the detection of the minority class in this high-dimensional image sequence?",
+      "scenario": "A global banking institution is deploying a real-time transaction monitoring system to segment millions of transactions per hour. The system must run on a distributed Spark cluster. The data is largely well-separated but contains significant high-frequency noise. The computational budget is tight, requiring an algorithm with linear time complexity O(n) that can scale horizontally across multiple nodes.",
+      "question": "Considering the trade-offs between computational complexity and scalability, which algorithm should the bank implement?",
       "options": [
-        "A) Use Mean Squared Error (MSE) loss and apply Random Cropping to increase spatial variability.",
-        "B) Implement a Weighted Cross-Entropy loss or Focal Loss combined with over-sampling of the minority class frames.",
-        "C) Apply Batch Normalization to every layer and increase the learning rate to escape local minima faster.",
-        "D) Convert the CNN into a Siamese Network architecture and use Contrastive Loss for one-shot learning."
+        "A) Agglomerative Hierarchical Clustering with Single Linkage.",
+        "B) DBSCAN using a KD-Tree index for spatial queries.",
+        "C) K-Means with an optimized distributed implementation.",
+        "D) BIRCH (Balanced Iterative Reducing and Clustering using Hierarchies)."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Implement a Weighted Cross-Entropy loss or Focal Loss combined with over-sampling of the minority class frames.",
-      "explanation": "In highly imbalanced scenarios, standard accuracy is a misleading metric. Focal Loss is specifically designed to down-weight easy examples (majority class) and focus the training on hard, misclassified examples (minority class). Combining this with over-sampling ensures the model sees enough instances of security breaches to learn the features relevant to detection, thereby reducing the False Negative Rate."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) K-Means with an optimized distributed implementation.",
+      "explanation": "In large-scale industrial applications where O(n) complexity and horizontal scalability are required, K-Means is the industry standard. Hierarchical clustering has a complexity of O(n^2) or O(n^3), making it unusable for millions of records. While DBSCAN is effective for noise, its standard implementation is difficult to parallelize across distributed nodes compared to the centroid-based approach of K-Means, which is natively supported by frameworks like Apache Spark's MLlib."
     }
   ]
 }
