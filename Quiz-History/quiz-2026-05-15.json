@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
+  "topic": "Advanced Collections Framework & Custom Implementations",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a Spring Boot microservice crashes with an `OutOfMemoryError: Java heap space` during nightly batch processing. The following service is responsible for ingesting 100,000 records into the database: \n\njava\n@Service\npublic class DataIngestor {\n    @PersistenceContext\n    private EntityManager entityManager;\n\n    @Transactional\n    public void processBatch(List<ExternalDto> inputs) {\n        for (ExternalDto dto : inputs) {\n            MetricEntity entity = new MetricEntity(dto);\n            entityManager.persist(entity);\n            // Logic to transform and link entities\n        }\n    }\n}\n",
-      "question": "What is the primary cause of the memory exhaustion in this scenario?",
+      "scenario": "You are debugging a production issue where a high-throughput microservice periodically fails to persist audit logs. The following code is used within a Spring Boot service: \n\njava\n@Service\npublic class AuditLogger {\n    @Transactional\n    public void processAuditLogs(List<String> payloads) {\n        payloads.forEach(this::internalPersist);\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void internalPersist(String data) {\n        // Logic to save to database\n    }\n}\n\nDespite `internalPersist` being marked as `REQUIRES_NEW`, if one record fails, the entire batch is rolled back because they are all running in the same transaction.",
+      "question": "What is the primary cause of this behavior?",
       "options": [
-        "A) The `MetricEntity` objects are being created in the Young Generation faster than the Minor GC can reclaim them.",
-        "B) The `PersistenceContext` (L1 Cache) keeps a reference to every managed entity until the transaction completes, preventing GC.",
-        "C) Spring's `@Transactional` proxy creates a deep copy of the `List<ExternalDto>` for rollback purposes, doubling heap usage.",
-        "D) The `EntityManager` is not thread-safe, leading to race conditions that corrupt the Heap's survivor space."
+        "A) The `List` interface is not compatible with `Propagation.REQUIRES_NEW`.",
+        "B) Spring Proxies: Internal calls using `this` bypass the proxy wrapper, preventing the Transaction Manager from intercepting the call.",
+        "C) The JVM JIT compiler optimizes the method call by inlining it, which strips the `@Transactional` annotation.",
+        "D) The `ArrayList` iterator maintains a reference to the initial transaction context, preventing new transactions."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `PersistenceContext` (L1 Cache) keeps a reference to every managed entity until the transaction completes, preventing GC.",
-      "explanation": "In JPA/Hibernate, the `PersistenceContext` acts as a first-level cache. When `persist()` is called within a `@Transactional` boundary, the entity becomes 'managed' and stays in memory until the transaction commits. For a batch of 100,000 records, all entities remain reachable from the `EntityManager` session, effectively bypassing GC. To fix this, one must periodically call `entityManager.flush()` and `entityManager.clear()` to release objects from the L1 cache."
+      "correct_answer_text": "B) Spring Proxies: Internal calls using `this` bypass the proxy wrapper, preventing the Transaction Manager from intercepting the call.",
+      "explanation": "Spring's `@Transactional` works via AOP proxies. When `processAuditLogs` is called from outside, it hits the proxy. However, calling `this.internalPersist()` is a direct reference call within the target object, bypassing the proxy entirely. Consequently, the `Propagation.REQUIRES_NEW` attribute is never processed, and the method executes within the caller's existing transaction context."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a high-throughput application using `G1GC` shows frequent 'Full GC' events in the logs. Upon closer inspection of the GC logs, you see many entries labeled `Pause Young (Concurrent Start) (Humongous Allocation)`. The heap size is 16GB and the `G1HeapRegionSize` is set to the default.",
-      "question": "Which tuning strategy is most likely to resolve these specific Full GC spikes?",
+      "scenario": "You are debugging a production issue involving a custom LRU (Least Recently Used) cache implementation. The cache uses `Collections.synchronizedMap(new LinkedHashMap<>(16, 0.75f, true))` to maintain access order. However, during heavy load, the application throws a `ConcurrentModificationException` even though all map access is supposedly synchronized.",
+      "question": "Which of the following is the most likely cause of the `ConcurrentModificationException`?",
       "options": [
-        "A) Increase the `-XX:MaxGCPauseMillis` to allow the collector more time to process the humongous objects.",
-        "B) Decrease the `-XX:InitiatingHeapOccupancyPercent` (IHOP) to trigger marking cycles earlier.",
-        "C) Increase the `-XX:G1HeapRegionSize` to ensure large objects do not exceed 50% of the region size.",
-        "D) Switch to `ParallelGC` because G1 is not designed to handle large object allocations."
+        "A) The `LinkedHashMap` access-order mode (true) modifies the list structure on `get()` calls, which is not thread-safe for iterators even if the map is synchronized.",
+        "B) The JVM Heap is full, causing the GC to move objects and corrupting the `LinkedHashMap` pointers.",
+        "C) `Collections.synchronizedMap` does not synchronize the `put` operation, only the `get` operation.",
+        "D) The load factor (0.75f) is too low, causing constant re-hashing in a multi-threaded environment."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Increase the `-XX:G1HeapRegionSize` to ensure large objects do not exceed 50% of the region size.",
-      "explanation": "In `G1GC`, an object is considered 'Humongous' if it occupies more than 50% of a single G1 region. Humongous objects are allocated directly in the `Old Generation` in a contiguous set of regions. This causes heap fragmentation and can trigger premature `Full GC` events because these objects are only reclaimed during the cleanup phase or Full GC. Increasing the region size (up to 32MB) makes fewer objects qualify as 'humongous', allowing them to be handled in the `Young Generation` normally."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The `LinkedHashMap` access-order mode (true) modifies the list structure on `get()` calls, which is not thread-safe for iterators even if the map is synchronized.",
+      "explanation": "In `LinkedHashMap`, when `accessOrder` is `true`, a `get()` operation actually modifies the underlying doubly-linked list to move the accessed entry to the end. While `Collections.synchronizedMap` protects the individual `get()` call, it does not protect an active `Iterator` from another thread. If one thread iterates over the map while another thread calls `get()`, the structural modification (moving the node) triggers the `fail-fast` mechanism of the iterator."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Spring-managed `ThreadPoolTaskExecutor` is used to process user requests. Each request sets a `UserContext` in a `ThreadLocal` variable for auditing. Over time, the `Old Gen` heap usage grows until the application becomes unresponsive, even though the `UserContext` is supposed to be short-lived.",
-      "question": "Why is the memory not being reclaimed by the Garbage Collector?",
+      "scenario": "You are debugging a production issue where a service utilizing a `WeakHashMap` as a metadata cache is experiencing a memory leak. You observe that while the keys are no longer referenced anywhere else in the application, the `WeakHashMap` entries are never cleared by the Garbage Collector (GC). The keys are custom `UserIdentity` objects and the values are `UserMetadata` objects.",
+      "question": "What is a common pitfall in custom `WeakHashMap` implementations that leads to this memory leak?",
       "options": [
-        "A) The `ThreadLocal` map in the worker threads retains references to the `UserContext` because threads in a pool are reused and never exit.",
-        "B) Spring Proxies wrap `ThreadLocal` variables in a 'Strong Reference' that the JVM cannot break during a Minor GC.",
-        "C) The `UserContext` objects are being promoted to the 'Survivor Space' but the 'Tenuring Threshold' is too high.",
-        "D) `ThreadPoolTaskExecutor` uses a `LinkedBlockingQueue` by default which prevents GC of any object ever added to the queue."
+        "A) The value objects (`UserMetadata`) maintain a strong reference back to the key objects (`UserIdentity`).",
+        "B) The `UserIdentity` key does not implement `Comparable`.",
+        "C) The JVM uses the G1 Collector, which ignores `WeakReference` types by default.",
+        "D) `WeakHashMap` only works with `String` keys because of the String Pool."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) The `ThreadLocal` map in the worker threads retains references to the `UserContext` because threads in a pool are reused and never exit.",
-      "explanation": "Threads in a `ThreadPoolExecutor` are long-lived. A `ThreadLocal` variable is stored inside the `Thread` object's `threadLocals` map. If `ThreadLocal.remove()` is not explicitly called after the task completion, the reference to the `UserContext` remains in the thread's map indefinitely. Since the thread never dies, the `UserContext` objects (and their classloaders) are never eligible for GC, leading to a memory leak."
+      "correct_answer_text": "A) The value objects (`UserMetadata`) maintain a strong reference back to the key objects (`UserIdentity`).",
+      "explanation": "In `WeakHashMap`, the entry is cleared only when the key is no longer strongly reachable. If the value (which is stored via a strong reference in the `Entry` object) contains a reference back to the key, a circular dependency is created. This 'Value-to-Key' strong reference prevents the key from ever being collected, as the value itself is strongly held by the `WeakHashMap` table until the key is cleared\u2014resulting in a classic memory leak."
     }
   ]
 }
