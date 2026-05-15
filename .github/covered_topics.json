@@ -65,7 +65,8 @@
   ],
   "Design a Notification System (Kafka + SQS + Webhooks)": [
     "Designing a Scalable Notification System (Kafka + SQS + Webhooks)",
-    "Reliable Notification Delivery: Handling Failure at Scale"
+    "Reliable Notification Delivery: Handling Failure at Scale",
+    "Orchestrating Notification Flows: Kafka as the Backbone, SQS as the Buffer"
   ],
   "Design a Rate Limiter (Token Bucket vs Leaky Bucket)": [
     "Rate Limiting: The Token Bucket vs. The Leaky Bucket",
