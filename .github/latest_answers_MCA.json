@@ -1,48 +1,48 @@
 {
-  "topic": "Clustering Scenarios: K-Means vs DBSCAN vs Hierarchical",
+  "topic": "Machine Learning: Classification vs Regression Scenarios",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A logistics tech company is analyzing GPS coordinates of delivery vehicles to identify 'high-traffic bottlenecks' in a metropolitan area. The data reveals that traffic congestion forms elongated, non-spherical patterns along major highways. When the team uses an algorithm that minimizes the within-cluster sum of squares (WCSS), the long highway clusters are incorrectly fragmented into multiple circular segments, leading to inaccurate traffic predictions.",
-      "question": "Which clustering approach would best resolve this fragmentation issue while naturally identifying vehicles not caught in traffic as noise?",
+      "scenario": "A smart-grid operator in a metropolitan city aims to manage peak electricity demand. The system must predict the exact consumption in Megawatts (MW) for the next hour to optimize power procurement. Simultaneously, it must trigger a 'Grid Overload' alert (Binary) if the demand exceeds 95% of the transformer capacity. The historical data shows that power consumption follows a continuous trend but contains sudden spikes during heatwaves that lead to imbalanced 'Overload' instances.",
+      "question": "Which modeling architecture is most appropriate to ensure both operational resource planning and high-sensitivity risk management?",
       "options": [
-        "A) K-Means++ with a higher value of K to capture sub-segments.",
-        "B) DBSCAN using an appropriate epsilon (eps) and minimum samples (min_samples).",
-        "C) Agglomerative Hierarchical Clustering using Ward's linkage to minimize variance.",
-        "D) K-Medoids to reduce the influence of spatial outliers along the highway."
+        "A) A single Linear Regression model where 'Overload' is determined by a hard threshold on the predicted continuous value.",
+        "B) A Multi-task Learning (MTL) framework with a shared feature extractor and two heads: a Regression head (MSE loss) and a Weighted Cross-Entropy Classification head.",
+        "C) A Logistic Regression model applied to the dataset after binning the continuous MW values into 10 discrete demand levels.",
+        "D) A Support Vector Machine (SVM) with a polynomial kernel designed to predict the probability of demand exceeding the threshold."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) DBSCAN using an appropriate epsilon (eps) and minimum samples (min_samples).",
-      "explanation": "K-Means and Ward's linkage Hierarchical clustering both tend to produce spherical clusters because they are based on distance-from-centroid or variance minimization. DBSCAN (Density-Based Spatial Clustering of Applications with Noise) is specifically designed to discover clusters of arbitrary shapes by connecting high-density reachable points. Furthermore, DBSCAN identifies points in low-density regions as outliers (noise), which satisfies the requirement to exclude vehicles not in traffic."
+      "correct_answer_text": "B) A Multi-task Learning (MTL) framework with a shared feature extractor and two heads: a Regression head (MSE loss) and a Weighted Cross-Entropy Classification head.",
+      "explanation": "In industrial scenarios requiring both value prediction (Regression) and event detection (Classification), a Multi-task framework is superior. It allows the model to learn shared representations of power trends while the weighted cross-entropy head specifically addresses the data imbalance of 'Overload' events, ensuring the model doesn't sacrifice safety alerts for average regression accuracy."
     },
     {
       "id": 2,
-      "scenario": "A pharmaceutical research lab is working with a high-dimensional dataset of 450 distinct viral protein sequences. The lead researcher needs to visualize the 'evolutionary lineage' of these proteins to understand how sub-strains branch off from major families. The dataset is small but the primary requirement is to explore the data at different levels of granularity without re-running the model for different cluster counts (K).",
-      "question": "Which clustering technique is most suitable for this 'exploratory branching' requirement?",
+      "scenario": "A global fintech firm is deploying a fraud detection system for cross-border transactions. The dataset is extremely skewed, with only 1 fraudulent transaction for every 10,000 legitimate ones. The engineering team has a hard constraint: the model must process a transaction and provide a decision within 15 milliseconds. They initially used a Deep Neural Network (DNN) which achieved 99.99% accuracy but failed to catch 80% of actual fraud cases in the test set.",
+      "question": "Which strategy would best improve the detection of fraud while adhering to the real-time latency constraints?",
       "options": [
-        "A) Mini-Batch K-Means for efficient processing of sequence dimensions.",
-        "B) DBSCAN, as it does not require the number of clusters to be specified.",
-        "C) Divisive Hierarchical Clustering (DIANA) visualizing results via a dendrogram.",
-        "D) K-Means with the Silhouette Method to determine the optimal cluster count."
+        "A) Increasing the depth of the DNN and using Dropout to reduce overfitting on the majority class.",
+        "B) Switching to a Random Forest with 1000 trees and using SMOTE to balance the training data.",
+        "C) Utilizing an XGBoost model with Scale_Pos_Weight and optimized Early Stopping to maintain low-latency inference.",
+        "D) Implementing a K-Nearest Neighbors (KNN) classifier to find the local density of fraudulent points in the feature space."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) Divisive Hierarchical Clustering (DIANA) visualizing results via a dendrogram.",
-      "explanation": "Hierarchical clustering (both Agglomerative and Divisive) produces a dendrogram, which is a tree-like diagram representing the nested groupings of data. This allows researchers to visualize relationships at any level of granularity (the 'branching' effect) without pre-defining K. While DBSCAN doesn't require K, it does not provide a hierarchical taxonomy of the data, and K-Means requires a fixed K for every execution."
+      "correct_answer_text": "C) Utilizing an XGBoost model with Scale_Pos_Weight and optimized Early Stopping to maintain low-latency inference.",
+      "explanation": "High accuracy on skewed data is often a 'Accuracy Paradox' symptom. Gradient Boosted Trees (XGBoost) with the 'scale_pos_weight' parameter directly address class imbalance during training. Furthermore, tree-based models are generally faster for inference on tabular data compared to deep networks or high-tree-count forests, making them ideal for the 15ms constraint."
     },
     {
       "id": 3,
-      "scenario": "A global banking institution is deploying a real-time transaction monitoring system to segment millions of transactions per hour. The system must run on a distributed Spark cluster. The data is largely well-separated but contains significant high-frequency noise. The computational budget is tight, requiring an algorithm with linear time complexity O(n) that can scale horizontally across multiple nodes.",
-      "question": "Considering the trade-offs between computational complexity and scalability, which algorithm should the bank implement?",
+      "scenario": "A pharmaceutical research institute is developing a model to predict the 'Inhibitory Concentration' (a continuous value) of a new drug based on 50,000 genomic features. They have a very small sample size of only 200 patients. Initial attempts using Ordinary Least Squares (OLS) regression resulted in a model with extremely large coefficients and a R-squared of 0.99 on training data, but 0.10 on unseen validation data.",
+      "question": "Given the 'p >> n' (features significantly exceeding samples) problem and the need for feature interpretability, which algorithm should be selected?",
       "options": [
-        "A) Agglomerative Hierarchical Clustering with Single Linkage.",
-        "B) DBSCAN using a KD-Tree index for spatial queries.",
-        "C) K-Means with an optimized distributed implementation.",
-        "D) BIRCH (Balanced Iterative Reducing and Clustering using Hierarchies)."
+        "A) Ridge Regression (L2 Regularization) to penalize the magnitude of all 50,000 coefficients.",
+        "B) Lasso Regression (L1 Regularization) to enforce sparsity and perform automated feature selection.",
+        "C) Principal Component Regression (PCR) to reduce the 50,000 features into 200 components before OLS.",
+        "D) A Multi-layer Perceptron (MLP) with ReLU activation to capture non-linear genomic interactions."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) K-Means with an optimized distributed implementation.",
-      "explanation": "In large-scale industrial applications where O(n) complexity and horizontal scalability are required, K-Means is the industry standard. Hierarchical clustering has a complexity of O(n^2) or O(n^3), making it unusable for millions of records. While DBSCAN is effective for noise, its standard implementation is difficult to parallelize across distributed nodes compared to the centroid-based approach of K-Means, which is natively supported by frameworks like Apache Spark's MLlib."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Lasso Regression (L1 Regularization) to enforce sparsity and perform automated feature selection.",
+      "explanation": "In high-dimensional scenarios with small samples (p >> n), models tend to overfit the noise (high variance). Lasso (L1) is specifically designed for this because its penalty term forces the coefficients of less important features to exactly zero. This creates a sparse model, which provides the 'feature selection' necessary for genomic interpretability, unlike Ridge which keeps all features."
     }
   ]
 }
