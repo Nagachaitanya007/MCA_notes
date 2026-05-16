@@ -1,49 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
-  "mode": "Java",
+  "topic": "Machine Learning: Classification vs Regression Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue in a Spring Boot application where a database update is not rolling back after an exception. The code snippet is as follows:\n\njava\n@Service\npublic class TransactionalService {\n    public void processOrder(Order order) {\n        try {\n            saveOrder(order);\n        } catch (Exception e) {\n            // Error handling\n        }\n    }\n\n    @Transactional(propagation = Propagation.REQUIRED)\n    public void saveOrder(Order order) {\n        orderRepository.save(order);\n        throw new RuntimeException(\"Force rollback\");\n    }\n}\n\nDespite the `RuntimeException`, the order remains in the database.",
-      "question": "Why is the `@Transactional` annotation failing to trigger a rollback in this scenario?",
-      "objective": "Bug Hunter",
+      "scenario": "A global logistics firm aims to optimize its operational expenditure by predicting the fuel consumption (in liters) for its fleet of 500 heavy-duty trucks per trip. The input features include cargo weight, route elevation, and driver idle time. Initial data analysis reveals that the target variable (fuel consumption) contains significant outliers due to intermittent GPS sensor malfunctions and extreme weather events that are not representative of standard operations.",
+      "question": "Which modeling approach and loss function should the data scientist implement to ensure the model remains robust to these sensor-induced outliers while providing a continuous prediction?",
       "options": [
-        "A) The `RuntimeException` is caught in the `processOrder` method, preventing the proxy from seeing the exception.",
-        "B) Spring's AOP proxying mechanism fails to intercept the `saveOrder` call because it is an internal method call using `this`.",
-        "C) The default `ProxyMode` for `@Transactional` does not support `Propagation.REQUIRED` on public methods.",
-        "D) The `orderRepository.save()` method is running in a separate JVM thread due to asynchronous class loading."
+        "A) Linear Regression using Mean Squared Error (MSE) loss to penalize large errors heavily.",
+        "B) Support Vector Regression (SVR) using an Epsilon-insensitive loss function to ignore minor fluctuations.",
+        "C) Huber Regression using a combination of L1 and L2 loss to minimize the impact of heavy-tailed distributions.",
+        "D) Logistic Regression with a Softmax output to categorize consumption into discrete quartiles."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Spring's AOP proxying mechanism fails to intercept the `saveOrder` call because it is an internal method call using `this`.",
-      "explanation": "In Spring, `@Transactional` is implemented via AOP proxies. When `processOrder` calls `saveOrder`, it is a direct method call on the `this` reference, bypassing the proxy. Since the proxy is never invoked, no transaction context is started for `saveOrder`. To fix this, the call must come from an external bean, or the class must use AspectJ weaving instead of Spring AOP."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Huber Regression using a combination of L1 and L2 loss to minimize the impact of heavy-tailed distributions.",
+      "explanation": "In a regression scenario with significant outliers, Mean Squared Error (MSE) is unsuitable because it squares the residuals, giving disproportionate weight to outliers and pulling the fit away from the majority of the data. Huber Loss provides a robust alternative; it behaves like MSE (quadratic) for small residuals but switches to Mean Absolute Error (MAE - linear) for residuals exceeding a threshold (delta). This linear behavior for large errors reduces the sensitivity to outliers, making it ideal for sensor-contaminated industrial data."
     },
     {
       "id": 2,
-      "scenario": "You are managing a high-throughput, low-latency financial system using the `ZGC` (Z Garbage Collector). You notice that during periods of extreme load, the application threads experience significant 'Allocation Stalls,' causing latency spikes that exceed 100ms, even though `ZGC` is designed for sub-millisecond pauses.",
-      "question": "What is the most likely cause of these latency spikes under `ZGC`?",
+      "scenario": "A Fintech startup is developing an automated credit-scoring engine for 'thin-file' borrowers (individuals with no prior credit history). The system must decide whether to 'Approve' or 'Reject' a loan application. The business requirement dictates that the model must not only provide a binary decision but also a calibrated probability score to allow the risk team to set dynamic interest rates based on the likelihood of default. The dataset is highly imbalanced, with only 2% of previous applicants having defaulted.",
+      "question": "Given the requirement for both a classification decision and a calibrated probability in a high-imbalance environment, which strategy is most technically sound?",
       "options": [
-        "A) The 'Stop-The-World' (STW) phase of the Mark-and-Compact cycle is being triggered due to heap fragmentation.",
-        "B) The 'Remap' phase is competing for CPU cycles with application threads, causing context switching overhead.",
-        "C) The application's allocation rate exceeds the collector's ability to reclaim memory concurrently, forcing threads to block.",
-        "D) The JVM is performing a full GC because the `ZGC` colored pointers have lost their reference bits."
+        "A) Random Forest Classifier using Balanced Class Weights and evaluating performance via the Area Under the Precision-Recall Curve (AUPRC).",
+        "B) K-Nearest Neighbors (KNN) with Euclidean distance to ensure that 'Default' cases are grouped together geographically in the feature space.",
+        "C) Standard OLS Linear Regression where the target is mapped to 0 and 1, applying a 0.5 threshold for final classification.",
+        "D) Naive Bayes Classifier assuming Gaussian distribution for all high-dimensional financial features to maximize speed."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The application's allocation rate exceeds the collector's ability to reclaim memory concurrently, forcing threads to block.",
-      "explanation": "ZGC is a concurrent collector, meaning it performs most work while application threads are running. However, it is not 'magic'\u2014if the application allocates memory faster than the ZGC threads can identify and reclaim garbage, the heap will fill up. In this scenario, the JVM forces application threads to stall (stop allocating) until the collector frees up space, resulting in significant latency spikes. This is often solved by increasing the heap size or the number of concurrent GC threads."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Random Forest Classifier using Balanced Class Weights and evaluating performance via the Area Under the Precision-Recall Curve (AUPRC).",
+      "explanation": "For imbalanced classification (2% defaults), standard accuracy is a misleading metric. Random Forest with 'balanced' class weights adjusts the Gini impurity or Entropy calculation to penalize misclassifications of the minority class more heavily. Furthermore, AUPRC is superior to ROC-AUC in highly skewed datasets because it focuses on the performance of the positive class (defaults). Random Forests also provide well-distributed probability estimates (via the fraction of trees voting for a class) which can be further calibrated for risk-based pricing."
     },
     {
       "id": 3,
-      "scenario": "You are developing a plugin system where classes are loaded dynamically at runtime using a custom `ClassLoader`. Multiple threads are concurrently attempting to load the same classes. You observe that occasionally the system hangs in a deadlock state involving the `ClassLoader` monitor and a `ReentrantLock` used within your plugin initialization logic.",
-      "question": "Which JVM-level configuration or behavior is the most common cause of `ClassLoader` deadlocks in a multi-threaded environment before Java 7, or in improperly implemented custom loaders in later versions?",
+      "scenario": "An OTT (Over-The-Top) streaming platform is analyzing user engagement to improve its 'Auto-Play Next' feature. They want to predict the 'Completion Rate' of a movie, defined as a value between 0.0 (stopped immediately) and 1.0 (watched to the end). Historical data shows a bimodal distribution: most users either drop off within the first 5 minutes (Completion < 0.1) or finish the entire movie (Completion > 0.9).",
+      "question": "If the team treats this as a Regression problem using a standard Deep Neural Network with a Sigmoid output and Mean Squared Error (MSE) loss, what is the most likely technical failure the business will encounter?",
       "options": [
-        "A) The lack of `registerAsParallelCapable()` in the custom `ClassLoader` constructor, leading to a single global lock on the loader instance.",
-        "B) A violation of the 'Happens-Before' relationship in the `defineClass` native method call.",
-        "C) The `Metaspace` reaching its capacity, triggering synchronous class unloading that blocks the `loadClass` method.",
-        "D) Use of the 'Parent-Last' delegation model which is inherently thread-unsafe according to the JVM Specification."
+        "A) The model will suffer from exploding gradients because the Sigmoid function is used in the output layer.",
+        "B) The model will predict values close to 0.5 for most users, which does not represent the reality of user behavior.",
+        "C) The MSE loss function will fail to converge because the completion rate is bounded between 0 and 1.",
+        "D) The model will accurately capture the bimodal peaks but will fail to generalize to new genres."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The lack of `registerAsParallelCapable()` in the custom `ClassLoader` constructor, leading to a single global lock on the loader instance.",
-      "explanation": "By default, `ClassLoader` instances are synchronized on their own monitor during the `loadClass` process. In complex scenarios (like circular dependencies between class loaders), this can lead to deadlocks. Since Java 7, custom loaders should call `ClassLoader.registerAsParallelCapable()` in their static initializer. This changes the locking mechanism to be per-classname rather than per-loader instance, significantly reducing the risk of deadlocks during concurrent class loading."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The model will predict values close to 0.5 for most users, which does not represent the reality of user behavior.",
+      "explanation": "MSE loss in a regression context forces the model to converge toward the mean of the distribution to minimize the total squared error. In a bimodal distribution where values are clustered at 0.1 and 0.9, the mean is approximately 0.5\u2014a value that almost no actual user exhibits. This makes the regression output 'actionably useless.' In such scenarios, it is often better to reframe the problem as a classification task (e.g., 'Will finish' vs 'Will not finish') or use a mixture density network that can model multiple modes."
     }
   ]
 }
