@@ -72,7 +72,8 @@
   ],
   "Design a Rate Limiter (Token Bucket vs Leaky Bucket)": [
     "Rate Limiting: The Token Bucket vs. The Leaky Bucket",
-    "Choosing Your Throttle: Token Bucket vs. Leaky Bucket"
+    "Choosing Your Throttle: Token Bucket vs. Leaky Bucket",
+    "Architecting Traffic Control: Token Bucket vs. Leaky Bucket"
   ],
   "Design a Distributed Cache (Consistent Hashing, LRU)": [
     "Distributed Cache Design: Consistent Hashing & LRU",
