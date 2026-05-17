@@ -44,7 +44,8 @@
     "Generational Garbage Collection & The \"Stop-The-World\" Problem",
     "Garbage Collection Tuning: Throughput vs. Latency Optimization",
     "Memory Allocation Strategies & The Fragmentation Problem",
-    "Heap Profiling & Memory Leak Detection"
+    "Heap Profiling & Memory Leak Detection",
+    "Region-Based Memory Management & Modern Concurrent Collectors"
   ],
   "Design a URL Shortener (Key Generation Service, Sharding)": [
     "URL Shortener: Key Generation Service (KGS) & Sharding",
