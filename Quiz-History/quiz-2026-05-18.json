@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
-  "mode": "Java",
+  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput microservice was migrated from platform threads to Java 21 Virtual Threads. Despite the change, the service is experiencing severe throughput degradation and increased latency during heavy database I/O. You find the following code snippet in a legacy library being used:\n\njava\npublic class LegacyService {\n    private final Object lock = new Object();\n\n    public String processRequest(String id) {\n        synchronized (lock) {\n            // Perform blocking I/O call to a legacy database\n            return databaseClient.fetchRecord(id);\n        }\n    }\n}\n",
-      "question": "What is the primary cause of the throughput degradation in the Virtual Thread environment?",
+      "scenario": "A multinational retail corporation is building a 'Unified Product Knowledge Graph' to integrate disparate inventory data from 5,000+ vendors. The system must support real-time semantic search across millions of SKUs while ensuring that reasoning about product categories (e.g., a 'Smartwatch' is both an 'Electronic' and a 'Wearable') remains computationally tractable. The technical team is debating between OWL 2 DL and OWL 2 QL for the ontology layer, given that the underlying data is stored in a massive relational database.",
+      "question": "Which trade-off is most critical when selecting the OWL 2 QL profile for this industrial application?",
       "options": [
-        "A) Virtual Threads are incompatible with the `synchronized` keyword, causing a `ThreadDeath` exception.",
-        "B) The `synchronized` block causes 'Pinning', where the Virtual Thread cannot be unmounted from its Carrier Thread during blocking I/O.",
-        "C) The `ForkJoinPool` used as the scheduler for Virtual Threads does not support reentrant locks.",
-        "D) Virtual Threads have a larger stack size than Platform Threads, leading to frequent Metaspace OutOfMemoryErrors."
+        "A) Sacrificing the ability to use property chains and cardinality constraints to gain sound and complete conjunctive query answering in polynomial time.",
+        "B) Increasing the complexity of the ABox reasoning to exponential time to ensure maximum expressivity of the TBox.",
+        "C) Utilizing the Open World Assumption (OWA) to ensure that missing vendor data is automatically treated as 'False' during SKU validation.",
+        "D) Enabling reflexive and symmetric properties at the cost of losing compatibility with standard SQL-based query rewriting techniques."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `synchronized` block causes 'Pinning', where the Virtual Thread cannot be unmounted from its Carrier Thread during blocking I/O.",
-      "explanation": "In Project Loom (Virtual Threads), when a thread hits a blocking operation, it should ideally yield and unmount from its carrier thread (a platform thread). However, if a Virtual Thread is inside a `synchronized` block or method, it becomes 'pinned' to its carrier thread. If the operation inside the block is a blocking I/O call, the underlying carrier thread is also blocked. Since the default carrier pool size is typically equal to the number of available processors, pinning a few carrier threads can quickly lead to exhaustion of the scheduler's resources, nullifying the benefits of Virtual Threads."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Sacrificing the ability to use property chains and cardinality constraints to gain sound and complete conjunctive query answering in polynomial time.",
+      "explanation": "In large-scale industrial settings like e-commerce, OWL 2 QL is designed specifically for scenarios where the TBox (terminology) is relatively simple but the ABox (data) is massive and stored in RDBMS. The primary trade-off is the restriction on expressivity (no cardinality constraints or general property chains) to allow for 'Query Rewriting,' where SPARQL queries are transformed into SQL. This ensures that the query performance scales with the database engine rather than the reasoning engine's logical complexity."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where data consistency is compromised in a Spring Boot application. A developer implemented the following logic to improve response times:\n\njava\n@Service\npublic class OrderService {\n    @Transactional\n    public CompletableFuture<Void> processOrder(Order order) {\n        orderRepository.save(order);\n        return CompletableFuture.runAsync(() -> {\n            inventoryService.updateStock(order);\n            notificationService.sendEmail(order);\n        });\n    }\n}\n\nUsers report that stock is sometimes updated even if the `orderRepository.save(order)` fails later in the method (e.g., due to a constraint violation at commit time).",
-      "question": "Why does the asynchronous block fail to respect the transaction boundaries?",
+      "scenario": "An autonomous drone fleet operates in a high-density smart warehouse. The fleet uses a First-Order Logic (FOL) based inference engine to navigate safety constraints. During a system-wide update, sensor noise results in a logical contradiction where a specific sector is flagged as both 'Safe_to_Enter' and 'NOT Safe_to_Enter'. The inference engine experiences a 'logical explosion' (Ex Falso Quodlibet), leading to a total system freeze.",
+      "question": "To handle such real-time sensor skew and prevent system-wide failure, which logic-based adaptation is most suitable?",
       "options": [
-        "A) `CompletableFuture` automatically starts a new transaction regardless of the parent thread's state.",
-        "B) Spring's `@Transactional` uses `ThreadLocal` to store transaction context, which is not propagated to the `runAsync` thread.",
-        "C) The `orderRepository.save` method is not actually called until the `CompletableFuture` joins.",
-        "D) The `inventoryService` proxy detects the `CompletableFuture` and automatically switches to an `ISOLATION_READ_UNCOMMITTED` level."
+        "A) Implementing Monotonic Logic to ensure that new sensor data never invalidates previously held safety beliefs.",
+        "B) Migrating to Paraconsistent Logic to localize the contradiction and allow the engine to continue reasoning about unaffected sectors.",
+        "C) Increasing the resolution of the predicate calculus to include fuzzy membership functions for 'Safety'.",
+        "D) Utilizing Modal Logic to distinguish between 'Necessarily Safe' and 'Possibly Safe' across all warehouse coordinates."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Spring's `@Transactional` uses `ThreadLocal` to store transaction context, which is not propagated to the `runAsync` thread.",
-      "explanation": "Spring Transactions are managed via `TransactionSynchronizationManager`, which uses `ThreadLocal` variables to bind the current transaction to the specific thread. When `CompletableFuture.runAsync` is called, it executes the task in a different thread (usually from the `ForkJoinPool.commonPool()`). This new thread does not have access to the `ThreadLocal` storage of the original thread, meaning the `inventoryService.updateStock` call runs outside the original transaction. Furthermore, the original transaction may commit or rollback independently of the async task's success or failure."
+      "correct_answer_text": "B) Migrating to Paraconsistent Logic to localize the contradiction and allow the engine to continue reasoning about unaffected sectors.",
+      "explanation": "Classical First-Order Logic suffers from the 'Explosion Principle' where a single contradiction allows any statement to be proven true, crashing the utility of the KR system. In industrial robotics, Paraconsistent Logic (like Belnap\u2019s four-valued logic) is used to manage inconsistent data. It prevents the contradiction from 'infecting' the entire knowledge base, allowing the drone fleet to remain operational in sectors where no contradictions exist while the localized error is resolved."
     },
     {
       "id": 3,
-      "scenario": "You are investigating a memory leak in a Spring Boot 3.x application using `CompletableFuture` for parallel API orchestration. The heap dump shows millions of `CompletableFuture$Completion` objects and associated lambda captures. The code structure is as follows:\n\njava\npublic CompletableFuture<Data> aggregateData(String id) {\n    return fetchFromA(id)\n        .thenCompose(resultA -> fetchFromB(resultA))\n        .thenCombine(fetchFromC(id), (b, c) -> combine(b, c))\n        .orTimeout(500, TimeUnit.MILLISECONDS);\n}\n\nYou notice that the upstream services (A, B, and C) are intermittently slow, frequently hitting the 500ms timeout.",
-      "question": "Which JVM internal behavior or `CompletableFuture` mechanism is most likely contributing to the resource pressure under high timeout rates?",
+      "scenario": "A healthcare AI startup utilizes a large-scale Semantic Net to model drug-drug interactions (DDI). The network contains 1 million nodes (chemicals, symptoms, proteins). During 'Spreading Activation' to find potential side effects for a new compound, the system suffers from 'Semantic Drift' and 'Activation Explosion,' where the search incorrectly identifies distant, irrelevant concepts like 'Hospital Billing' as high-probability side effects due to high-degree hub nodes.",
+      "question": "Which architectural constraint or algorithm adjustment would most effectively mitigate this issue in a high-dimensional semantic space?",
       "options": [
-        "A) The `orTimeout` method uses a global `ScheduledThreadPoolExecutor` which prevents GC of the entire chain until the timeout elapses.",
-        "B) `CompletableFuture` objects are allocated in the Survivor Space and moved to the Old Gen immediately upon any exception.",
-        "C) When a timeout occurs, the underlying HTTP threads are interrupted, but the callback chain is not automatically cleared until all segments complete.",
-        "D) The `thenCombine` operation creates a strong reference back to the root `CompletableFuture`, preventing the 'id' string from being collected."
+        "A) Applying a 'Fan-out' constraint that inversely weights activation energy based on the out-degree of a node.",
+        "B) Switching from a Semantic Net to a strictly hierarchical Taxonomy to eliminate cycles in the graph.",
+        "C) Implementing a Depth-First Search (DFS) with an infinite depth limit to ensure all possible interactions are captured.",
+        "D) Removing all 'IS-A' inheritance links to reduce the branching factor of the activation pulse."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) The `orTimeout` method uses a global `ScheduledThreadPoolExecutor` which prevents GC of the entire chain until the timeout elapses.",
-      "explanation": "When `orTimeout` is called, it schedules a task in a hidden system-wide `ScheduledThreadPoolExecutor`. This task holds a reference to the `CompletableFuture`. If the future chain is long or captures large objects (via lambdas), these cannot be garbage collected until the timeout task fires and is removed from the scheduler's queue, even if the primary worker thread has abandoned the task. Under heavy load with many timeouts, this causes a 'backlog' of unreachable but not yet collectable objects, leading to high memory pressure."
+      "correct_answer_text": "A) Applying a 'Fan-out' constraint that inversely weights activation energy based on the out-degree of a node.",
+      "explanation": "In semantic networks, hub nodes (nodes with many connections) act as 'sinks' or 'bridges' that cause activation to spread too broadly, leading to semantic drift. By applying a 'fan-out' constraint\u2014where the amount of activation passed to neighbors is divided by the number of neighbors (out-degree)\u2014the system penalizes overly general concepts. This preserves the signal for specific, relevant paths and prevents the activation from saturating the network with irrelevant high-dimensional associations."
     }
   ]
 }
