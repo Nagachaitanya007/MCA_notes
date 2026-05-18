@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Java 21 service was migrated from Platform Threads to Virtual Threads to handle more concurrent connections. During peak load, you observe that the throughput drops significantly and CPU utilization on the carrier threads is unusually high, while the OS thread count remains low. You find the following snippet in the codebase: \n\njava\npublic class DataService {\n    private final ReentrantLock lock = new ReentrantLock();\n\n    public String processRequest(String id) {\n        synchronized (this) {\n            return bffClient.fetchData(id); // Performs blocking network I/O\n        }\n    }\n}\n",
-      "question": "What is the primary cause of the performance degradation in this Virtual Thread-based system?",
+      "scenario": "You are debugging a production issue where a high-throughput microservice was migrated from platform threads to Java 21 Virtual Threads. Despite the change, the service is experiencing severe throughput degradation and increased latency during heavy database I/O. You find the following code snippet in a legacy library being used:\n\njava\npublic class LegacyService {\n    private final Object lock = new Object();\n\n    public String processRequest(String id) {\n        synchronized (lock) {\n            // Perform blocking I/O call to a legacy database\n            return databaseClient.fetchRecord(id);\n        }\n    }\n}\n",
+      "question": "What is the primary cause of the throughput degradation in the Virtual Thread environment?",
       "options": [
-        "A) Virtual threads are not compatible with the `synchronized` keyword, causing a `ClassCastException` at runtime.",
-        "B) The Virtual Thread is 'pinned' to its carrier thread because it entered a `synchronized` block before performing a blocking operation.",
-        "C) The `ReentrantLock` is not used, which is the only lock type that Virtual Threads can recognize for non-blocking yields.",
-        "D) The `ForkJoinPool` scheduler used by Virtual Threads cannot handle more than 256 concurrent tasks."
+        "A) Virtual Threads are incompatible with the `synchronized` keyword, causing a `ThreadDeath` exception.",
+        "B) The `synchronized` block causes 'Pinning', where the Virtual Thread cannot be unmounted from its Carrier Thread during blocking I/O.",
+        "C) The `ForkJoinPool` used as the scheduler for Virtual Threads does not support reentrant locks.",
+        "D) Virtual Threads have a larger stack size than Platform Threads, leading to frequent Metaspace OutOfMemoryErrors."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The Virtual Thread is 'pinned' to its carrier thread because it entered a `synchronized` block before performing a blocking operation.",
-      "explanation": "In Java 21, when a Virtual Thread executes a `synchronized` block or method and then performs a blocking operation (like I/O or `Thread.sleep`), it 'pins' the Virtual Thread to its carrier thread (the platform thread it is currently running on). This prevents the scheduler from unmounting the virtual thread and using the carrier thread for other tasks. This leads to carrier thread exhaustion, effectively nullifying the benefits of Virtual Threads. The fix is to use `ReentrantLock`, which allows the virtual thread to unmount during blocking operations."
+      "correct_answer_text": "B) The `synchronized` block causes 'Pinning', where the Virtual Thread cannot be unmounted from its Carrier Thread during blocking I/O.",
+      "explanation": "In Project Loom (Virtual Threads), when a thread hits a blocking operation, it should ideally yield and unmount from its carrier thread (a platform thread). However, if a Virtual Thread is inside a `synchronized` block or method, it becomes 'pinned' to its carrier thread. If the operation inside the block is a blocking I/O call, the underlying carrier thread is also blocked. Since the default carrier pool size is typically equal to the number of available processors, pinning a few carrier threads can quickly lead to exhaustion of the scheduler's resources, nullifying the benefits of Virtual Threads."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a Spring Boot application where a developer attempted to offload a database write to a background thread to improve API response times. They used the following implementation:\n\njava\n@Service\npublic class OrderService {\n    @Autowired private OrderRepository repository;\n\n    @Transactional\n    public void placeOrder(Order order) {\n        repository.save(order);\n        CompletableFuture.runAsync(() -> {\n            updateInventory(order);\n        });\n    }\n\n    private void updateInventory(Order order) {\n        // Logic to update inventory table\n    }\n}\n\nIn production, users report that inventory updates are frequently missing even when orders are successfully saved.",
-      "question": "Why does the `updateInventory` logic fail to consistently see the saved `Order`?",
+      "scenario": "You are debugging a production issue where data consistency is compromised in a Spring Boot application. A developer implemented the following logic to improve response times:\n\njava\n@Service\npublic class OrderService {\n    @Transactional\n    public CompletableFuture<Void> processOrder(Order order) {\n        orderRepository.save(order);\n        return CompletableFuture.runAsync(() -> {\n            inventoryService.updateStock(order);\n            notificationService.sendEmail(order);\n        });\n    }\n}\n\nUsers report that stock is sometimes updated even if the `orderRepository.save(order)` fails later in the method (e.g., due to a constraint violation at commit time).",
+      "question": "Why does the asynchronous block fail to respect the transaction boundaries?",
       "options": [
-        "A) `CompletableFuture.runAsync` defaults to the `ForkJoinPool.commonPool()`, which does not have access to the Spring Bean Context.",
-        "B) Spring's `@Transactional` uses `ThreadLocal` to manage the database connection; the async thread does not share this context and may execute before the transaction commits.",
-        "C) The `Order` object is not `Serializable`, so it cannot be passed across thread boundaries in a Spring Proxy.",
-        "D) The `repository.save()` method is asynchronous by default in Spring Data JPA."
+        "A) `CompletableFuture` automatically starts a new transaction regardless of the parent thread's state.",
+        "B) Spring's `@Transactional` uses `ThreadLocal` to store transaction context, which is not propagated to the `runAsync` thread.",
+        "C) The `orderRepository.save` method is not actually called until the `CompletableFuture` joins.",
+        "D) The `inventoryService` proxy detects the `CompletableFuture` and automatically switches to an `ISOLATION_READ_UNCOMMITTED` level."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Spring's `@Transactional` uses `ThreadLocal` to manage the database connection; the async thread does not share this context and may execute before the transaction commits.",
-      "explanation": "Spring's transaction management relies on `ThreadLocal` to bind a database connection to the current thread. When `CompletableFuture.runAsync` is called, it executes in a different thread from the `ForkJoinPool`. This new thread is not part of the existing transaction. Furthermore, the `placeOrder` transaction only commits *after* the method returns. Therefore, the background thread often tries to read the order or update inventory before the main transaction has actually been committed to the database, leading to a race condition and 'invisible' data."
+      "correct_answer_text": "B) Spring's `@Transactional` uses `ThreadLocal` to store transaction context, which is not propagated to the `runAsync` thread.",
+      "explanation": "Spring Transactions are managed via `TransactionSynchronizationManager`, which uses `ThreadLocal` variables to bind the current transaction to the specific thread. When `CompletableFuture.runAsync` is called, it executes the task in a different thread (usually from the `ForkJoinPool.commonPool()`). This new thread does not have access to the `ThreadLocal` storage of the original thread, meaning the `inventoryService.updateStock` call runs outside the original transaction. Furthermore, the original transaction may commit or rollback independently of the async task's success or failure."
     },
     {
       "id": 3,
-      "scenario": "You are investigating a memory leak in a service that aggregates data from multiple microservices using `CompletableFuture`. The code looks like this:\n\njava\npublic CompletableFuture<Response> aggregate() {\n    var task1 = serviceA.call();\n    var task2 = serviceB.call();\n\n    return CompletableFuture.allOf(task1, task2)\n        .thenApply(v -> new Response(task1.join(), task2.join()));\n}\n\nUnder heavy load, the `ForkJoinPool.commonPool()` becomes saturated, and the application's heap usage grows until an `OutOfMemoryError` occurs. Thread dumps show thousands of threads waiting on `CompletableFuture.join()`.",
-      "question": "Which of the following is the best architectural fix for this concurrency issue?",
+      "scenario": "You are investigating a memory leak in a Spring Boot 3.x application using `CompletableFuture` for parallel API orchestration. The heap dump shows millions of `CompletableFuture$Completion` objects and associated lambda captures. The code structure is as follows:\n\njava\npublic CompletableFuture<Data> aggregateData(String id) {\n    return fetchFromA(id)\n        .thenCompose(resultA -> fetchFromB(resultA))\n        .thenCombine(fetchFromC(id), (b, c) -> combine(b, c))\n        .orTimeout(500, TimeUnit.MILLISECONDS);\n}\n\nYou notice that the upstream services (A, B, and C) are intermittently slow, frequently hitting the 500ms timeout.",
+      "question": "Which JVM internal behavior or `CompletableFuture` mechanism is most likely contributing to the resource pressure under high timeout rates?",
       "options": [
-        "A) Replace `join()` with `get()` and add a `try-catch` block to handle `InterruptedException`.",
-        "B) Increase the `Parallelism` factor of the `ForkJoinPool.commonPool()` using a JVM system property.",
-        "C) Supply a custom `Executor` to `supplyAsync` / `runAsync` to isolate the web thread pool from the background task pool.",
-        "D) Use `CompletableFuture.delayedExecutor()` to slow down the rate of task submission."
+        "A) The `orTimeout` method uses a global `ScheduledThreadPoolExecutor` which prevents GC of the entire chain until the timeout elapses.",
+        "B) `CompletableFuture` objects are allocated in the Survivor Space and moved to the Old Gen immediately upon any exception.",
+        "C) When a timeout occurs, the underlying HTTP threads are interrupted, but the callback chain is not automatically cleared until all segments complete.",
+        "D) The `thenCombine` operation creates a strong reference back to the root `CompletableFuture`, preventing the 'id' string from being collected."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Supply a custom `Executor` to `supplyAsync` / `runAsync` to isolate the web thread pool from the background task pool.",
-      "explanation": "Using the `ForkJoinPool.commonPool()` for blocking I/O operations is dangerous because it is shared across the entire JVM (including parallel streams). If the external services (A or B) become slow, the common pool threads will be exhausted waiting for responses. Providing a dedicated `Executor` (e.g., a `ThreadPoolExecutor` with a bounded queue and a rejection policy) ensures that resource exhaustion in the aggregation logic doesn't starve other parts of the system and allows for better monitoring and tuning of the specific workload."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The `orTimeout` method uses a global `ScheduledThreadPoolExecutor` which prevents GC of the entire chain until the timeout elapses.",
+      "explanation": "When `orTimeout` is called, it schedules a task in a hidden system-wide `ScheduledThreadPoolExecutor`. This task holds a reference to the `CompletableFuture`. If the future chain is long or captures large objects (via lambdas), these cannot be garbage collected until the timeout task fires and is removed from the scheduler's queue, even if the primary worker thread has abandoned the task. Under heavy load with many timeouts, this causes a 'backlog' of unreachable but not yet collectable objects, leading to high memory pressure."
     }
   ]
 }
