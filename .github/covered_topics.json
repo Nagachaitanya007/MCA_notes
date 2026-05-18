@@ -33,7 +33,8 @@
     "JVM Architecture: The Engine, The Warehouse, and The Janitors",
     "JVM Internals: The Blueprint, The Safety Protocol, and the Elite Cleaners",
     "JVM Internals: The Memory Laws, Modern Cleaners, and the Dynamic Loader",
-    "JVM Performance & Stability: Memory Consistency, Evolution of GC, and Dynamic Linking"
+    "JVM Performance & Stability: Memory Consistency, Evolution of GC, and Dynamic Linking",
+    "JVM Internals: The Class Loading Hierarchy, Memory Consistency, and Zero-Pause Collectors"
   ],
   "Design a Real-time Chat System (WebSockets, Redis Pub/Sub)": [
     "Scalable Real-time Chat: WebSockets & Redis Pub/Sub",
