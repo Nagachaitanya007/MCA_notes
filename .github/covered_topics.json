@@ -39,7 +39,8 @@
   ],
   "Design a Real-time Chat System (WebSockets, Redis Pub/Sub)": [
     "Scalable Real-time Chat: WebSockets & Redis Pub/Sub",
-    "Horizontal Scaling of WebSockets with Redis Pub/Sub"
+    "Horizontal Scaling of WebSockets with Redis Pub/Sub",
+    "The Anatomy of Real-time Connectivity: WebSockets & Redis Pub/Sub"
   ],
   "Memory Management & Garbage Collection Tuning": [
     "Java Memory Management & Garbage Collection Tuning",
