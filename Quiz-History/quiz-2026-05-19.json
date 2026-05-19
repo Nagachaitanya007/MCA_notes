@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
-  "mode": "Java",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Java application using the `G1 GC` (Garbage First) collector is experiencing frequent `Full GC` pauses. Monitoring shows that the heap is only 45% occupied, yet `jstat` and GC logs reveal numerous `Humongous Allocation` events. The JVM is configured with an 8GB heap (`-Xms8g -Xmx8g`).",
-      "question": "What is the primary cause of these frequent Full GC cycles and how should the JVM be tuned?",
+      "scenario": "A logistics automation startup is deploying Autonomous Mobile Robots (AMRs) in a high-density warehouse. The robots use the A* algorithm to navigate from the charging station to various picking zones. To meet strict real-time response requirements under low-power ARM-based microcontrollers, the lead engineer proposes using an 'Inadmissible Heuristic' that significantly overestimates the cost to the goal ($h(n) > h*(n)$) to force the search to expand fewer nodes.",
+      "question": "What is the most critical performance trade-off the system will encounter due to this heuristic modification?",
       "options": [
-        "A) The G1 region size is too large, causing the collector to ignore small object clusters.",
-        "B) Objects larger than 50% of the G1 region size are bypassing the Young Gen and being allocated directly in the Humongous regions of the Old Gen, leading to fragmentation.",
-        "C) The `MaxGCPauseMillis` is set too high, allowing the Eden space to grow until it triggers a heap-wide evacuation failure.",
-        "D) The `ParallelGCThreads` parameter is misconfigured, causing contention during the marking phase of humongous objects."
+        "A) The algorithm will lose its completeness, potentially failing to find a path even if one exists.",
+        "B) The search will become significantly slower as it reverts to a Breadth-First Search behavior.",
+        "C) The algorithm will no longer guarantee an optimal (shortest) path, acting more like a Greedy Best-First Search.",
+        "D) The memory consumption will increase exponentially because the 'closed list' cannot be maintained."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Objects larger than 50% of the G1 region size are bypassing the Young Gen and being allocated directly in the Humongous regions of the Old Gen, leading to fragmentation.",
-      "explanation": "In `G1 GC`, any object larger than 50% of the region size is considered a 'Humongous Object'. For an 8GB heap, the default region size is typically 4MB. If the application allocates 2.1MB objects, they are placed in Humongous regions. These regions are allocated as contiguous sequences in the Old Gen. Frequent humongous allocations can lead to heap fragmentation and trigger `Full GC` even if total occupancy is low. The fix is to increase `-XX:G1HeapRegionSize` (e.g., to 16MB or 32MB) so that these objects fall below the 50% threshold and are handled via standard Young Gen collection."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) The algorithm will no longer guarantee an optimal (shortest) path, acting more like a Greedy Best-First Search.",
+      "explanation": "In A* search, the guarantee of optimality (finding the shortest path) depends on the heuristic being admissible ($h(n) \\le h*(n)$). If the heuristic is inadmissible and overestimates the cost, the algorithm favors reaching the goal quickly over finding the most cost-effective path, effectively trading optimality for reduced computational overhead (expansion of fewer nodes)."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a Spring Boot application is leaking memory in its `AuditContext` (which uses a `ThreadLocal<String>`). You identify the following `Bug Hunter` snippet in a `@Service` class:\n\njava\n@Service\npublic class OrderProcessingService {\n    private final AuditContext auditContext;\n\n    @Transactional\n    public void process(Order order) {\n        auditContext.setContextId(order.getTraceId());\n        try {\n            this.internalUpdate(order);\n        } finally {\n            auditContext.clear();\n        }\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void internalUpdate(Order order) {\n        // Database operations here\n        if (order.isInvalid()) throw new RuntimeException(\"Invalid Order\");\n    }\n}\n",
-      "question": "Despite the `finally` block, under heavy load, certain threads still hold stale context IDs. Why is the `REQUIRES_NEW` propagation not behaving as expected, and what is the underlying proxy issue?",
+      "scenario": "A FinTech firm is developing an automated risk-mitigation engine that treats market volatility as an 'Adversarial Game.' The system uses a Min-Max algorithm with Alpha-Beta pruning to determine the best hedging strategy against 'market moves' (the adversary). During high-frequency trading hours, the branching factor of possible market states increases drastically, and the engine fails to reach the required search depth within the 20ms latency window, leading to sub-optimal hedging.",
+      "question": "Which optimization technique should be implemented to maximize the number of pruned branches and improve search depth within the time constraint?",
       "options": [
-        "A) The `ThreadLocal` is being cleared before the inner transaction commits due to the `finally` block execution order.",
-        "B) Spring's `@Transactional` does not support `Propagation.REQUIRES_NEW` when using the default CGLIB proxying mechanism.",
-        "C) The `internalUpdate` method is called via `this`, bypassing the Spring Proxy; therefore, no new transaction is created and the `RuntimeException` may interfere with the outer context logic differently than expected.",
-        "D) The `AuditContext` is a singleton bean, which causes thread-safety issues regardless of the `ThreadLocal` implementation."
+        "A) Switching the search strategy from Depth-First to Breadth-First to ensure all immediate moves are evaluated.",
+        "B) Implementing Move Ordering by evaluating 'strong' moves (high-impact hedges) earlier in the search tree.",
+        "C) Disabling Alpha-Beta pruning to reduce the overhead of keeping track of alpha and beta bounds.",
+        "D) Replacing the Min-Max evaluation function with a static linear regression model to avoid tree traversal."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The `internalUpdate` method is called via `this`, bypassing the Spring Proxy; therefore, no new transaction is created and the `RuntimeException` may interfere with the outer context logic differently than expected.",
-      "explanation": "In Spring, `@Transactional` is implemented via AOP proxies. When `process` calls `this.internalUpdate`, it is a local method call that does not pass through the proxy. Consequently, the `REQUIRES_NEW` instruction is ignored, and the code runs within the same transaction. While the `finally` block in this specific snippet *should* clear the `ThreadLocal`, the developer's assumption about transaction boundaries is broken. If the `auditContext.clear()` call were managed by a transaction synchronization or if the exception handling logic relied on the inner method being in a separate transaction (e.g., to catch it and continue), the leak or state corruption occurs because the proxy logic was never invoked."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Implementing Move Ordering by evaluating 'strong' moves (high-impact hedges) earlier in the search tree.",
+      "explanation": "The efficiency of Alpha-Beta pruning is highly dependent on the order in which nodes are examined. In the best-case scenario (perfect ordering), the number of nodes examined is reduced from $O(b^d)$ to $O(b^{d/2})$. By implementing Move Ordering (exploring the most promising moves first), the algorithm can trigger cut-offs much earlier, allowing for a deeper search within the same time budget."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a low-latency trading application crashes with `java.lang.OutOfMemoryError: Direct buffer memory`. The heap usage (Xmx) is stable at 2GB, but the Resident Set Size (RSS) of the process has climbed to 10GB. The application uses Netty and `java.nio.DirectByteBuffer` for zero-copy I/O. The JVM flag `-XX:+DisableExplicitGC` is enabled.",
-      "question": "What is the relationship between GC and the Direct Buffer leak in this scenario?",
+      "scenario": "An AI-driven pharmaceutical research platform uses a heuristic search to find stable protein folding configurations in a high-dimensional state space. The current implementation uses A* with an admissible heuristic. However, because the state space is nearly infinite and the search involves millions of nodes, the system frequently crashes with a 'Java.lang.OutOfMemoryError' before reaching a goal state, despite having 128GB of RAM.",
+      "question": "Which search variant is specifically designed to handle such memory-intensive constraints while still attempting to maintain the benefits of an admissible heuristic?",
       "options": [
-        "A) Direct buffers are allocated in the `Metaspace`, and `-XX:+DisableExplicitGC` prevents `Metaspace` expansion.",
-        "B) `DirectByteBuffer` objects on the heap are only small wrappers; their native memory is only freed when the heap object is garbage collected. If the heap is not full, GC isn't triggered, and native memory accumulates.",
-        "C) Netty requires the `G1` collector to use the `StringDeduplication` feature to clean up off-heap buffers.",
-        "D) The `-XX:+DisableExplicitGC` flag prevents Netty from manually calling `System.gc()` to force the reclamation of leaked Direct Memory."
+        "A) Uniform Cost Search (UCS), as it minimizes the cost of the paths explored.",
+        "B) Iterative Deepening A* (IDA*), which uses the depth-first approach to minimize memory footprint.",
+        "C) Bidirectional Search, to meet in the middle and reduce the search radius.",
+        "D) Hill Climbing with Random Restarts, to escape local optima in the high-dimensional space."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) `DirectByteBuffer` objects on the heap are only small wrappers; their native memory is only freed when the heap object is garbage collected. If the heap is not full, GC isn't triggered, and native memory accumulates.",
-      "explanation": "Direct memory is linked to a 'Cleaner' or 'PhantomReference'. The native memory is only released when the Java wrapper object is collected from the heap. In scenarios with a large heap or low heap pressure, the JVM may not perform a GC for a long time. If the application allocates off-heap memory rapidly, it can exhaust physical RAM (RSS) before the heap is full enough to trigger a collection. Using `-XX:+DisableExplicitGC` makes this worse because it prevents calls to `System.gc()` (which many libraries use as a last-resort to trigger a cleanup of direct buffers) from working."
+      "correct_answer_text": "B) Iterative Deepening A* (IDA*), which uses the depth-first approach to minimize memory footprint.",
+      "explanation": "A* is notorious for its memory consumption because it stores all generated nodes in the 'open list' (Priority Queue). IDA* (Iterative Deepening A*) addresses this by using a depth-first search approach, limited by a 'f-cost' threshold ($g + h$). It only requires memory proportional to the depth of the search ($O(d)$), making it suitable for high-dimensional problems where RAM is the primary bottleneck."
     }
   ]
 }

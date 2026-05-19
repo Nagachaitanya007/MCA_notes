@@ -1,48 +1,48 @@
 {
-  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A multinational retail corporation is building a 'Unified Product Knowledge Graph' to integrate disparate inventory data from 5,000+ vendors. The system must support real-time semantic search across millions of SKUs while ensuring that reasoning about product categories (e.g., a 'Smartwatch' is both an 'Electronic' and a 'Wearable') remains computationally tractable. The technical team is debating between OWL 2 DL and OWL 2 QL for the ontology layer, given that the underlying data is stored in a massive relational database.",
-      "question": "Which trade-off is most critical when selecting the OWL 2 QL profile for this industrial application?",
+      "scenario": "A logistics automation startup is deploying Autonomous Mobile Robots (AMRs) in a high-density warehouse. The robots use the A* algorithm to navigate from the charging station to various picking zones. To meet strict real-time response requirements under low-power ARM-based microcontrollers, the lead engineer proposes using an 'Inadmissible Heuristic' that significantly overestimates the cost to the goal ($h(n) > h*(n)$) to force the search to expand fewer nodes.",
+      "question": "What is the most critical performance trade-off the system will encounter due to this heuristic modification?",
       "options": [
-        "A) Sacrificing the ability to use property chains and cardinality constraints to gain sound and complete conjunctive query answering in polynomial time.",
-        "B) Increasing the complexity of the ABox reasoning to exponential time to ensure maximum expressivity of the TBox.",
-        "C) Utilizing the Open World Assumption (OWA) to ensure that missing vendor data is automatically treated as 'False' during SKU validation.",
-        "D) Enabling reflexive and symmetric properties at the cost of losing compatibility with standard SQL-based query rewriting techniques."
+        "A) The algorithm will lose its completeness, potentially failing to find a path even if one exists.",
+        "B) The search will become significantly slower as it reverts to a Breadth-First Search behavior.",
+        "C) The algorithm will no longer guarantee an optimal (shortest) path, acting more like a Greedy Best-First Search.",
+        "D) The memory consumption will increase exponentially because the 'closed list' cannot be maintained."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Sacrificing the ability to use property chains and cardinality constraints to gain sound and complete conjunctive query answering in polynomial time.",
-      "explanation": "In large-scale industrial settings like e-commerce, OWL 2 QL is designed specifically for scenarios where the TBox (terminology) is relatively simple but the ABox (data) is massive and stored in RDBMS. The primary trade-off is the restriction on expressivity (no cardinality constraints or general property chains) to allow for 'Query Rewriting,' where SPARQL queries are transformed into SQL. This ensures that the query performance scales with the database engine rather than the reasoning engine's logical complexity."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) The algorithm will no longer guarantee an optimal (shortest) path, acting more like a Greedy Best-First Search.",
+      "explanation": "In A* search, the guarantee of optimality (finding the shortest path) depends on the heuristic being admissible ($h(n) \\le h*(n)$). If the heuristic is inadmissible and overestimates the cost, the algorithm favors reaching the goal quickly over finding the most cost-effective path, effectively trading optimality for reduced computational overhead (expansion of fewer nodes)."
     },
     {
       "id": 2,
-      "scenario": "An autonomous drone fleet operates in a high-density smart warehouse. The fleet uses a First-Order Logic (FOL) based inference engine to navigate safety constraints. During a system-wide update, sensor noise results in a logical contradiction where a specific sector is flagged as both 'Safe_to_Enter' and 'NOT Safe_to_Enter'. The inference engine experiences a 'logical explosion' (Ex Falso Quodlibet), leading to a total system freeze.",
-      "question": "To handle such real-time sensor skew and prevent system-wide failure, which logic-based adaptation is most suitable?",
+      "scenario": "A FinTech firm is developing an automated risk-mitigation engine that treats market volatility as an 'Adversarial Game.' The system uses a Min-Max algorithm with Alpha-Beta pruning to determine the best hedging strategy against 'market moves' (the adversary). During high-frequency trading hours, the branching factor of possible market states increases drastically, and the engine fails to reach the required search depth within the 20ms latency window, leading to sub-optimal hedging.",
+      "question": "Which optimization technique should be implemented to maximize the number of pruned branches and improve search depth within the time constraint?",
       "options": [
-        "A) Implementing Monotonic Logic to ensure that new sensor data never invalidates previously held safety beliefs.",
-        "B) Migrating to Paraconsistent Logic to localize the contradiction and allow the engine to continue reasoning about unaffected sectors.",
-        "C) Increasing the resolution of the predicate calculus to include fuzzy membership functions for 'Safety'.",
-        "D) Utilizing Modal Logic to distinguish between 'Necessarily Safe' and 'Possibly Safe' across all warehouse coordinates."
+        "A) Switching the search strategy from Depth-First to Breadth-First to ensure all immediate moves are evaluated.",
+        "B) Implementing Move Ordering by evaluating 'strong' moves (high-impact hedges) earlier in the search tree.",
+        "C) Disabling Alpha-Beta pruning to reduce the overhead of keeping track of alpha and beta bounds.",
+        "D) Replacing the Min-Max evaluation function with a static linear regression model to avoid tree traversal."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Migrating to Paraconsistent Logic to localize the contradiction and allow the engine to continue reasoning about unaffected sectors.",
-      "explanation": "Classical First-Order Logic suffers from the 'Explosion Principle' where a single contradiction allows any statement to be proven true, crashing the utility of the KR system. In industrial robotics, Paraconsistent Logic (like Belnap\u2019s four-valued logic) is used to manage inconsistent data. It prevents the contradiction from 'infecting' the entire knowledge base, allowing the drone fleet to remain operational in sectors where no contradictions exist while the localized error is resolved."
+      "correct_answer_text": "B) Implementing Move Ordering by evaluating 'strong' moves (high-impact hedges) earlier in the search tree.",
+      "explanation": "The efficiency of Alpha-Beta pruning is highly dependent on the order in which nodes are examined. In the best-case scenario (perfect ordering), the number of nodes examined is reduced from $O(b^d)$ to $O(b^{d/2})$. By implementing Move Ordering (exploring the most promising moves first), the algorithm can trigger cut-offs much earlier, allowing for a deeper search within the same time budget."
     },
     {
       "id": 3,
-      "scenario": "A healthcare AI startup utilizes a large-scale Semantic Net to model drug-drug interactions (DDI). The network contains 1 million nodes (chemicals, symptoms, proteins). During 'Spreading Activation' to find potential side effects for a new compound, the system suffers from 'Semantic Drift' and 'Activation Explosion,' where the search incorrectly identifies distant, irrelevant concepts like 'Hospital Billing' as high-probability side effects due to high-degree hub nodes.",
-      "question": "Which architectural constraint or algorithm adjustment would most effectively mitigate this issue in a high-dimensional semantic space?",
+      "scenario": "An AI-driven pharmaceutical research platform uses a heuristic search to find stable protein folding configurations in a high-dimensional state space. The current implementation uses A* with an admissible heuristic. However, because the state space is nearly infinite and the search involves millions of nodes, the system frequently crashes with a 'Java.lang.OutOfMemoryError' before reaching a goal state, despite having 128GB of RAM.",
+      "question": "Which search variant is specifically designed to handle such memory-intensive constraints while still attempting to maintain the benefits of an admissible heuristic?",
       "options": [
-        "A) Applying a 'Fan-out' constraint that inversely weights activation energy based on the out-degree of a node.",
-        "B) Switching from a Semantic Net to a strictly hierarchical Taxonomy to eliminate cycles in the graph.",
-        "C) Implementing a Depth-First Search (DFS) with an infinite depth limit to ensure all possible interactions are captured.",
-        "D) Removing all 'IS-A' inheritance links to reduce the branching factor of the activation pulse."
+        "A) Uniform Cost Search (UCS), as it minimizes the cost of the paths explored.",
+        "B) Iterative Deepening A* (IDA*), which uses the depth-first approach to minimize memory footprint.",
+        "C) Bidirectional Search, to meet in the middle and reduce the search radius.",
+        "D) Hill Climbing with Random Restarts, to escape local optima in the high-dimensional space."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Applying a 'Fan-out' constraint that inversely weights activation energy based on the out-degree of a node.",
-      "explanation": "In semantic networks, hub nodes (nodes with many connections) act as 'sinks' or 'bridges' that cause activation to spread too broadly, leading to semantic drift. By applying a 'fan-out' constraint\u2014where the amount of activation passed to neighbors is divided by the number of neighbors (out-degree)\u2014the system penalizes overly general concepts. This preserves the signal for specific, relevant paths and prevents the activation from saturating the network with irrelevant high-dimensional associations."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Iterative Deepening A* (IDA*), which uses the depth-first approach to minimize memory footprint.",
+      "explanation": "A* is notorious for its memory consumption because it stores all generated nodes in the 'open list' (Priority Queue). IDA* (Iterative Deepening A*) addresses this by using a depth-first search approach, limited by a 'f-cost' threshold ($g + h$). It only requires memory proportional to the depth of the search ($O(d)$), making it suitable for high-dimensional problems where RAM is the primary bottleneck."
     }
   ]
 }
