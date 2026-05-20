@@ -1,48 +1,48 @@
 {
-  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A logistics automation startup is deploying Autonomous Mobile Robots (AMRs) in a high-density warehouse. The robots use the A* algorithm to navigate from the charging station to various picking zones. To meet strict real-time response requirements under low-power ARM-based microcontrollers, the lead engineer proposes using an 'Inadmissible Heuristic' that significantly overestimates the cost to the goal ($h(n) > h*(n)$) to force the search to expand fewer nodes.",
-      "question": "What is the most critical performance trade-off the system will encounter due to this heuristic modification?",
+      "scenario": "A fintech corporation is deploying an online, real-time credit card fraud detection system designed to handle up to 15,000 transactions per second (TPS) with a strict sub-15ms end-to-end latency SLA. During initial profiling, you find that the feature 'historical_merchant_risk_score' is missing for 8% of transactions (Missing at Random, MAR), and the 'transaction_amount' feature is heavily right-skewed (skewness > 5.2). The downstream classifier is a latency-sensitive logistic regression model.",
+      "question": "Which combination of preprocessing steps optimizes predictive performance while consistently meeting the sub-15ms real-time latency SLA?",
       "options": [
-        "A) The algorithm will lose its completeness, potentially failing to find a path even if one exists.",
-        "B) The search will become significantly slower as it reverts to a Breadth-First Search behavior.",
-        "C) The algorithm will no longer guarantee an optimal (shortest) path, acting more like a Greedy Best-First Search.",
-        "D) The memory consumption will increase exponentially because the 'closed list' cannot be maintained."
+        "A) Apply an iterative Multivariate Imputation by Chained Equations (MICE) with a Random Forest regressor for the missing scores, and a Yeo-Johnson power transform for the transaction amount.",
+        "B) Apply a K-Nearest Neighbors (KNN) Imputer (K=5) optimized with a KD-Tree spatial index for missing values, and a Box-Cox transformation (with a shift parameter) for the transaction amount.",
+        "C) Use simple median imputation coupled with an binary 'is_missing' indicator column for the missing scores, and a computationally cheap Log1p (log(x + 1)) transformation for the transaction amount.",
+        "D) Utilize a Matrix Factorization (SoftImpute) model to complete the missing data matrix in batches, and a QuantileTransformer (mapping to a normal distribution) for the transaction amount."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) The algorithm will no longer guarantee an optimal (shortest) path, acting more like a Greedy Best-First Search.",
-      "explanation": "In A* search, the guarantee of optimality (finding the shortest path) depends on the heuristic being admissible ($h(n) \\le h*(n)$). If the heuristic is inadmissible and overestimates the cost, the algorithm favors reaching the goal quickly over finding the most cost-effective path, effectively trading optimality for reduced computational overhead (expansion of fewer nodes)."
+      "correct_answer_text": "C) Use simple median imputation coupled with an binary 'is_missing' indicator column for the missing scores, and a computationally cheap Log1p (log(x + 1)) transformation for the transaction amount.",
+      "explanation": "In high-throughput, real-time production pipelines (15,000 TPS, <15ms SLA), algorithmic complexity during inference is the primary constraint. MICE, KNN Imputation, and Matrix Factorization require significant computational overhead at inference time (MICE runs iterative models, KNN requires computing distances against the training set which is O(N*D) or O(D*log N) with KD-Tree). Simple median imputation has O(1) time complexity. Adding a missingness indicator retains the information that the value was missing (which is crucial for MAR data). Similarly, Log1p is a mathematically simple, element-wise O(1) operation that handles right-skewed data effectively, whereas Yeo-Johnson and Box-Cox require parameter estimation and complex exponentiation operations that add non-trivial overhead to the serving path."
     },
     {
       "id": 2,
-      "scenario": "A FinTech firm is developing an automated risk-mitigation engine that treats market volatility as an 'Adversarial Game.' The system uses a Min-Max algorithm with Alpha-Beta pruning to determine the best hedging strategy against 'market moves' (the adversary). During high-frequency trading hours, the branching factor of possible market states increases drastically, and the engine fails to reach the required search depth within the 20ms latency window, leading to sub-optimal hedging.",
-      "question": "Which optimization technique should be implemented to maximize the number of pruned branches and improve search depth within the time constraint?",
+      "scenario": "You are designing an outlier detection pipeline for a high-dimensional IoT sensor network deployed on gas turbines. The dataset contains 320 continuous features representing high-frequency vibrational and thermal telemetry. Outliers represent structural anomalies and constitute less than 0.05% of the dataset. The system must run on an edge gateway with severe memory constraints (maximum 512MB RAM allocated to the container) but must capture complex, non-linear interactions without assuming a normal distribution.",
+      "question": "Which anomaly detection algorithm should you select to best balance memory footprint, high-dimensional scaling, and non-parametric outlier detection?",
       "options": [
-        "A) Switching the search strategy from Depth-First to Breadth-First to ensure all immediate moves are evaluated.",
-        "B) Implementing Move Ordering by evaluating 'strong' moves (high-impact hedges) earlier in the search tree.",
-        "C) Disabling Alpha-Beta pruning to reduce the overhead of keeping track of alpha and beta bounds.",
-        "D) Replacing the Min-Max evaluation function with a static linear regression model to avoid tree traversal."
+        "A) Local Outlier Factor (LOF) using a Mahalanobis distance metric to account for feature correlations.",
+        "B) Isolation Forest (iForest) configured with feature sub-spacing (max_features = 0.2) and a shallow tree depth constraint.",
+        "C) One-Class Support Vector Machine (OC-SVM) utilizing a Radial Basis Function (RBF) kernel with hyperparameter tuning on the full dataset.",
+        "D) Minimum Covariance Determinant (MCD) estimator coupled with Mahalanobis distance analysis."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Implementing Move Ordering by evaluating 'strong' moves (high-impact hedges) earlier in the search tree.",
-      "explanation": "The efficiency of Alpha-Beta pruning is highly dependent on the order in which nodes are examined. In the best-case scenario (perfect ordering), the number of nodes examined is reduced from $O(b^d)$ to $O(b^{d/2})$. By implementing Move Ordering (exploring the most promising moves first), the algorithm can trigger cut-offs much earlier, allowing for a deeper search within the same time budget."
+      "correct_answer_text": "B) Isolation Forest (iForest) configured with feature sub-spacing (max_features = 0.2) and a shallow tree depth constraint.",
+      "explanation": "Isolation Forest (iForest) is highly suitable for high-dimensional, memory-constrained environments. By isolating anomalies via random partitioning, it has a linear time complexity O(n) and a very low memory footprint since it only needs to store a forest of extremely shallow trees. Feature sub-spacing (max_features=0.2) directly addresses the curse of dimensionality and reduces memory usage further. In contrast, Local Outlier Factor (LOF) and OC-SVM scale poorly with sample size and feature count; LOF requires storing and querying pairwise distance matrices (O(n^2) space complexity), and OC-SVM requires solving a quadratic programming problem that scales quadratically with the number of samples. MCD requires inverting a 320x320 covariance matrix, which becomes highly unstable and computationally expensive when features are collinear or highly dimensional."
     },
     {
       "id": 3,
-      "scenario": "An AI-driven pharmaceutical research platform uses a heuristic search to find stable protein folding configurations in a high-dimensional state space. The current implementation uses A* with an admissible heuristic. However, because the state space is nearly infinite and the search involves millions of nodes, the system frequently crashes with a 'Java.lang.OutOfMemoryError' before reaching a goal state, despite having 128GB of RAM.",
-      "question": "Which search variant is specifically designed to handle such memory-intensive constraints while still attempting to maintain the benefits of an admissible heuristic?",
+      "scenario": "A data scientist is building a pipeline to predict house prices. The target variable 'SalePrice' is highly right-skewed. The pipeline uses a Gradient Boosting Regressor (GBDT). To handle the skewness of the target, the data scientist writes a script that applies a log-transformation to the target variable of the entire dataset before conducting a 5-fold cross-validation. They evaluate the model using Mean Squared Error (MSE) computed on the log-transformed predictions against the log-transformed targets.",
+      "question": "What critical methodological flaw and performance risk are introduced by this preprocessing and evaluation setup?",
       "options": [
-        "A) Uniform Cost Search (UCS), as it minimizes the cost of the paths explored.",
-        "B) Iterative Deepening A* (IDA*), which uses the depth-first approach to minimize memory footprint.",
-        "C) Bidirectional Search, to meet in the middle and reduce the search radius.",
-        "D) Hill Climbing with Random Restarts, to escape local optima in the high-dimensional space."
+        "A) Data leakage is introduced because the parameters of the log-transform are calculated globally across both training and validation folds.",
+        "B) GBDT algorithms cannot handle monotonic target transformations, which will cause the tree splitting criteria to fail.",
+        "C) Evaluating with MSE on log-transformed targets implicitly optimizes for Mean Absolute Percentage Error (MAPE) rather than standard additive error, potentially leading to massive, unpenalized absolute errors on high-value properties when back-transformed.",
+        "D) The log-transformation will compress the variance of the target variable to the point where the GBDT will suffer from severe underfitting due to gradient vanishing."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Iterative Deepening A* (IDA*), which uses the depth-first approach to minimize memory footprint.",
-      "explanation": "A* is notorious for its memory consumption because it stores all generated nodes in the 'open list' (Priority Queue). IDA* (Iterative Deepening A*) addresses this by using a depth-first search approach, limited by a 'f-cost' threshold ($g + h$). It only requires memory proportional to the depth of the search ($O(d)$), making it suitable for high-dimensional problems where RAM is the primary bottleneck."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Evaluating with MSE on log-transformed targets implicitly optimizes for Mean Absolute Percentage Error (MAPE) rather than standard additive error, potentially leading to massive, unpenalized absolute errors on high-value properties when back-transformed.",
+      "explanation": "While log-transforming the target variable is highly effective for normalizing right-skewed distributions, calculating MSE in the log-space changes the loss function's sensitivity. Minimizing MSE in the log-space is mathematically closer to minimizing relative error (percentage error) in the original scale. Consequently, when predictions are back-transformed ($e^y$), the model will tolerate massive absolute dollar-amount errors on expensive houses because a 10% error on a $2,000,000 home ($200,000) is penalized identically to a 10% error on a $100,000 home ($10,000). Option A is incorrect because log-transformation ($y' = \\ln(y)$) is an element-wise mathematical operation that does not depend on dataset-wide parameters (unlike standardization or MinMax scaling), so it does not introduce data leakage. GBDTs are perfectly fine with monotonic target transformations."
     }
   ]
 }

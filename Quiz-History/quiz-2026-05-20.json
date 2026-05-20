@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
-  "mode": "Java",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput payment processing engine starts throwing `java.lang.OutOfMemoryError: Metaspace` after running for several hours in production. The following code snippet is identified as the source of the problem:\n\njava\n@Service\npublic class PaymentProcessingService {\n    private final Map<String, PaymentHandler> handlers = new ConcurrentHashMap<>();\n\n    public void process(String providerId, String code) {\n        PaymentHandler handler = handlers.computeIfAbsent(providerId, id -> {\n            ProxyFactory factory = new ProxyFactory(new DefaultPaymentHandler(code));\n            return (PaymentHandler) factory.getProxy(new URLClassLoader(new URL[0], getClass().getClassLoader()));\n        });\n        handler.handle();\n    }\n}\n",
-      "question": "What is the primary cause of this Metaspace OOM error?",
+      "scenario": "A fintech corporation is deploying an online, real-time credit card fraud detection system designed to handle up to 15,000 transactions per second (TPS) with a strict sub-15ms end-to-end latency SLA. During initial profiling, you find that the feature 'historical_merchant_risk_score' is missing for 8% of transactions (Missing at Random, MAR), and the 'transaction_amount' feature is heavily right-skewed (skewness > 5.2). The downstream classifier is a latency-sensitive logistic regression model.",
+      "question": "Which combination of preprocessing steps optimizes predictive performance while consistently meeting the sub-15ms real-time latency SLA?",
       "options": [
-        "A) Spring's `ProxyFactory` defaults to JDK Dynamic Proxies which cannot be garbage collected if they implement interfaces.",
-        "B) A new `ClassLoader` instance is created for every dynamic proxy, preventing the generated proxy classes from being shared or unloaded, leaking classloader metadata in Metaspace.",
-        "C) The `ConcurrentHashMap` holds hard references to the `PaymentHandler` objects, which keeps the transactional thread-local state from being cleaned up by the JVM.",
-        "D) CGLIB proxy generation requires static compilation, and dynamically invoking `getProxy` bypassing the Spring context forces the JVM to keep class files in the code cache."
+        "A) Apply an iterative Multivariate Imputation by Chained Equations (MICE) with a Random Forest regressor for the missing scores, and a Yeo-Johnson power transform for the transaction amount.",
+        "B) Apply a K-Nearest Neighbors (KNN) Imputer (K=5) optimized with a KD-Tree spatial index for missing values, and a Box-Cox transformation (with a shift parameter) for the transaction amount.",
+        "C) Use simple median imputation coupled with an binary 'is_missing' indicator column for the missing scores, and a computationally cheap Log1p (log(x + 1)) transformation for the transaction amount.",
+        "D) Utilize a Matrix Factorization (SoftImpute) model to complete the missing data matrix in batches, and a QuantileTransformer (mapping to a normal distribution) for the transaction amount."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) A new `ClassLoader` instance is created for every dynamic proxy, preventing the generated proxy classes from being shared or unloaded, leaking classloader metadata in Metaspace.",
-      "explanation": "Classes in Java are uniquely identified by their fully qualified class name AND the `ClassLoader` instance that defined them. Because a new `URLClassLoader` is instantiated and passed to `factory.getProxy(...)` for every entry added to the map, the JVM cannot cache or reuse these generated proxy classes. Since the `PaymentHandler` proxies are kept alive indefinitely by the long-lived `ConcurrentHashMap`, their respective custom classloaders are also kept alive, preventing the garbage collector from reclaiming the class metadata allocated in the Metaspace."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Use simple median imputation coupled with an binary 'is_missing' indicator column for the missing scores, and a computationally cheap Log1p (log(x + 1)) transformation for the transaction amount.",
+      "explanation": "In high-throughput, real-time production pipelines (15,000 TPS, <15ms SLA), algorithmic complexity during inference is the primary constraint. MICE, KNN Imputation, and Matrix Factorization require significant computational overhead at inference time (MICE runs iterative models, KNN requires computing distances against the training set which is O(N*D) or O(D*log N) with KD-Tree). Simple median imputation has O(1) time complexity. Adding a missingness indicator retains the information that the value was missing (which is crucial for MAR data). Similarly, Log1p is a mathematically simple, element-wise O(1) operation that handles right-skewed data effectively, whereas Yeo-Johnson and Box-Cox require parameter estimation and complex exponentiation operations that add non-trivial overhead to the serving path."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a high-throughput real-time bidding system experiences sudden, unpredictable multi-second Stop-The-World (STW) pauses. Monitoring alerts show that these pauses correlate directly with G1GC 'To-space exhausted' (or 'Evacuation Failure') events followed by a single-threaded Full GC. High volumes of transient, large bid payloads (approximately 2MB to 5MB each) are being processed alongside a medium-lived reference data cache.",
-      "question": "Which of the following GC tuning strategies is the most appropriate and sustainable mitigation?",
+      "scenario": "You are designing an outlier detection pipeline for a high-dimensional IoT sensor network deployed on gas turbines. The dataset contains 320 continuous features representing high-frequency vibrational and thermal telemetry. Outliers represent structural anomalies and constitute less than 0.05% of the dataset. The system must run on an edge gateway with severe memory constraints (maximum 512MB RAM allocated to the container) but must capture complex, non-linear interactions without assuming a normal distribution.",
+      "question": "Which anomaly detection algorithm should you select to best balance memory footprint, high-dimensional scaling, and non-parametric outlier detection?",
       "options": [
-        "A) Decrease `-XX:G1ReservePercent` to reclaim space for the Eden space and increase `-XX:MaxGCPauseMillis` to allow longer young collections.",
-        "B) Increase `-XX:G1HeapRegionSize` to 8m or 16m to prevent large transient payloads from being classified as Humongous objects, and increase `-XX:G1ReservePercent`.",
-        "C) Disable explicit GC calls using `-XX:+DisableExplicitGC` and decrease `-XX:SurvivorRatio` to accelerate survivor object aging.",
-        "D) Switch from G1GC to the Parallel GC collector using `-XX:+UseParallelGC` to ensure high-throughput compaction of fragmented heap partitions."
+        "A) Local Outlier Factor (LOF) using a Mahalanobis distance metric to account for feature correlations.",
+        "B) Isolation Forest (iForest) configured with feature sub-spacing (max_features = 0.2) and a shallow tree depth constraint.",
+        "C) One-Class Support Vector Machine (OC-SVM) utilizing a Radial Basis Function (RBF) kernel with hyperparameter tuning on the full dataset.",
+        "D) Minimum Covariance Determinant (MCD) estimator coupled with Mahalanobis distance analysis."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Increase `-XX:G1HeapRegionSize` to 8m or 16m to prevent large transient payloads from being classified as Humongous objects, and increase `-XX:G1ReservePercent`.",
-      "explanation": "In G1GC, any object that is larger than 50% of a G1 region is considered a 'Humongous' object. Humongous objects are allocated directly into the Old Generation, bypassing the Eden generation, and are not easily moved or compacted during standard young collection cycles, leading to rapid heap fragmentation. This fragmentation causes 'To-space exhausted' (evacuation failure) because G1GC cannot find enough contiguous space to copy surviving objects during young/mixed collections, triggering a slow, single-threaded Full GC. Increasing `-XX:G1HeapRegionSize` prevents objects up to half its size from becoming humongous, forcing them to be allocated in Eden where they can be garbage collected cheaply. Increasing `-XX:G1ReservePercent` provides a larger buffer to handle survivor copies."
+      "correct_answer_text": "B) Isolation Forest (iForest) configured with feature sub-spacing (max_features = 0.2) and a shallow tree depth constraint.",
+      "explanation": "Isolation Forest (iForest) is highly suitable for high-dimensional, memory-constrained environments. By isolating anomalies via random partitioning, it has a linear time complexity O(n) and a very low memory footprint since it only needs to store a forest of extremely shallow trees. Feature sub-spacing (max_features=0.2) directly addresses the curse of dimensionality and reduces memory usage further. In contrast, Local Outlier Factor (LOF) and OC-SVM scale poorly with sample size and feature count; LOF requires storing and querying pairwise distance matrices (O(n^2) space complexity), and OC-SVM requires solving a quadratic programming problem that scales quadratically with the number of samples. MCD requires inverting a 320x320 covariance matrix, which becomes highly unstable and computationally expensive when features are collinear or highly dimensional."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where an application utilizing a high-performance custom metadata cache experiences a slow but continuous memory leak. The cache is built around `WeakReference` keys to ensure that metadata is cleared automatically when keys are no longer referenced elsewhere. However, heap analysis reveals that thousands of dead key objects and their associated heavy metadata values remain on the heap indefinitely.",
-      "question": "What is the most likely structural issue in this custom cache implementation causing the memory leak?",
+      "scenario": "A data scientist is building a pipeline to predict house prices. The target variable 'SalePrice' is highly right-skewed. The pipeline uses a Gradient Boosting Regressor (GBDT). To handle the skewness of the target, the data scientist writes a script that applies a log-transformation to the target variable of the entire dataset before conducting a 5-fold cross-validation. They evaluate the model using Mean Squared Error (MSE) computed on the log-transformed predictions against the log-transformed targets.",
+      "question": "What critical methodological flaw and performance risk are introduced by this preprocessing and evaluation setup?",
       "options": [
-        "A) The GC thread-priority is set lower than the application threads, causing the `ReferenceQueue` notifications to be dropped under high CPU load.",
-        "B) The cached metadata value holds a strong reference back to the key object (either directly or transitively), preventing the key from ever becoming weakly reachable.",
-        "C) Spring's `@Transactional` boundary wraps the cache access, and the dynamic proxy intercepts the `WeakReference` lookup, elevating it to a hard JVM reference.",
-        "D) The application is running on a JVM with `-XX:+UseStringDeduplication` enabled, which merges weak reference targets in the string pool."
+        "A) Data leakage is introduced because the parameters of the log-transform are calculated globally across both training and validation folds.",
+        "B) GBDT algorithms cannot handle monotonic target transformations, which will cause the tree splitting criteria to fail.",
+        "C) Evaluating with MSE on log-transformed targets implicitly optimizes for Mean Absolute Percentage Error (MAPE) rather than standard additive error, potentially leading to massive, unpenalized absolute errors on high-value properties when back-transformed.",
+        "D) The log-transformation will compress the variance of the target variable to the point where the GBDT will suffer from severe underfitting due to gradient vanishing."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The cached metadata value holds a strong reference back to the key object (either directly or transitively), preventing the key from ever becoming weakly reachable.",
-      "explanation": "For a `WeakReference` key to be reclaimed by the garbage collector, there must be no strong paths of reachability to it. If the value in the cache entry holds a strong reference back to the key (a cyclic reference), the key is never considered weakly reachable by the garbage collector. As a result, the JVM will never collect the key, it will never be placed on the corresponding `ReferenceQueue`, and the entire entry\u2014including the heavy metadata value\u2014will leak on the heap."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Evaluating with MSE on log-transformed targets implicitly optimizes for Mean Absolute Percentage Error (MAPE) rather than standard additive error, potentially leading to massive, unpenalized absolute errors on high-value properties when back-transformed.",
+      "explanation": "While log-transforming the target variable is highly effective for normalizing right-skewed distributions, calculating MSE in the log-space changes the loss function's sensitivity. Minimizing MSE in the log-space is mathematically closer to minimizing relative error (percentage error) in the original scale. Consequently, when predictions are back-transformed ($e^y$), the model will tolerate massive absolute dollar-amount errors on expensive houses because a 10% error on a $2,000,000 home ($200,000) is penalized identically to a 10% error on a $100,000 home ($10,000). Option A is incorrect because log-transformation ($y' = \\ln(y)$) is an element-wise mathematical operation that does not depend on dataset-wide parameters (unlike standardization or MinMax scaling), so it does not introduce data leakage. GBDTs are perfectly fine with monotonic target transformations."
     }
   ]
 }
