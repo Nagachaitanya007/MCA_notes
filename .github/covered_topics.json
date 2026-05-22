@@ -20,7 +20,8 @@
     "The Circuit Breaker Pattern: Preventing Cascading Failures",
     "The Saga Pattern: Handling Failures via Compensating Transactions",
     "The Dead Letter Queue (DLQ): Handling \"The Poison Pill\" in Asynchronous Systems",
-    "Idempotency & Request Tracking: The \"Safely Try Again\" Strategy"
+    "Idempotency & Request Tracking: The \"Safely Try Again\" Strategy",
+    "Distributed Error Translation & Context Propagation"
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections",
