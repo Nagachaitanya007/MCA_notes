@@ -67,7 +67,8 @@
   "Design a Scalable File Storage System (S3 Internals, CDN)": [
     "Distributed Object Storage & Global Delivery Architecture",
     "S3 Metadata Management & Data Durability: The Brain and Body of Storage",
-    "Optimizing High-Performance Data Transfer: Multipart Uploads and Edge Delivery"
+    "Optimizing High-Performance Data Transfer: Multipart Uploads and Edge Delivery",
+    "S3 Storage Node Internals: Append-Only Engines and CDN Cache Coherency"
   ],
   "Database Sharding & Replication Strategies": [
     "Horizontal Sharding: Scaling Out Your Data",
