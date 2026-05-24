@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
-  "mode": "Java",
+  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput microservice is experiencing gradual memory leaks and eventually `OutOfMemoryError: Java heap space`. The service uses a custom metadata cache to optimize database lookups, designed using a `WeakHashMap` to allow garbage collection of unused keys. Below is the simplified code:\n\njava\npublic class MetadataCache {\n    private final Map<UserKey, UserValue> cache = Collections.synchronizedMap(new WeakHashMap<>());\n\n    public void put(String id, String role) {\n        UserKey key = new UserKey(id);\n        UserValue value = new UserValue(key, role);\n        cache.put(key, value);\n    }\n}\n",
-      "question": "What is the primary cause of this memory leak in the `WeakHashMap` implementation?",
+      "scenario": "A multinational financial institution has deployed a 50-layer deep neural network (DNN) to predict credit default risks using a highly skewed dataset containing 300+ financial features. Due to strict regulatory requirements under GDPR, the compliance team mandates that the system must provide local, contrastive, and model-agnostic explanations for rejected loan applications within a 50-millisecond SLA per transaction. The engineering team initially deployed KernelSHAP, but average latency per inference-explanation pair spiked to 1200 milliseconds, violating the SLA under production workloads.",
+      "question": "Which of the following optimization or alternative XAI approaches should the team implement to satisfy the 50ms real-time latency constraint without altering the core DNN architecture?",
       "options": [
-        "A) Wrapping the `WeakHashMap` in `Collections.synchronizedMap()` converts the internal weak references to strong references.",
-        "B) The `UserValue` object retains a strong reference to the `UserKey` object, preventing the key from ever becoming weakly reachable and defeating the GC mechanism.",
-        "C) The JVM JIT compiler inline-optimizes the `UserKey` instantiation, preventing the garbage collector from identifying it as weakly reachable.",
-        "D) `WeakHashMap` requires explicit calls to its mutating methods (like `put` or `remove`) by the same thread to trigger reference queue cleanup, which does not happen in a multi-threaded pool."
+        "A) Replace KernelSHAP with Integrated Gradients, leveraging GPU-parallelized backpropagation to compute path integrals from a baseline representation.",
+        "B) Configure a global surrogate model using a highly pruned Gradient Boosted Decision Tree (GBDT) and explain local decisions using TreeSHAP.",
+        "C) Use LIME with an exponential kernel on the raw 300-dimensional feature space, reducing the perturbation sample size to N=25.",
+        "D) Apply a Principal Component Analysis (PCA) pipeline upstream to compress the features to 10 dimensions, then execute KernelSHAP on the compressed latent space."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `UserValue` object retains a strong reference to the `UserKey` object, preventing the key from ever becoming weakly reachable and defeating the GC mechanism.",
-      "explanation": "In a `WeakHashMap`, the keys are wrapped in `WeakReference` objects, while the values are held via strong references. If the value (`UserValue`) contains a strong reference to its corresponding key (`UserKey`), a strong reference cycle is formed: `WeakHashMap` -> internal entry table -> value -> key. Since the key is strongly reachable through this cycle, it can never be garbage collected, entirely defeating the memory-reclaiming design of `WeakHashMap` and causing a memory leak."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Replace KernelSHAP with Integrated Gradients, leveraging GPU-parallelized backpropagation to compute path integrals from a baseline representation.",
+      "explanation": "KernelSHAP is model-agnostic but computationally expensive because it treats the model as a black box, requiring thousands of forward passes (evaluations) to estimate Shapley values, making it unsuitable for a 50ms SLA on deep networks. Integrated Gradients (IG) is an axiomatic attribution method designed specifically for differentiable models like DNNs. Instead of perturbation-based sampling, IG computes gradients along the path from a baseline to the input. Because gradient calculation can be fully parallelized on a GPU, IG can easily compute high-fidelity local feature attributions within milliseconds, satisfying the strict real-time SLA while maintaining the original DNN architecture."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a low-latency trading system where a custom ring-buffer implementation `ArrayQueue<T>` with a volatile array field `private volatile T[] array` is experiencing stale data reads under high thread contention. Consumers occasionally read stale or `null` values even after the producer has written a non-null object to that index.",
-      "question": "Why does declaring the array reference as `volatile` fail to guarantee visibility of the elements inside the custom collection?",
+      "scenario": "An AI-powered talent acquisition platform uses a pre-trained transformer model fine-tuned on historical hiring data to score candidate resumes. An internal audit reveals that the model exhibits severe historical bias, yielding a disparate impact ratio of 0.65 for a protected group (violating the four-fifths rule). Because the transformer is extremely large, retraining it from scratch with debiased data is computationally and financially unfeasible. The engineering team only has access to the final classification layer output probabilities and the protected attribute labels of the validation set.",
+      "question": "Which algorithmic intervention should the engineers apply to eliminate the disparate impact while minimizing the loss in predictive accuracy under these computational constraints?",
       "options": [
-        "A) The JVM JIT compiler optimizes the read operations on array indices by caching them in CPU registers, disregarding the `volatile` modifier.",
-        "B) Declaring an array reference as `volatile` only ensures that the reference to the array itself has volatile semantics; updates to individual elements inside the array do not establish a happens-before relationship.",
-        "C) Custom arrays in Java cannot be shared across CPU cores unless they are padded to avoid cache line bouncing and false sharing.",
-        "D) Modifying elements in a volatile array forces the JVM to lock the entire heap, which leads to silent thread starvation and index-state corruption."
+        "A) Implement Adversarial Debiasing by training a secondary discriminator network that attempts to predict the protected attribute from the transformer's bottleneck layer embeddings.",
+        "B) Apply Equalized Odds Post-Processing by solving a linear programming problem to find group-specific classification thresholds on the predicted probability scores.",
+        "C) Execute a preprocessing Re-weighing strategy by assigning higher sample weights to the minority group in the training loss function and re-running the final epoch.",
+        "D) Perform Reject Option Classification (ROC) by systematically flipping outcomes for all candidates whose scores lie within the standard deviation of the global mean."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Declaring an array reference as `volatile` only ensures that the reference to the array itself has volatile semantics; updates to individual elements inside the array do not establish a happens-before relationship.",
-      "explanation": "In Java, declaring an array reference as `volatile` (e.g., `volatile T[] array`) means that reading or writing the *reference* itself has volatile semantics (i.e., pointing the variable to a completely new array). It does *not* apply volatile read/write semantics to the elements *within* the array. To ensure proper visibility and volatile/atomic memory ordering when accessing or modifying individual elements of an array, developers must use `AtomicReferenceArray` or JDK 9+ `VarHandle` with volatile access modes (e.g., `VarHandle.setVolatile` and `VarHandle.getVolatile`)."
+      "correct_answer_text": "B) Apply Equalized Odds Post-Processing by solving a linear programming problem to find group-specific classification thresholds on the predicted probability scores.",
+      "explanation": "Given the strict constraint that the massive transformer cannot be retrained from scratch (ruling out inprocessing methods like adversarial debiasing) and preprocessing (which requires complete retraining), a post-processing method is required. Equalized Odds Post-Processing adjusts the decision thresholds for different demographic groups based on their predicted probability distributions. By formulating this as a linear program, the team can find optimal, group-specific thresholds that satisfy fairness constraints (equal false positive and true positive rates across groups) while maximizing utility/accuracy, requiring only the inference outputs of the frozen model."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue in a Spring Boot application where updates to a JPA entity's custom lazy-loaded collection (e.g., `PersistentBag` from Hibernate) are intermittently throwing `LazyInitializationException` or failing to commit within a `@Transactional` boundary. The simplified code is as follows:\n\njava\n@Service\npublic class UserService {\n    @Autowired\n    private UserRepository userRepository;\n\n    public void processUser(Long id) {\n        User user = userRepository.findById(id).orElseThrow();\n        updateRoles(user);\n    }\n\n    @Transactional\n    public void updateRoles(User user) {\n        user.getRoles().add(\"ROLE_ADMIN\");\n    }\n}\n",
-      "question": "Why is the lazy-loaded collection update failing to run inside a database transaction, resulting in a `LazyInitializationException`?",
+      "scenario": "A health-tech startup deploys a Convolutional Neural Network (CNN) to detect diabetic retinopathy from high-resolution retinal images, utilizing Grad-CAM to generate visual saliency maps for clinicians. In production, the model is exposed to a severe covariate shift due to differences in camera hardware and illumination across clinical partners. Although the model's accuracy drops by 35%, the Grad-CAM maps continue to highlight seemingly plausible pathological regions (e.g., blood vessels), leading clinicians to trust incorrect negative predictions due to confirmation bias.",
+      "question": "What is the primary technical limitation of Grad-CAM that causes this 'false confidence' under covariate shift, and how should it be architecturally mitigated?",
       "options": [
-        "A) Hibernate's `PersistentBag` is not thread-safe and automatically invalidates itself if accessed within an unsynchronized method.",
-        "B) The `UserRepository` returns a detached entity because the root method `processUser` is not marked as `@Transactional`, which automatically closes the Hibernate Session.",
-        "C) The internal call `updateRoles(user)` bypasses the Spring AOP proxy, executing on the raw `this` instance, which means the `@Transactional` aspect is not applied.",
-        "D) Spring's `@Transactional` cannot handle collections decorated with custom dirty-tracking wrappers unless proxy target class inheritance is disabled."
+        "A) Grad-CAM lacks class discriminative power because it relies on average pooling of gradients; mitigate by implementing a confidence-calibration layer (e.g., Platt Scaling) to scale visual intensity based on class probability.",
+        "B) Grad-CAM explains the model's internal representation, not the data distribution; mitigate by deploying an out-of-distribution (OOD) detection network using Mahalanobis distance on the latent spaces to flag shifted inputs before generating explanations.",
+        "C) Grad-CAM is vulnerable to gradient saturation in the deep layers; mitigate by switching to Guided Backpropagation, which zeroes out negative gradients during the backward pass to isolate fine-grained edges.",
+        "D) Grad-CAM maps are sensitive to adversarial perturbations in high-dimensional feature spaces; mitigate by introducing L2 regularization directly on the gradient flow during the forward inference pass."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The internal call `updateRoles(user)` bypasses the Spring AOP proxy, executing on the raw `this` instance, which means the `@Transactional` aspect is not applied.",
-      "explanation": "Spring's declarative transaction management (`@Transactional`) is powered by Spring AOP, which wraps beans in proxies. Transaction interceptors are only triggered when a method call passes *through* the proxy from an external bean. When `processUser` calls `updateRoles(user)` internally, it makes a direct method call on the raw `this` instance, bypassing the Spring proxy. Consequently, no transaction is started, the Hibernate session is closed/non-existent during the collection modification, and accessing the lazy-loaded `PersistentBag` collection throws a `LazyInitializationException`."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Grad-CAM explains the model's internal representation, not the data distribution; mitigate by deploying an out-of-distribution (OOD) detection network using Mahalanobis distance on the latent spaces to flag shifted inputs before generating explanations.",
+      "explanation": "Grad-CAM is a post-hoc local explanation tool that shows *what* features of the input image contributed most to whatever class score the network outputted, regardless of whether that output is correct or if the model is operating on out-of-distribution (OOD) data. When covariate shift occurs, the model's features are degraded, but Grad-CAM will still backpropagate gradients to highlight features that match its shifted filters, creating a false sense of trust. The mitigation is to identify when the inputs have shifted out-of-distribution (e.g., using Mahalanobis distance on the latent space embeddings of a layer) and flag them as untrustworthy before presenting any visual explanations to the clinicians."
     }
   ]
 }
