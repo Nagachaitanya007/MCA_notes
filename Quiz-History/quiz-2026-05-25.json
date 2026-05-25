@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
-  "mode": "Java",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a low-latency financial transaction processor experiences high garbage collection pause times, culminating in `java.lang.OutOfMemoryError: Metaspace`. Analysis of the heap dump shows millions of dynamically generated classes. You locate the following Spring bean responsible for decorating outgoing payment tasks:\n\njava\n@Component\npublic class DynamicBillingService {\n    public Object createMonitoredService(final Object target) {\n        ProxyFactory factory = new ProxyFactory(target);\n        factory.addAdvice(new PerformanceMonitorInterceptor());\n        return factory.getProxy();\n    }\n}\n",
-      "question": "What is the primary cause of this Metaspace exhaustion?",
+      "scenario": "A real-world industrial fleet management system uses the A* algorithm to route autonomous guided vehicles (AGVs) across a massive $10,000 \\times 10,000$ grid warehouse. Due to real-time dynamic obstacle movements, the search space must be re-evaluated continuously. In production, the system frequently encounters Out-Of-Memory (OOM) errors because the memory footprint of storing states in the Open and Closed lists scales exponentially ($O(b^d)$) with the path length, especially when obstacles block optimal paths.",
+      "question": "Which of the following modifications or search algorithm transitions is most appropriate to resolve this memory crisis while preserving search optimality or maintaining a predictable, strict memory bound?",
       "options": [
-        "A) Spring's `ProxyFactory` does not cache generated proxy classes when instantiated programmatically in this manner, causing a new class definition to be loaded into the Metaspace on every call.",
-        "B) The `PerformanceMonitorInterceptor` holds a hard reference to the dynamic proxy, preventing the class loader from unloading the class during GC.",
-        "C) The JVM cannot reclaim Metaspace because `DynamicBillingService` is a singleton bean, meaning all proxy classes are tied to its classloader lifecycle.",
-        "D) CGLIB proxies require explicit manual configuration of `-XX:MaxMetaspaceSize` to enable automated garbage collection of dynamic class definitions."
+        "A) Replace standard A* with Simplified Memory Bounded A* (SMA*), which utilizes a pre-allocated, fixed memory buffer, discarding the worst-performing leaf nodes when full while propagating their f-costs back to parent nodes.",
+        "B) Transition to Iterative Deepening A* (IDA*), because on a real-valued high-dimensional grid with thousands of unique f-values, IDA* is guaranteed to run faster than SMA* due to its O(d) memory bounds.",
+        "C) Convert the map to a sparse roadmap and run Dijkstra's algorithm, as eliminating the heuristic calculation overhead fundamentally reduces the search space memory footprint.",
+        "D) Apply a greedy best-first search using a squared Euclidean distance heuristic to aggressively minimize the size of the Open list, ignoring the actual path cost g(n)."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Spring's `ProxyFactory` does not cache generated proxy classes when instantiated programmatically in this manner, causing a new class definition to be loaded into the Metaspace on every call.",
-      "explanation": "When using `ProxyFactory` programmatically inside a method call, Spring generates a new proxy class on the fly every time `getProxy()` is invoked. Unlike Spring's declarative AOP or `@Configuration` processing which caches generated proxy classes, this programmatic approach creates class definitions indefinitely. Because these classes are loaded by the application's `ClassLoader`, they cannot be garbage collected until the ClassLoader itself is unloaded, leading to a Metaspace leak."
+      "correct_answer_text": "A) Replace standard A* with Simplified Memory Bounded A* (SMA*), which utilizes a pre-allocated, fixed memory buffer, discarding the worst-performing leaf nodes when full while propagating their f-costs back to parent nodes.",
+      "explanation": "SMA* is explicitly designed for scenarios with strict memory constraints. It operates like A* but is restricted to a maximum queue size. When memory is full, it drops the node with the worst f-value. Crucially, it backs up this dropped node's f-value to its parent, ensuring that the algorithm can reconstruct or re-explore this path later if all other options turn out to be worse. This maintains optimality (given enough memory for the optimal path) within a predictable memory footprint. IDA* is unsuitable for continuous or dense real-valued grids with many unique f-values because it suffers from extreme overhead due to constant, repetitive node regeneration."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a Spring Boot application processing large payload arrays (averaging 8MB to 16MB) experiences frequent 'To-space exhausted' or 'Evacuation Failure' warnings in the G1GC logs. These warnings are accompanied by immediate, prolonged stop-the-world (STW) pauses and spiked CPU usage. The current JVM flags are: `-Xms32g -Xmx32g`.",
-      "question": "Which GC tuning strategy or architectural change best resolves this issue without causing excessive heap fragmentation or CPU overhead?",
+      "scenario": "A fintech company is designing a high-frequency derivative trading engine modeled as a two-player, zero-sum game where market actions are evaluated using the Min-Max algorithm with Alpha-Beta pruning. Under extreme market volatility, the branching factor ($b$) of potential trading actions surges to over 150 per ply. Consequently, the algorithm fails to complete search operations within its strict 50ms real-time SLA when configured to search at a depth ($d$) of 4.",
+      "question": "To consistently meet the 50ms latency constraint for depth d=4 without compromising the deterministic nature of the minimax evaluations, which optimization strategy should the engineering team prioritize?",
       "options": [
-        "A) Switch to Parallel GC (`-XX:+UseParallelGC`) to enforce aggressive compaction of the Old Generation during the STW phase.",
-        "B) Increase the G1 region size using `-XX:G1HeapRegionSize=32m` to ensure large payloads do not qualify as Humongous Objects.",
-        "C) Lower the G1 reserve percent using `-XX:G1ReservePercent=5` to allow more space for the Eden generation.",
-        "D) Set `-XX:InitiatingHeapOccupancyPercent=90` to delay the start of the concurrent marking cycle."
+        "A) Switch the pruning engine to standard Min-Max and integrate a neural network to evaluate states dynamically, completely bypassing the alpha-beta pruning computation overhead.",
+        "B) Implement highly optimized domain-specific move ordering heuristics to evaluate the most promising trading actions first, reducing the effective branching factor towards the theoretical limit of O(b^(d/2)).",
+        "C) Shift to a Monte Carlo Tree Search (MCTS) with random rollouts up to depth 4, as MCTS completely eliminates the dependency on the branching factor b.",
+        "D) Apply a hard cutoff timer at 45ms within an iterative deepening framework, accepting the move found at whatever depth has been fully evaluated, even if it falls below depth 4."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Increase the G1 region size using `-XX:G1HeapRegionSize=32m` to ensure large payloads do not qualify as Humongous Objects.",
-      "explanation": "In G1GC, any object that is larger than 50% of the G1 region size is classified as a Humongous Object. With a 32GB heap, the default G1 region size is likely 16MB (making the humongous threshold 8MB). Humongous objects are allocated directly into the contiguous regions of the Old Generation, bypass the Young Generation GCs, and cause massive fragmentation. Increasing `-XX:G1HeapRegionSize` to 32MB raises the humongous threshold to 16MB, allowing these transient large objects to be allocated in Eden and reclaimed efficiently during minor GCs."
+      "correct_answer_text": "B) Implement highly optimized domain-specific move ordering heuristics to evaluate the most promising trading actions first, reducing the effective branching factor towards the theoretical limit of O(b^(d/2)).",
+      "explanation": "The efficiency of Alpha-Beta pruning is heavily dependent on the order in which nodes are examined. If the best moves are examined first (perfect ordering), the search complexity drops from O(b^d) to O(b^(d/2)), effectively doubling the searchable depth in the same timeframe. By implementing an effective heuristic for move ordering, the engine can prune massive subtrees early, allowing it to easily complete the depth 4 search within the 50ms constraint. Option D does not guarantee reaching depth 4, and Option C introduces non-deterministic stochastic evaluations."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot application experiences a slow, steady memory leak in the JVM Heap. APM tools indicate that the leak is associated with `ThreadLocal` variables used to store user session context. The system uses a customized `ThreadPoolTaskExecutor` for async processing:\n\njava\n@Configuration\npublic class AsyncConfig {\n    @Bean(name = \"asyncExecutor\")\n    public Executor asyncExecutor() {\n        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();\n        executor.setCorePoolSize(10);\n        executor.setMaxPoolSize(50);\n        executor.initialize();\n        return executor;\n    }\n}\n\n\nThe leak occurs despite the fact that a `ServletFilter` explicitly calls `UserContextHolder.clear()` inside a `finally` block for every incoming HTTP request.",
-      "question": "Why is the heap memory leaking despite the explicit `UserContextHolder.clear()` call in the filter's `finally` block?",
+      "scenario": "A global maritime logistics corporation utilizes the A* algorithm to optimize vessel routing over dynamic ocean currents. The cost function $g(n)$ represents actual fuel consumed. The heuristic function $h(n)$ estimates remaining fuel consumption. Because of shifting dynamic currents, the physical cost of moving from checkpoint $A$ to checkpoint $B$ is occasionally less than the difference in their estimated heuristics to the destination, represented mathematically as: $c(A, B) < h(A) - h(B)$. During production trials, the system generates suboptimal routes for certain voyages.",
+      "question": "What is the underlying algorithmic cause of this suboptimality, and how can it be mathematically corrected?",
       "options": [
-        "A) The JVM fails to clean ThreadLocal values because the `UserContext` instances are proxied by Spring's AOP framework.",
-        "B) The `ServletFilter` only clears the `ThreadLocal` on the Tomcat container thread, leaving the value uncleared on the separate `ThreadPoolTaskExecutor` threads where tasks were executed.",
-        "C) The `ThreadLocal` class uses strong references internally for its keys, preventing the Map entry from being garbage collected.",
-        "D) Spring's `@Async` annotation automatically clones the ThreadLocal map, making the filter's cleanup call target an obsolete reference."
+        "A) The heuristic is inadmissible because it violates the boundary condition $h(n) \\le h^*(n)$ at all states, requiring a complete reset of the heuristic to zero.",
+        "B) The heuristic is inconsistent (non-monotonic) because $h(A) > c(A, B) + h(B)$. In a standard graph search where closed nodes are not reopened, an inconsistent heuristic can lead to suboptimal paths. The heuristic must be adjusted to ensure $h(A) \\le c(A, B) + h(B)$ for all adjacent nodes.",
+        "C) The state transition model is violating the triangle inequality because of the dynamic currents, which means A* is fundamentally mathematically incapable of finding the optimal path and must be replaced by Breadth-First Search.",
+        "D) The heuristic function is too computationally heavy, creating a race condition in the priority queue thread pool that drops the optimal path nodes."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `ServletFilter` only clears the `ThreadLocal` on the Tomcat container thread, leaving the value uncleared on the separate `ThreadPoolTaskExecutor` threads where tasks were executed.",
-      "explanation": "The `ServletFilter` executes entirely within the context of the container's HTTP worker thread. When work is delegated to the `ThreadPoolTaskExecutor` via `@Async` or manual submission, the context is often copied or set on the worker thread. Since the `finally` block in the filter runs only on the HTTP thread, the worker thread's `ThreadLocal` map never gets cleared. Because these worker threads are pooled and live for the life of the application, any references stored in their `ThreadLocal` map will leak until the thread itself is terminated."
+      "correct_answer_text": "B) The heuristic is inconsistent (non-monotonic) because $h(A) > c(A, B) + h(B)$. In a standard graph search where closed nodes are not reopened, an inconsistent heuristic can lead to suboptimal paths. The heuristic must be adjusted to ensure $h(A) \\le c(A, B) + h(B)$ for all adjacent nodes.",
+      "explanation": "For A* graph search to be optimal without reopening nodes in the closed list, the heuristic must be consistent (or monotonic). Consistency requires that for every node A and its successor B, $h(A) \\le c(A, B) + h(B)$, which translates to $h(A) - h(B) \\le c(A, B)$. The condition $c(A, B) < h(A) - h(B)$ explicitly violates consistency. This allows the search to find a shorter path to a node after it has already been closed, leading to a suboptimal final path if closed nodes are not allowed to be reopened and updated."
     }
   ]
 }
