@@ -1,48 +1,48 @@
 {
-  "topic": "Exception Handling Strategies in Distributed Systems",
+  "topic": "Memory Management & Garbage Collection Tuning",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a distributed Saga orchestrator invokes a downstream booking service. The booking service is annotated with Spring's `@Transactional` but is failing to roll back database changes when a custom checked `BookingException` is thrown. Below is the service implementation:\n\njava\n@Service\npublic class BookingService {\n    @Autowired\n    private InventoryRepository inventoryRepository;\n\n    @Transactional\n    public void reserveSeat(String bookingId) throws BookingException {\n        inventoryRepository.updateStatus(bookingId, 'RESERVED');\n        try {\n            callExternalPaymentGateway(bookingId);\n        } catch (IOException e) {\n            throw new BookingException('Payment failed', e);\n        }\n    }\n}\n",
-      "question": "What is the primary cause of this database rollback failure?",
+      "scenario": "You are debugging a production issue where a high-throughput Spring Boot microservice deployed on a Tomcat container experiences progressive Heap memory exhaustion and frequent Full GCs. You isolate the issue to a newly introduced performance monitoring aspect:\n\njava\n@Aspect\n@Component\npublic class PerformanceMonitorAspect {\n    private static final ThreadLocal<MonitorContext> contextHolder = ThreadLocal.withInitial(MonitorContext::new);\n\n    @Around(\"@annotation(Monitored)\")\n    public Object monitor(ProceedingJoinPoint pjp) throws Throwable {\n        MonitorContext ctx = contextHolder.get();\n        ctx.startTimer(pjp.getSignature().toShortString());\n        try {\n            return pjp.proceed();\n        } finally {\n            ctx.stopTimer();\n        }\n    }\n}\n",
+      "question": "What is the primary cause of the memory leak in this scenario?",
       "options": [
-        "A) Spring's `@Transactional` proxy defaults to rolling back only on unchecked exceptions (`RuntimeException` and `Error`), ignoring checked exceptions like `BookingException`.",
-        "B) The call to `inventoryRepository` is auto-committed instantly, bypassing the Spring transaction manager.",
-        "C) The `IOException` is completely swallowed by the JVM's default class loader before reaching the Spring AOP proxy.",
-        "D) The transactional context is lost because the repository runs in a separate asynchronous ForkJoin thread."
+        "A) The `MonitorContext` instance remains strongly reachable via the `ThreadLocalMap` of the pooled worker threads because `ThreadLocal.remove()` is never called in the `finally` block.",
+        "B) The `ThreadLocal` reference is declared `static`, which prevents the ClassLoader from unloading the `PerformanceMonitorAspect` class during context refreshes.",
+        "C) The JVM cannot garbage collect `MonitorContext` objects because the `ThreadLocalMap` keys are strong references, leading to permanent retention in the Metaspace.",
+        "D) Every invocation of `@Around` creates a new Spring JDK dynamic proxy instance which leaks directly into the Old Generation."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Spring's `@Transactional` proxy defaults to rolling back only on unchecked exceptions (`RuntimeException` and `Error`), ignoring checked exceptions like `BookingException`.",
-      "explanation": "By default, Spring's transaction infrastructure intercepts exceptions and triggers rollbacks only for unchecked exceptions (instances of `RuntimeException` or `Error`). Checked exceptions, such as custom exceptions extending `Exception` (like `BookingException`), do not trigger a rollback unless explicitly configured using `@Transactional(rollbackFor = BookingException.class)`. This default behavior aligns with standard EJB transactional architecture patterns."
+      "correct_answer_text": "A) The `MonitorContext` instance remains strongly reachable via the `ThreadLocalMap` of the pooled worker threads because `ThreadLocal.remove()` is never called in the `finally` block.",
+      "explanation": "In web containers like Tomcat, threads are pooled and reused across multiple HTTP requests. `ThreadLocal` uses a weak-keyed map (`ThreadLocalMap`) inside the `Thread` object. While the map's keys (the `ThreadLocal` instances themselves) are `WeakReference` objects, the values (the `MonitorContext` instances) are strong references. Because the worker threads never die, these values are never reclaimed unless `ThreadLocal.remove()` is explicitly invoked or the thread is terminated. This causes a progressive memory leak under heavy load."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where an asynchronous pipeline processing user notifications silently ignores failures. Under heavy load, remote notification calls fail, but no exceptions are printed to the logs, nor does the system raise any alerts. You locate the following execution block:\n\njava\npublic void processNotifications(List<Notification> targets) {\n    targets.forEach(target -> {\n        CompletableFuture.supplyAsync(() -> remoteService.send(target))\n            .thenApply(this::formatResponse)\n            .thenAccept(dbService::logSuccess);\n    });\n}\n",
-      "question": "Why are the exceptions thrown by `remoteService.send()` failing to log or propagate?",
+      "scenario": "You are debugging a production issue where a high-throughput transaction service experiences severe stop-the-world (STW) pauses. Analyzing the GC logs, you observe frequent \"Humongous Allocation\" phases in your `G1` Garbage Collector, which trigger premature old-generation evacuations and concurrent marking cycles, spiking CPU usage to 100%.",
+      "question": "Which of the following approaches is the most effective tuning and architectural remedy to address these humongous allocations in the `G1` GC?",
       "options": [
-        "A) `CompletableFuture` stores exceptions internally within the completion pipeline and will not throw or propagate them unless explicitly retrieved via `.get()`, `.join()`, or handled with `.exceptionally()` / `.whenComplete()`.",
-        "B) The `ForkJoinPool.commonPool()` intercepts all raw exceptions and automatically channels them to the system's null output stream.",
-        "C) Spring Boot's default garbage collector aggressively reclaims aborted `CompletableFuture` objects, clearing the thread-local exception stack trace.",
-        "D) The `thenAccept` terminal operation automatically handles downstream exceptions by returning a default `Void` promise."
+        "A) Increase the `-XX:G1ReservePercent` to allow the JVM to allocate large objects directly into the Eden space.",
+        "B) Use `-XX:G1HeapRegionSize` to increase the region size (up to 32MB) and refactor the code to stream large data payloads instead of instantiating large contiguous byte arrays.",
+        "C) Disable `-XX:+UseG1GC` and fall back to the Parallel GC, which performs compacting operations without region fragmentation.",
+        "D) Apply `-XX:+UseStringDeduplication` to automatically merge identical large byte arrays in the Heap."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) `CompletableFuture` stores exceptions internally within the completion pipeline and will not throw or propagate them unless explicitly retrieved via `.get()`, `.join()`, or handled with `.exceptionally()` / `.whenComplete()`.",
-      "explanation": "In a `CompletableFuture` chain, an exception thrown during asynchronous execution is captured and encapsulated inside the returning `CompletableFuture` object rather than bubbling up the thread's call stack. If the pipeline is not terminated with an exception handler like `.exceptionally()`, `.handle()`, or resolved via blocking calls like `.get()` or `.join()`, the exception remains completely unhandled and silent, leading to swallowed production failures."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Use `-XX:G1HeapRegionSize` to increase the region size (up to 32MB) and refactor the code to stream large data payloads instead of instantiating large contiguous byte arrays.",
+      "explanation": "In `G1` GC, any object that is equal to or larger than 50% of a G1 region is classified as a 'Humongous Object'. These objects are allocated directly into the Old Generation as contiguous regions, skipping the Eden space entirely. Frequent humongous allocations lead to massive heap fragmentation and trigger premature, expensive concurrent mark cycles and Full GCs. Increasing the `-XX:G1HeapRegionSize` (up to 32MB) raises the humongous threshold. Combining this with an architectural change\u2014such as streaming payloads instead of storing huge contiguous arrays in memory\u2014directly addresses the root allocation behavior."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where fallback resilience mechanisms fail to execute. During an external API outage, a Spring Boot application using Resilience4j continues throwing raw connection timeout exceptions directly to clients instead of returning a cached fallback response. The developer implemented the following service class:\n\njava\n@Service\npublic class RemoteQueryService {\n\n    public Map<String, Object> getDataWithFallback() {\n        return queryExternalAPI(); \n    }\n\n    @CircuitBreaker(name = 'apiBreaker', fallbackMethod = 'getFallbackData')\n    public Map<String, Object> queryExternalAPI() {\n        throw new RemoteServiceException('Connection failed!');\n    }\n\n    public Map<String, Object> getFallbackData(Throwable t) {\n        return Map.of('status', 'cached_data');\n    }\n}\n",
-      "question": "Why is the `@CircuitBreaker` fallback logic bypassed when `getDataWithFallback` is invoked?",
+      "scenario": "You are debugging a production issue where a low-latency microservice is encountering severe throughput degradation. The application relies on an in-memory caching engine that manages cache entries using `SoftReference` wrappers. Under high system load and memory pressure, the JVM spends up to 90% of its runtime execution performing GC sweeps, and the cache hit rate drops to zero, causing database starvation.",
+      "question": "What is the primary cause of this extreme degradation when using `SoftReference` for caching under memory pressure?",
       "options": [
-        "A) Spring uses proxy-based AOP. Internal self-invocations bypass the generated proxy object, executing the raw target method directly without running the aspect interceptor.",
-        "B) Resilience4j fallbacks do not support a single `Throwable` argument in the fallback method signature.",
-        "C) The `Map` return type is incompatible with Spring's internal serialization requirements for proxy fallback routes.",
-        "D) The JDK dynamic proxy requires the class to implement a marker interface to register the `@CircuitBreaker` aspect."
+        "A) The JVM GC is forced to execute a Stop-the-World phase to clear each individual `SoftReference` sequentially, leading to high synchronization lock contention on the global `ReferenceQueue`.",
+        "B) Modern JVM collectors (like `G1` or `Parallel`) aggressively clear all softly-reachable objects simultaneously when memory pressure is high, causing an immediate cache stampede that overwhelms the system with new object allocations and triggers GC thrashing.",
+        "C) The `SoftReference` objects are allocated directly in the Metaspace rather than the Young generation, causing premature class metadata corruption.",
+        "D) Soft references prevent the `ZGC` concurrent thread-local handshakes, causing the collector to degrade to a legacy single-threaded stop-the-world collector."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Spring uses proxy-based AOP. Internal self-invocations bypass the generated proxy object, executing the raw target method directly without running the aspect interceptor.",
-      "explanation": "Spring's declarative features (like `@Transactional`, `@Async`, and `@CircuitBreaker` from resilience libraries) are implemented using JDK dynamic proxies or CGLIB subclassing proxies. When a client calls a method on a bean, the call goes through the proxy first, allowing the interception and aspect logic to run. However, when a method inside the service class calls another method of the same class (internal self-invocation), the call is resolved via the raw `this` reference, completely bypassing the proxy wrapper and its associated aspects."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Modern JVM collectors (like `G1` or `Parallel`) aggressively clear all softly-reachable objects simultaneously when memory pressure is high, causing an immediate cache stampede that overwhelms the system with new object allocations and triggers GC thrashing.",
+      "explanation": "While `SoftReference` instances are designed to be cleared only when the JVM runs out of memory, JVM garbage collectors will clear them en masse when the heap utilization approaches its limit. This eager clearing behavior triggers a massive cache stampede (or cache collapse). As the cache hit rate drops to zero, the application attempts to reconstruct the cache by pulling data from database, which triggers a flood of new allocations. These new allocations immediately re-trigger GC and another round of `SoftReference` sweeps, putting the JVM into a permanent cycle of garbage collection thrashing."
     }
   ]
 }
