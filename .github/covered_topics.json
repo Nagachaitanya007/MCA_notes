@@ -12,7 +12,8 @@
     "Modern Concurrency Safety: Structured Concurrency & Scoped Values",
     "From Thread Pools to Thread-per-Task: Scaling Beyond Platform Limits",
     "The \"Thread-Per-Task\" Rebirth: Optimizing I/O-Bound Applications",
-    "The Mechanics of Carrier Threads: How Virtual Threads Mount, Unmount, and Pin"
+    "The Mechanics of Carrier Threads: How Virtual Threads Mount, Unmount, and Pin",
+    "Hybrid Async Architectures: Orchestrating Virtual Threads with CompletableFuture"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
