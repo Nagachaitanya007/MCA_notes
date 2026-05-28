@@ -1,48 +1,48 @@
 {
-  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
+  "topic": "Clustering Scenarios: K-Means vs DBSCAN vs Hierarchical",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A retail lending company uses an XGBoost model to automate credit risk assessment. The training dataset has a significant historical bias: historical systemic inequalities have led to under-representation and lower approval rates for a protected minority demographic. While the model achieves 91% overall classification accuracy during offline validation, a fairness audit reveals that the False Negative Rate (FNR) for the protected group is 28% compared to only 8% for the majority group. The system must meet strict regulatory compliance to minimize FNR disparity, but the engineering team cannot afford the computational cost or downtime of retraining the core model on synthesized or modified datasets.",
-      "question": "Which combination of algorithmic mitigation and evaluation metric is most appropriate to resolve this disparity efficiently under these constraints?",
+      "scenario": "A logistics enterprise is designing an automated dispatch optimization system. GPS coordinates of delivery vehicles operating in a mountainous terrain must be clustered to determine natural regional hubs. The raw spatial data contains significant noise due to GPS signal reflection and multi-path interference in deep valleys. Additionally, the actual delivery routes are non-spherical and follow the natural contours of the winding valleys. The engineering team's initial trial with K-Means (using k=5 and Euclidean distance) resulted in centroids being placed on inaccessible, uninhabited mountain peaks (empty space between valleys) and grouped distinct routes together across high-altitude ridges.",
+      "question": "Which clustering strategy should the data science team adopt to resolve this issue and correctly identify the natural route-based hubs while ignoring GPS noise?",
       "options": [
-        "A) Implement Post-processing Reject Option Classification (ROC) to adjust decision thresholds for the protected group, using Equalized Odds as the primary evaluation metric.",
-        "B) Apply Pre-processing SMOTE to balance the training data across demographic groups, and optimize the model using macro-averaged F1-Score.",
-        "C) Train an In-processing Adversarial Debiasing model to minimize demographic parity difference, utilizing the Area Under the ROC Curve (AUROC) as the performance metric.",
-        "D) Perform Feature Selection using Mutual Information to drop all correlated proxies of the protected attribute, and evaluate the model using Average Precision."
+        "A) Switch to Agglomerative Hierarchical Clustering with complete linkage and Euclidean distance to enforce strict hierarchical route grouping.",
+        "B) Use DBSCAN with a domain-tuned Eps (representing maximum valley width) and MinPts, using a road-network distance metric instead of Euclidean distance.",
+        "C) Apply K-Means++ with k=12 and use Manhattan distance to force the centroids to align with the valley gridlines.",
+        "D) Apply Gaussian Mixture Models (GMM) with spherical covariance matrices to model the density drop-off of GPS points."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Implement Post-processing Reject Option Classification (ROC) to adjust decision thresholds for the protected group, using Equalized Odds as the primary evaluation metric.",
-      "explanation": "Post-processing techniques like Reject Option Classification (ROC) allow adjustment of decision boundaries near the decision threshold for specific groups post-hoc, bypassing the need for computationally expensive retraining of the core XGBoost model. Equalized Odds is the correct metric here because it requires the model to have both equal True Positive Rates (TPR) and equal False Positive Rates (FPR) across groups, which directly targets and mitigates the unequal False Negative Rates (FNR = 1 - TPR) observed in the audit. Pre-processing (SMOTE) and In-processing (Adversarial Debiasing) require complete model retraining, violating the operational constraints."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Use DBSCAN with a domain-tuned Eps (representing maximum valley width) and MinPts, using a road-network distance metric instead of Euclidean distance.",
+      "explanation": "K-Means assumes spherical, convex clusters and is highly sensitive to outliers/noise, which pulls centroids into empty spatial regions (mountain peaks) when trying to group points from adjacent valleys. DBSCAN is a density-based algorithm designed to discover clusters of arbitrary shapes and can explicitly mark sparse GPS drift as noise. Coupling DBSCAN with a road-network distance metric (instead of straight-line Euclidean distance) prevents clustering points on opposite sides of an impassable mountain ridge, aligning the clusters with physical transportation realities."
     },
     {
       "id": 2,
-      "scenario": "An autonomous driving company utilizes a deep ResNet-50 convolutional neural network for real-time pedestrian detection at the edge. To satisfy safety-critical regulatory requirements, the vehicle's onboard computer must generate local explainability maps (saliency/feature attributions) to explain why a pedestrian was or was not detected. The onboard GPU has a strict total latency budget of 15 milliseconds (ms) per frame for both inference and explanation generation.",
-      "question": "Which Explainable AI (XAI) methodology should be selected to generate these local explanations under these constraints?",
+      "scenario": "A fintech enterprise is building a real-time customer support monitoring platform. Incoming customer tickets are converted into dense 768-dimensional embeddings using a pre-trained transformer model. At peak times, the stream handles 500 tickets per second. The operations team wants to dynamically cluster these embeddings to detect sudden spikes in specific system failures (e.g., payment gateway timeouts). The prototype system used Agglomerative Hierarchical Clustering (Ward's linkage), but under production load, the service crashed due to Out-Of-Memory (OOM) errors and latency spiked exponentially as ticket volume scaled.",
+      "question": "How should the system architect redesign the clustering pipeline to meet both the high-dimensionality and real-time latency constraints?",
       "options": [
-        "A) KernelSHAP, because it leverages coalitional game theory to provide highly consistent and mathematically rigorous local feature attributions.",
-        "B) LIME (Local Interpretable Model-agnostic Explanations), because it constructs a local surrogate model using perturbed superpixels which is highly interpretable.",
-        "C) Grad-CAM (Gradient-weighted Class Activation Mapping), because it computes the gradients of the target score with respect to the final convolutional feature maps in a single backward pass.",
-        "D) Integrated Gradients, because it satisfies the axioms of completeness and sensitivity by integrating gradients along a path from a reference baseline."
+        "A) Perform non-linear dimensionality reduction using t-SNE to 2D space, then apply DBSCAN with a global Eps threshold.",
+        "B) Reduce dimensions using PCA/Cosine-based Autoencoders, and utilize Mini-Batch K-Means with a sliding window approach on the stream.",
+        "C) Implement Single-Linkage Hierarchical Clustering on the raw 768-dimensional space, optimized with parallel GPU matrix operations.",
+        "D) Run Spectral Clustering on the high-dimensional embeddings using a highly sparse radial basis function (RBF) kernel matrix."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Grad-CAM (Gradient-weighted Class Activation Mapping), because it computes the gradients of the target score with respect to the final convolutional feature maps in a single backward pass.",
-      "explanation": "Grad-CAM is a gradient-based post-hoc explainability method that computes feature attributions using a single forward and backward pass through the network. This makes it extremely fast (typically <2-5ms), easily fitting into the strict 15ms real-time latency budget of an edge device. In contrast, perturbation-based methods like KernelSHAP and LIME require thousands of forward passes (predictions) per explanation to build local surrogates, making them computationally intractable for real-time applications. Integrated Gradients, while gradient-based, requires computing gradients along 20 to 300 interpolated steps, which also exceeds the real-time threshold."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Reduce dimensions using PCA/Cosine-based Autoencoders, and utilize Mini-Batch K-Means with a sliding window approach on the stream.",
+      "explanation": "Hierarchical clustering has a computational complexity of O(N^3) or O(N^2 log N) and space complexity of O(N^2), making it completely unviable for continuous high-throughput streams. Mini-Batch K-Means operates with O(K * N) time complexity and can process mini-batches in real-time. High-dimensional spaces (768-D) suffer from the 'curse of dimensionality,' where distance metrics like Euclidean distance become uniform; reducing dimensions with PCA or Autoencoders while preserving local/global semantic relationships ensures the centroid calculation remains effective and computationally lightweight."
     },
     {
       "id": 3,
-      "scenario": "A healthcare network deploys a LightGBM model to predict 30-day patient readmission risks using over 2,000 clinical, demographic, and administrative features. During post-deployment monitoring, the team notices that administrative 'billing codes' act as proxy features for socio-economic status, introducing systemic bias. The engineering team must remove this proxy bias. However, simply dropping the billing codes results in other correlated clinical variables (like hospital stay duration) implicitly carrying the proxy information, a phenomenon known as redundant encodings.",
-      "question": "What is the most robust pipeline to identify, measure, and eliminate this indirect proxy leakage while maintaining high model performance and interpretability?",
+      "scenario": "A national retail chain wants to segment its customer database to tailor its high-tier loyalty programs. The dataset contains highly skewed features: annual spending spans several orders of magnitude, and geographic distribution is heavily unbalanced. Urban regions contain dense, highly concentrated clusters of customer records, whereas rural regions feature sparse, highly dispersed customers who are nonetheless highly valuable. When running a standard DBSCAN, the team finds that setting a single global density threshold (Eps and MinPts) either merges all urban customers into a single massive cluster, or classifies all valuable rural customers as noise.",
+      "question": "Which clustering approach is best suited to handle this variation in cluster density across the customer base?",
       "options": [
-        "A) Drop the billing codes, retrain the LightGBM model, and use Conditional (Dependency-Aware) TreeSHAP to identify and prune remaining features that exhibit high mutual information with the omitted proxy.",
-        "B) Apply principal component analysis (PCA) to compress all 2,000 features into 20 principal components, and use KernelSHAP to explain the output predictions.",
-        "C) Maintain the original LightGBM model, but apply post-hoc marginal SHAP attribution to mathematically subtract the Shapley value of the billing codes from the final prediction score.",
-        "D) Retrain the LightGBM model with strong L1 regularization (Lasso-like) on all features, and rely on the resulting sparse tree splits as a native explanation."
+        "A) Scale the numerical features using MinMax scaling, and run K-Means with an elbow-curve optimized k value.",
+        "B) Apply OPTICS (Ordering Points To Identify the Clustering Structure) using Gower's distance metric to handle variable density and mixed features.",
+        "C) Deploy BIRCH (Balanced Iterative Reducing and Clustering using Hierarchies) to build a Clustering Feature Tree with a global threshold.",
+        "D) Map the data to a high-dimensional space using Kernel PCA, then apply standard DBSCAN with a single global threshold."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Drop the billing codes, retrain the LightGBM model, and use Conditional (Dependency-Aware) TreeSHAP to identify and prune remaining features that exhibit high mutual information with the omitted proxy.",
-      "explanation": "When direct proxy features are removed, machine learning models often reconstruct the missing information via correlated surrogate features (redundant encodings). Conditional (or Dependency-Aware) TreeSHAP models the true conditional expectation of features, allowing developers to detect when remaining clinical features are carrying proxy information (such as hospital stay duration encoding socio-economic status). Once these indirectly leaking features are identified via TreeSHAP analysis, they can be pruned or transformed, and the model retrained. Option B obscures interpretability through linear combinations. Option C is mathematically unsound because subtracting Shapley values post-hoc does not alter the underlying decision boundary. Option D (L1 regularization) does not prevent the model from selecting correlated proxy features over clinical ones."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Apply OPTICS (Ordering Points To Identify the Clustering Structure) using Gower's distance metric to handle variable density and mixed features.",
+      "explanation": "Standard DBSCAN uses a single global density parameter (Eps), which fails when cluster densities vary widely (dense urban vs. sparse rural). OPTICS is specifically designed to address this limitation by generating a reachability plot that represents density-based clustering structures of variable densities. Gower's distance is the appropriate metric here because customer segmentation datasets contain mixed data types (continuous spending data and categorical demographic data)."
     }
   ]
 }
