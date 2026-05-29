@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput microservice is experiencing a gradual memory leak, eventually leading to an `OutOfMemoryError: Java heap space`. Your team suspects a custom session cache. Here is the implementation snippet:\n\njava\n@Service\npublic class ClientSessionManager {\n    private final Map<ClientToken, SessionContext> sessionCache = new WeakHashMap<>();\n\n    public synchronized void registerSession(String tokenStr, SessionContext context) {\n        ClientToken token = new ClientToken(tokenStr);\n        context.setToken(token); \n        sessionCache.put(token, context);\n    }\n}\n\n\nThe profiling dumps show that `ClientToken` objects are never garbage collected, even after clients disconnect and all external references to the tokens are dropped.",
-      "question": "What is the primary cause of this memory leak?",
+      "scenario": "You are debugging a production issue where the application occasionally throws a `ConcurrentModificationException` when iterating over a `List<String>` in a multi-threaded environment. The relevant code snippet is: `List<String> myList = new ArrayList<>();` ... `for (String s : myList) { myList.remove(s); }`",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) `WeakHashMap` is not thread-safe, and concurrent access corrupts the internal bucket references, preventing the GC from reaching them.",
-        "B) The `SessionContext` value maintains a strong reference back to the `ClientToken` key, creating a strong reference cycle that prevents the weak key from being reclaimed by the garbage collector.",
-        "C) The `ClientToken` object is declared within the method scope of `registerSession`, causing it to be eagerly promoted to the Old Generation where `WeakHashMap` cannot track its references.",
-        "D) Spring's transactional proxy context proxies the `ClientSessionManager`, which retains hard references to the method arguments inside the transaction synchronization manager."
+        "A) The `ArrayList` implementation is not thread-safe",
+        "B) The `remove` method is not synchronized with the iterator",
+        "C) The `for-each` loop is not suitable for modifying collections",
+        "D) The `List` interface does not support concurrent modifications"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `SessionContext` value maintains a strong reference back to the `ClientToken` key, creating a strong reference cycle that prevents the weak key from being reclaimed by the garbage collector.",
-      "explanation": "In a `WeakHashMap`, the key is held via a `WeakReference`, but the value is held via a strong reference. If the value (`SessionContext`) contains a strong reference back to the key (`ClientToken`), the key remains strongly reachable through the value object graph as long as the entry is in the map. This creates a reference cycle that completely defeats the garbage collection mechanism of `WeakHashMap`, preventing the key from being cleared and causing a silent, persistent memory leak."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) The `for-each` loop is not suitable for modifying collections",
+      "explanation": "The `for-each` loop uses an iterator internally, and when the list is modified structurally (e.g., by calling `remove`), the iterator becomes invalid, leading to a `ConcurrentModificationException`. To fix this, use an `Iterator` explicitly and call `iterator.remove()` instead of `list.remove()`, or use a thread-safe collection like `CopyOnWriteArrayList`."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a highly concurrent financial ledger service experiences severe thread contention and sporadic JVM-level deadlocks. The application is running within a Spring Boot container, and threads lock keys dynamically inside a Spring `@Transactional` block using a custom nested locking structure on a `ConcurrentHashMap`:\n\njava\n@Service\npublic class LedgerService {\n    private final ConcurrentHashMap<String, Account> accounts = new ConcurrentHashMap<>();\n\n    @Transactional\n    public void transferFunds(String fromId, String toId, BigDecimal amount) {\n        accounts.compute(fromId, (fromKey, fromAcc) -> {\n            accounts.compute(toId, (toKey, toAcc) -> {\n                fromAcc.withdraw(amount);\n                toAcc.deposit(amount);\n                return toAcc;\n            });\n            return fromAcc;\n        });\n    }\n}\n\n\nThread dumps during peak hours show multiple application threads in `BLOCKED` states at `java.util.concurrent.ConcurrentHashMap.compute`.",
-      "question": "Why does this implementation cause thread deadlocks within the JVM?",
+      "scenario": "You are debugging a production issue where a custom implementation of `Map<String, Object>` is not displaying the correct results in a Spring-based application. The custom `Map` implementation uses a `HashMap` internally and overrides the `put` method to perform some additional logic. However, the overridden `put` method is not properly synchronized, leading to inconsistent results in a multi-threaded environment. The relevant code snippet is: `public class CustomMap extends HashMap<String, Object> { @Override public Object put(String key, Object value) { /* additional logic */ return super.put(key, value); } }`",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) `ConcurrentHashMap` promotes bucket locks to global exclusive write locks when accessed inside a active Spring `@Transactional` proxy.",
-        "B) The nested `compute` calls perform synchronized operations on the head nodes of the respective hash bins. If Thread 1 attempts to transfer from A to B while Thread 2 attempts to transfer from B to A concurrently, a classic circular lock acquisition deadlock occurs at the JVM monitor level.",
-        "C) The transaction manager registers a database-level lock that conflicts with the internal `ReentrantLock` segments of the `ConcurrentHashMap` during nested updates.",
-        "D) `ConcurrentHashMap` throws a `ConcurrentModificationException` during nested write operations, which forces the Spring transaction proxy to retry and indefinitely block the pool threads."
+        "A) The `put` method is not properly synchronized",
+        "B) The `HashMap` implementation is not suitable for multi-threaded environments",
+        "C) The custom `Map` implementation is not registered with the Spring framework",
+        "D) The `Object` type is not compatible with the `HashMap` implementation"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The nested `compute` calls perform synchronized operations on the head nodes of the respective hash bins. If Thread 1 attempts to transfer from A to B while Thread 2 attempts to transfer from B to A concurrently, a classic circular lock acquisition deadlock occurs at the JVM monitor level.",
-      "explanation": "In modern Java (Java 8+), `ConcurrentHashMap` uses `synchronized` blocks on the first node of each hash bucket (bin) during write operations such as `compute`, `computeIfPresent`, and `merge`. By nesting these calls, you are acquiring monitor locks on two different bucket nodes sequentially. If Thread 1 locks bucket A and waits for bucket B, while Thread 2 locks bucket B and waits for bucket A, a standard circular wait condition occurs in the JVM. Since these are JVM monitor locks, they are completely transparent to and unmanaged by the database transaction coordinator, resulting in a hard JVM-level deadlock."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The `put` method is not properly synchronized",
+      "explanation": "The `put` method is not properly synchronized, which means that multiple threads can access the `HashMap` simultaneously, leading to inconsistent results. To fix this, use the `synchronized` keyword to ensure that only one thread can execute the `put` method at a time, or use a thread-safe `Map` implementation like `ConcurrentHashMap`."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a customized lazy-loading persistent collection (`CustomPersistentList`) is being returned from a Spring `@Cacheable` service. When a client thread accesses the cached list outside of the active transaction boundary, it throws a `LazyInitializationException` from Hibernate. Oddly, this error only occurs when the application cache provider is configured with an in-memory serializing cache (like Ehcache with heap offload) or a distributed cache (like Redis), but never when using a JVM local reference-based cache (like Caffeine).",
-      "question": "What is the underlying architectural reason for this behavior?",
+      "scenario": "You are debugging a production issue where a Spring-based application is experiencing performance issues due to excessive garbage collection. The application uses a custom implementation of `List<Object>` that creates a new object on every `add` operation. The relevant code snippet is: `public class CustomList extends ArrayList<Object> { @Override public boolean add(Object element) { return super.add(new CustomObject(element)); } }`",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) Serializing caches strip the runtime Spring proxies from the list elements, preventing the transaction interceptor from re-attaching the list to a new database session.",
-        "B) Local JVM caches like Caffeine return the exact same object reference, allowing the thread to access the underlying session-bound cache proxy. In contrast, serializing caches serialize and deserialize the list, creating a detached copy that lacks the active persistence context / `Session` association.",
-        "C) The Redis cache provider forces the Spring transaction proxy to commit prematurely, leaving the custom collection in an uninitialized state before serialization occurs.",
-        "D) Caffeine implements lazy serialization natively, which automatically initializes all transient fields of the collection before caching, whereas Redis and Ehcache do not support transient fields."
+        "A) The `add` method is creating too many temporary objects",
+        "B) The `CustomObject` class is not properly registering with the Spring framework",
+        "C) The `ArrayList` implementation is not suitable for large datasets",
+        "D) The `List` interface does not support garbage collection"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Local JVM caches like Caffeine return the exact same object reference, allowing the thread to access the underlying session-bound cache proxy. In contrast, serializing caches serialize and deserialize the list, creating a detached copy that lacks the active persistence context / `Session` association.",
-      "explanation": "When using local reference caches like Caffeine, the cached item is the exact JVM object instance. If the calling thread happens to have an active `Session` (e.g., via Open Session in View, or within the same thread execution flow), the original collection can still lazily load database fields because it is still bound to that living context. However, with serializing caches (Redis, Hazelcast, or Ehcache with off-heap storage), the cache returns a deserialized *copy* of the collection. This new instance is completely detached from the JPA/Hibernate Persistence Context (`Session`), and any subsequent attempts to lazily load its uninitialized associations outside a transaction will fail instantly with a `LazyInitializationException`."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The `add` method is creating too many temporary objects",
+      "explanation": "The `add` method creates a new `CustomObject` on every invocation, which leads to excessive object creation and garbage collection. To fix this, consider reusing existing objects or using a more efficient data structure, such as a `LinkedList` or a `Stack`. Additionally, consider using a garbage collection-friendly approach, such as using `Arrays` instead of `Lists`, or using a cache to reduce object creation."
     }
   ]
 }
