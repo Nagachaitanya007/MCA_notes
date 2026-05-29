@@ -1,48 +1,48 @@
 {
-  "topic": "Clustering Scenarios: K-Means vs DBSCAN vs Hierarchical",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A logistics enterprise is designing an automated dispatch optimization system. GPS coordinates of delivery vehicles operating in a mountainous terrain must be clustered to determine natural regional hubs. The raw spatial data contains significant noise due to GPS signal reflection and multi-path interference in deep valleys. Additionally, the actual delivery routes are non-spherical and follow the natural contours of the winding valleys. The engineering team's initial trial with K-Means (using k=5 and Euclidean distance) resulted in centroids being placed on inaccessible, uninhabited mountain peaks (empty space between valleys) and grouped distinct routes together across high-altitude ridges.",
-      "question": "Which clustering strategy should the data science team adopt to resolve this issue and correctly identify the natural route-based hubs while ignoring GPS noise?",
+      "scenario": "Real-world Industrial Problem Statement: An autonomous robot is navigating through a warehouse to locate a specific item. The warehouse has multiple obstacles and paths, and the robot needs to find the shortest path possible while avoiding collisions. The A* search algorithm is used, but it's taking a long time to find the optimal path due to the large number of possible paths and obstacles.",
+      "question": "What optimization can be applied to the A* search algorithm to improve its performance in this scenario?",
       "options": [
-        "A) Switch to Agglomerative Hierarchical Clustering with complete linkage and Euclidean distance to enforce strict hierarchical route grouping.",
-        "B) Use DBSCAN with a domain-tuned Eps (representing maximum valley width) and MinPts, using a road-network distance metric instead of Euclidean distance.",
-        "C) Apply K-Means++ with k=12 and use Manhattan distance to force the centroids to align with the valley gridlines.",
-        "D) Apply Gaussian Mixture Models (GMM) with spherical covariance matrices to model the density drop-off of GPS points."
+        "A) Using a more informed heuristic function",
+        "B) Increasing the number of nodes to be explored",
+        "C) Reducing the weight of the heuristic function",
+        "D) Using a different search algorithm like Min-Max"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Use DBSCAN with a domain-tuned Eps (representing maximum valley width) and MinPts, using a road-network distance metric instead of Euclidean distance.",
-      "explanation": "K-Means assumes spherical, convex clusters and is highly sensitive to outliers/noise, which pulls centroids into empty spatial regions (mountain peaks) when trying to group points from adjacent valleys. DBSCAN is a density-based algorithm designed to discover clusters of arbitrary shapes and can explicitly mark sparse GPS drift as noise. Coupling DBSCAN with a road-network distance metric (instead of straight-line Euclidean distance) prevents clustering points on opposite sides of an impassable mountain ridge, aligning the clusters with physical transportation realities."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Using a more informed heuristic function",
+      "explanation": "The A* search algorithm uses an admissible heuristic function to guide the search towards the goal. Using a more informed heuristic function can help to reduce the number of nodes to be explored and improve the algorithm's performance."
     },
     {
       "id": 2,
-      "scenario": "A fintech enterprise is building a real-time customer support monitoring platform. Incoming customer tickets are converted into dense 768-dimensional embeddings using a pre-trained transformer model. At peak times, the stream handles 500 tickets per second. The operations team wants to dynamically cluster these embeddings to detect sudden spikes in specific system failures (e.g., payment gateway timeouts). The prototype system used Agglomerative Hierarchical Clustering (Ward's linkage), but under production load, the service crashed due to Out-Of-Memory (OOM) errors and latency spiked exponentially as ticket volume scaled.",
-      "question": "How should the system architect redesign the clustering pipeline to meet both the high-dimensionality and real-time latency constraints?",
+      "scenario": "Real-world Industrial Problem Statement: A logistics company is trying to optimize the route of its delivery trucks to minimize fuel consumption and reduce emissions. The company has a large dataset of traffic patterns, road conditions, and weather forecasts. The Min-Max algorithm is being used to find the optimal route, but it's struggling to handle the high-dimensional space and large amounts of data.",
+      "question": "What technique can be used to improve the performance of the Min-Max algorithm in handling high-dimensional spaces and large datasets?",
       "options": [
-        "A) Perform non-linear dimensionality reduction using t-SNE to 2D space, then apply DBSCAN with a global Eps threshold.",
-        "B) Reduce dimensions using PCA/Cosine-based Autoencoders, and utilize Mini-Batch K-Means with a sliding window approach on the stream.",
-        "C) Implement Single-Linkage Hierarchical Clustering on the raw 768-dimensional space, optimized with parallel GPU matrix operations.",
-        "D) Run Spectral Clustering on the high-dimensional embeddings using a highly sparse radial basis function (RBF) kernel matrix."
+        "A) Dimensionality reduction using PCA",
+        "B) Increasing the number of iterations",
+        "C) Using a more efficient data structure like a heap",
+        "D) Applying a clustering algorithm to group similar routes"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Reduce dimensions using PCA/Cosine-based Autoencoders, and utilize Mini-Batch K-Means with a sliding window approach on the stream.",
-      "explanation": "Hierarchical clustering has a computational complexity of O(N^3) or O(N^2 log N) and space complexity of O(N^2), making it completely unviable for continuous high-throughput streams. Mini-Batch K-Means operates with O(K * N) time complexity and can process mini-batches in real-time. High-dimensional spaces (768-D) suffer from the 'curse of dimensionality,' where distance metrics like Euclidean distance become uniform; reducing dimensions with PCA or Autoencoders while preserving local/global semantic relationships ensures the centroid calculation remains effective and computationally lightweight."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Dimensionality reduction using PCA",
+      "explanation": "Dimensionality reduction techniques like PCA can help to reduce the number of features in the dataset, making it easier to handle high-dimensional spaces and improving the performance of the Min-Max algorithm."
     },
     {
       "id": 3,
-      "scenario": "A national retail chain wants to segment its customer database to tailor its high-tier loyalty programs. The dataset contains highly skewed features: annual spending spans several orders of magnitude, and geographic distribution is heavily unbalanced. Urban regions contain dense, highly concentrated clusters of customer records, whereas rural regions feature sparse, highly dispersed customers who are nonetheless highly valuable. When running a standard DBSCAN, the team finds that setting a single global density threshold (Eps and MinPts) either merges all urban customers into a single massive cluster, or classifies all valuable rural customers as noise.",
-      "question": "Which clustering approach is best suited to handle this variation in cluster density across the customer base?",
+      "scenario": "Real-world Industrial Problem Statement: A real-time system is using a heuristic search algorithm to optimize the allocation of resources in a cloud computing environment. The system needs to respond quickly to changing demand and allocate resources efficiently. However, the heuristic search algorithm is taking too long to find the optimal solution due to the complexity of the problem and the large number of possible solutions.",
+      "question": "What technique can be used to improve the responsiveness of the heuristic search algorithm in this real-time system?",
       "options": [
-        "A) Scale the numerical features using MinMax scaling, and run K-Means with an elbow-curve optimized k value.",
-        "B) Apply OPTICS (Ordering Points To Identify the Clustering Structure) using Gower's distance metric to handle variable density and mixed features.",
-        "C) Deploy BIRCH (Balanced Iterative Reducing and Clustering using Hierarchies) to build a Clustering Feature Tree with a global threshold.",
-        "D) Map the data to a high-dimensional space using Kernel PCA, then apply standard DBSCAN with a single global threshold."
+        "A) Using a more aggressive pruning strategy",
+        "B) Increasing the number of nodes to be explored",
+        "C) Applying a time-bounded search strategy",
+        "D) Using a different search algorithm like A*"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Apply OPTICS (Ordering Points To Identify the Clustering Structure) using Gower's distance metric to handle variable density and mixed features.",
-      "explanation": "Standard DBSCAN uses a single global density parameter (Eps), which fails when cluster densities vary widely (dense urban vs. sparse rural). OPTICS is specifically designed to address this limitation by generating a reachability plot that represents density-based clustering structures of variable densities. Gower's distance is the appropriate metric here because customer segmentation datasets contain mixed data types (continuous spending data and categorical demographic data)."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Applying a time-bounded search strategy",
+      "explanation": "A time-bounded search strategy can be used to limit the amount of time spent on the search, ensuring that the system responds quickly to changing demand and allocates resources efficiently, even if the optimal solution is not found."
     }
   ]
 }
