@@ -1,48 +1,48 @@
 {
-  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "Real-world Industrial Problem Statement: An autonomous robot is navigating through a warehouse to locate a specific item. The warehouse has multiple obstacles and paths, and the robot needs to find the shortest path possible while avoiding collisions. The A* search algorithm is used, but it's taking a long time to find the optimal path due to the large number of possible paths and obstacles.",
-      "question": "What optimization can be applied to the A* search algorithm to improve its performance in this scenario?",
+      "scenario": "A financial risk modeling team is training a neural network-based credit scoring model on a dataset containing 'Annual Income' and 'Outstanding Debt'. The continuous 'Annual Income' feature is highly right-skewed with a heavy tail representing ultra-high-net-worth individuals, spanning several orders of magnitude. The downstream neural network relies on gradient descent for optimization and uses Mean Squared Error (MSE) loss. During initial epochs, the gradients explode, and the model fails to converge because the loss is heavily dominated by the extreme values in the right tail. The team cannot simply drop these observations as they represent high-value potential customers.",
+      "question": "Which transformation strategy is mathematically and practically most appropriate to stabilize gradient descent while preserving the relative variance and distribution structure of the income feature?",
       "options": [
-        "A) Using a more informed heuristic function",
-        "B) Increasing the number of nodes to be explored",
-        "C) Reducing the weight of the heuristic function",
-        "D) Using a different search algorithm like Min-Max"
+        "A) Apply a Min-Max Scaler to force all income values strictly between 0 and 1, as this mathematically guarantees that the gradients will never exceed a magnitude of 1.0.",
+        "B) Apply a Box-Cox transformation (or Yeo-Johnson if zero/negative values exist) to map the highly skewed distribution to a near-normal distribution, followed by Standard Scaling.",
+        "C) Implement a Robust Scaler using the Median and Interquartile Range (IQR), which completely eliminates the skewness of the underlying distribution without altering the distance between points.",
+        "D) Apply a hard mathematical ceiling (clipping/winsorization) at the 50th percentile to convert the continuous feature into a uniform step function, preventing any extreme value from influencing the gradient."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Using a more informed heuristic function",
-      "explanation": "The A* search algorithm uses an admissible heuristic function to guide the search towards the goal. Using a more informed heuristic function can help to reduce the number of nodes to be explored and improve the algorithm's performance."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Apply a Box-Cox transformation (or Yeo-Johnson if zero/negative values exist) to map the highly skewed distribution to a near-normal distribution, followed by Standard Scaling.",
+      "explanation": "A Box-Cox or Yeo-Johnson power transformation stabilizes variance and normalizes heavily skewed distributions by finding an optimal parameter lambda to minimize skewness. Standard deep learning optimization algorithms (like gradient descent) assume that input features are normally distributed or scaled to a similar range. If features are heavily skewed, the loss surface becomes highly elongated, leading to unstable gradient steps (oscillations or explosions). Standardizing (Z-score) or Min-Max scaling alone on heavily skewed data does not change the underlying skewed shape; it merely shifts and scales the values, meaning the extreme values will still dominate the variance and the gradients. Power transformations alter the shape of the distribution, pulling the tail inward and stabilizing gradient flow."
     },
     {
       "id": 2,
-      "scenario": "Real-world Industrial Problem Statement: A logistics company is trying to optimize the route of its delivery trucks to minimize fuel consumption and reduce emissions. The company has a large dataset of traffic patterns, road conditions, and weather forecasts. The Min-Max algorithm is being used to find the optimal route, but it's struggling to handle the high-dimensional space and large amounts of data.",
-      "question": "What technique can be used to improve the performance of the Min-Max algorithm in handling high-dimensional spaces and large datasets?",
+      "scenario": "An Industrial Internet of Things (IIoT) platform processes continuous high-dimensional sensor data (120+ features) from gas turbines to perform predictive maintenance. The system must flag operational anomalies (outliers) within a strict SLA of 30 milliseconds per inference. The data engineering team reports that traditional distance-based outlier detection models (like Local Outlier Factor or K-Nearest Neighbors) are failing to meet the SLA because calculating pairwise Euclidean distances in high-dimensional space is highly computationally expensive ($O(N^2)$ complexity) and suffers from the 'curse of dimensionality', where distance metrics lose their contrast.",
+      "question": "Which pipeline design represents the best trade-off between dimensionality reduction, computational efficiency, and preservation of anomaly detection performance under the strict real-time constraint?",
       "options": [
-        "A) Dimensionality reduction using PCA",
-        "B) Increasing the number of iterations",
-        "C) Using a more efficient data structure like a heap",
-        "D) Applying a clustering algorithm to group similar routes"
+        "A) Apply t-Distributed Stochastic Neighbor Embedding (t-SNE) to compress the 120 features to 2 dimensions, followed by a dynamically computed Local Outlier Factor (LOF).",
+        "B) Deploy a deep Autoencoder with non-linear activation functions, using its reconstruction error as the anomaly score directly on the GPU-accelerated edge node.",
+        "C) Apply Principal Component Analysis (PCA) to project the features onto a lower-dimensional subspace (preserving 95% variance), and then run Isolation Forest on the reduced space.",
+        "D) Drop all features except the top 3 with the highest variance, and run a Multivariate Gaussian Mixture Model (GMM) on the raw CPU thread."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Dimensionality reduction using PCA",
-      "explanation": "Dimensionality reduction techniques like PCA can help to reduce the number of features in the dataset, making it easier to handle high-dimensional spaces and improving the performance of the Min-Max algorithm."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Apply Principal Component Analysis (PCA) to project the features onto a lower-dimensional subspace (preserving 95% variance), and then run Isolation Forest on the reduced space.",
+      "explanation": "To meet strict latency SLAs in high-dimensional outlier detection, we must reduce dimensions efficiently and use a fast, non-distance-based outlier detection algorithm. PCA projection is a linear transformation ($O(d \\times D)$ where $D$ is input dimension and $d$ is target dimension), which is computationally trivial and extremely fast at inference time. Isolation Forest does not rely on expensive distance calculations (like KNN or LOF); instead, it isolates anomalies by randomly partitioning feature spaces, running in $O(t \\times d)$ where $t$ is the number of trees and $d$ is the depth, making it highly suitable for real-time applications. Option A is incorrect because t-SNE is non-parametric, cannot easily project out-of-sample streaming data in real-time, and is extremely slow. Option B, while powerful, might introduce excessive computational overhead/latency on edge devices compared to PCA + Isolation Forest."
     },
     {
       "id": 3,
-      "scenario": "Real-world Industrial Problem Statement: A real-time system is using a heuristic search algorithm to optimize the allocation of resources in a cloud computing environment. The system needs to respond quickly to changing demand and allocate resources efficiently. However, the heuristic search algorithm is taking too long to find the optimal solution due to the complexity of the problem and the large number of possible solutions.",
-      "question": "What technique can be used to improve the responsiveness of the heuristic search algorithm in this real-time system?",
+      "scenario": "A real-time clickstream recommendation engine processes user sessions to predict purchase intent using a recurrent neural network (LSTM). Due to intermittent tracking pixel failures, approximately 12% of the continuous 'session duration' and 'scroll depth' features are missing at random (MAR). The downstream LSTM model requires complete sequences with consistent timesteps. Offline methods like Multivariate Imputation by Chained Equations (MICE) or Deep Learning-based imputers yield high accuracy but cannot be run on-the-fly within the stream ingestion layer due to their high computational latency.",
+      "question": "Which real-time imputation strategy balances temporal consistency, computational simplicity, and downstream model sensitivity to missing values?",
       "options": [
-        "A) Using a more aggressive pruning strategy",
-        "B) Increasing the number of nodes to be explored",
-        "C) Applying a time-bounded search strategy",
-        "D) Using a different search algorithm like A*"
+        "A) Replace missing values with the global training mean of the respective feature to ensure zero variance shift during inference.",
+        "B) Use a forward-fill (Last Observation Carried Forward) mechanism to impute the missing value with the previous timestep's value, and append a binary indicator column representing the missingness state.",
+        "C) Drop any user session that contains at least one missing feature value to preserve the mathematical purity of the LSTM input tensors.",
+        "D) Run a rolling K-Nearest Neighbors (KNN) imputer with $K=15$ calculated dynamically on a rolling micro-batch of the last 100,000 stream records."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Applying a time-bounded search strategy",
-      "explanation": "A time-bounded search strategy can be used to limit the amount of time spent on the search, ensuring that the system responds quickly to changing demand and allocates resources efficiently, even if the optimal solution is not found."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Use a forward-fill (Last Observation Carried Forward) mechanism to impute the missing value with the previous timestep's value, and append a binary indicator column representing the missingness state.",
+      "explanation": "In streaming sequence data (time-series/clickstreams), Forward-fill (LOCF) is highly efficient ($O(1)$ time complexity) and preserves the temporal continuity of the user's state. However, because forward-fill falsely implies that the user's state did not change, it introduces bias. To mitigate this bias and allow the downstream recurrent model (LSTM) to learn the reliability of the imputed values, appending a binary 'missingness' indicator (0 for observed, 1 for imputed) is an industry-standard best practice. This lets the LSTM's gating mechanisms down-weight or adapt to the imputed features dynamically. Global mean imputation (Option A) destroys the temporal context of individual sessions. Dropping sessions (Option C) leads to massive data loss and prediction gaps. Rolling KNN (Option D) is too computationally expensive for high-throughput streaming environments."
     }
   ]
 }
