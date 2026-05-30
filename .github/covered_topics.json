@@ -83,7 +83,8 @@
   "Database Sharding & Replication Strategies": [
     "Horizontal Sharding: Scaling Out Your Data",
     "Database Scaling Strategies: Sharding Architectures & Replication Models",
-    "Data Consistency in Replication: Synchronous vs. Asynchronous Models"
+    "Data Consistency in Replication: Synchronous vs. Asynchronous Models",
+    "Choosing a Sharding Key: How to Avoid Hotspots & Achieve Even Data Distribution"
   ],
   "Design a Notification System (Kafka + SQS + Webhooks)": [
     "Designing a Scalable Notification System (Kafka + SQS + Webhooks)",
