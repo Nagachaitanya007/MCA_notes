@@ -23,7 +23,8 @@
     "The Dead Letter Queue (DLQ): Handling \"The Poison Pill\" in Asynchronous Systems",
     "Idempotency & Request Tracking: The \"Safely Try Again\" Strategy",
     "Distributed Error Translation & Context Propagation",
-    "Graceful Degradation: Designing Resilient Fallback Paths"
+    "Graceful Degradation: Designing Resilient Fallback Paths",
+    "Bulkhead Isolation: Preventing Resource Exhaustion in Distributed Failures"
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections",
