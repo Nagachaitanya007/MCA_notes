@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
-  "mode": "Java",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where your Spring Boot application's Metaspace is continuously growing until it throws an `java.lang.OutOfMemoryError: Metaspace`. You locate this class used for dynamic event routing: \n\njava\n@Service\npublic class EventRoutingService {\n    public void routeEvent(String tenantId, Event event) {\n        ProxyFactory factory = new ProxyFactory(new DefaultEventHandler());\n        factory.addAdvice(new TenantInterceptor(tenantId));\n        EventHandler proxy = (EventHandler) factory.getProxy();\n        proxy.handle(event);\n    }\n}\n",
-      "question": "What is the primary cause of this Metaspace OOM?",
+      "scenario": "Real-world Industrial Problem Statement: A logistics company is designing an autonomous warehouse routing system where the grid topology changes dynamically due to moving cobots (collaborative robots). The system uses A* search to compute path-finding in real-time. Under peak traffic, the system experiences latency spikes and occasionally produces sub-optimal paths. The heuristic function h(n) is calculated as the Manhattan distance, but a recent update modified the heuristic to include a penalty term for congested zones: h'(n) = h(n) + w * C(n), where C(n) is a dynamic congestion factor (C(n) >= 0) and w > 1 is a scaling weight used to aggressively bypass traffic.",
+      "question": "Why does this modified heuristic h'(n) result in sub-optimal paths, and what is the trade-off being made here?",
       "options": [
-        "A) The `DefaultEventHandler` instance is never garbage collected because it is pinned by the `ProxyFactory` classloader.",
-        "B) Every call to `ProxyFactory.getProxy()` dynamically generates a new class definition in Metaspace, which cannot be GC'ed because the classloader loading them remains active.",
-        "C) The `TenantInterceptor` holds a strong reference to `tenantId` in the heap, causing a heap leak that overflows into Metaspace.",
-        "D) Spring's transactional proxy mechanism caches every dynamically generated proxy instance in a global concurrent map by default."
+        "A) The addition of w * C(n) where w > 1 violates the admissibility of the heuristic because h'(n) can now overestimate the true cost to the goal, causing A* to forfeit its guarantee of optimality in exchange for a reduction in search space (fewer expanded nodes).",
+        "B) The congestion factor C(n) introduces non-monotonicity, violating consistency, which causes A* to expand the same node multiple times, drastically increasing time complexity to O(2^d) without affecting path optimality.",
+        "C) The Manhattan distance becomes invalid in dynamic grids, making the heuristic inadmissible because the true cost of reaching the goal is always lower than the estimated heuristic cost.",
+        "D) The weight w > 1 converts A* into Breadth-First Search, which prioritizes shallower paths regardless of edge costs, resulting in sub-optimal paths but a constant memory footprint."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Every call to `ProxyFactory.getProxy()` dynamically generates a new class definition in Metaspace, which cannot be GC'ed because the classloader loading them remains active.",
-      "explanation": "Using Spring's `ProxyFactory` programmatically without caching the generated proxy classes causes a new class to be dynamically defined in the JVM for every invocation. In Java, metadata for these dynamically created classes is stored in Metaspace. Because the classloader loading these dynamic classes remains alive (typically the application classloader), the garbage collector cannot unload these dynamic classes, leading to continuous Metaspace growth and eventual exhaustion."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The addition of w * C(n) where w > 1 violates the admissibility of the heuristic because h'(n) can now overestimate the true cost to the goal, causing A* to forfeit its guarantee of optimality in exchange for a reduction in search space (fewer expanded nodes).",
+      "explanation": "To guarantee finding an optimal path, A* requires an admissible heuristic, which must never overestimate the cost to reach the goal (h(n) <= h*(n)). By adding the weighted congestion penalty (w * C(n)), the heuristic h'(n) can easily exceed the actual shortest path cost h*(n), making it inadmissible. This technique is known as Weighted A*, which traded optimality for search speed (sub-optimal path but fewer expanded nodes)."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a high-throughput financial application experiences frequent, unpredictable stop-the-world (STW) pauses. Looking at the GC logs, you see frequent `G1 Humongous Allocation` messages followed by `To-space exhausted` and Full GC cycles. The heap size is set to 32GB (`-Xmx32g`), but the pauses occur when the heap usage is only at 50% of its capacity.",
-      "question": "What is the primary cause and the most effective tuning strategy to mitigate this issue without increasing the overall heap size?",
+      "scenario": "Real-world Industrial Problem Statement: An autonomous cybersecurity defense system simulates cyber-attacks and defenses using an adversarial game-tree model. The defender wants to evaluate threats up to 10 moves ahead using Min-Max with Alpha-Beta pruning under a strict 200ms real-time constraint. The branching factor of the network state transition is exceptionally high (b \u2248 150). During simulation runs, the search frequently times out, forcing the agent to make moves based on incomplete evaluations (shallow searches of depth d <= 3).",
+      "question": "Which optimization strategy would most effectively increase the search depth within the 200ms limit without compromising the safety and accuracy of the optimal minimax decision?",
       "options": [
-        "A) The humongous allocations are bypassing the Young Generation and entering the Old Generation directly. The solution is to decrease `-XX:NewRatio` to allocate more space to the Young Generation.",
-        "B) Humongous objects (>50% of G1 region size) are allocated in contiguous regions of the Old Generation, causing fragmentation and triggering premature Full GCs. The solution is to increase `-XX:G1HeapRegionSize` (e.g., to 16m or 32m) to reduce the number of objects classified as humongous.",
-        "C) The G1 collector is not initiating concurrent cycles early enough. The solution is to increase `-XX:InitiatingHeapOccupancyPercent` to defer the marking cycle.",
-        "D) The JVM is running out of Metaspace due to dynamic class definitions. The solution is to tune `-XX:MaxMetaspaceSize`."
+        "A) Implementing iterative deepening combined with a transposition table and history heuristic to optimize move ordering, maximizing the probability of early alpha-beta cutoffs.",
+        "B) Switching from Alpha-Beta pruning to pure Monte Carlo Tree Search (MCTS) with an epsilon-greedy exploration strategy, which guarantees finding the exact minimax optimal path in O(b * d) time.",
+        "C) Relaxing the pruning threshold by dynamically increasing the alpha value and decreasing the beta value by a factor of epsilon (Fuzzy Alpha-Beta Pruning), sacrificing optimality for a O(sqrt(b)) depth expansion.",
+        "D) Using a static evaluation function that assigns uniform random weights to non-terminal states, which allows Alpha-Beta pruning to achieve its theoretical best-case complexity of O(b^(d/2)) regardless of node evaluation order."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Humongous objects (>50% of G1 region size) are allocated in contiguous regions of the Old Generation, causing fragmentation and triggering premature Full GCs. The solution is to increase `-XX:G1HeapRegionSize` (e.g., to 16m or 32m) to reduce the number of objects classified as humongous.",
-      "explanation": "In G1GC, any object that is larger than 50% of a G1 region size is considered a 'Humongous Object'. These objects are allocated directly into the Old Generation as a contiguous set of regions. This causes severe heap fragmentation, leading to 'To-space exhausted' errors and triggering costly Full GC cycles even when the overall heap usage is relatively low. Increasing `-XX:G1HeapRegionSize` (up to 32MB) increases the threshold for what constitutes a humongous object, allowing normal objects to be allocated in the Young Generation and cleaned up during minor GCs."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Implementing iterative deepening combined with a transposition table and history heuristic to optimize move ordering, maximizing the probability of early alpha-beta cutoffs.",
+      "explanation": "The efficiency of Alpha-Beta pruning highly depends on the order in which nodes are evaluated. If the best moves are evaluated first (perfect ordering), the search complexity is reduced from O(b^d) to O(b^(d/2)). Utilizing iterative deepening allows the engine to use shallow-search results to sort moves at deeper levels. Combined with a transposition table (to cache already evaluated states) and a history heuristic, this significantly maximizes early cutoffs, allowing deeper search within the 200ms threshold."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Spring Boot application's heap memory usage shows a slow, steady upward saw-tooth pattern that never returns to baseline, eventually leading to `java.lang.OutOfMemoryError: Java heap space`. The heap dump reveals millions of `ThreadLocalMap$Entry` instances. You identify the following thread pool configuration and execution logic: \n\njava\npublic void process(UserRequest request) {\n    taskExecutor.execute(() -> {\n        contextHolder.set(new UserContext(request.getUserId()));\n        doWork();\n        // No cleanup performed\n    });\n}\n",
-      "question": "What is the primary cause of this memory leak?",
+      "scenario": "Real-world Industrial Problem Statement: An automated drone fleet is mapping high-resolution 3D point cloud environments for disaster relief. The onboard flight computer has severely constrained RAM (less than 256MB) but must calculate optimal paths over a massive search space containing skewed obstacle density (highly dense urban ruins vs open fields). Traditional A* search fails due to Out-Of-Memory (OOM) errors as the open list size scales exponentially with path length. The engineering team replaces A* with Iterative Deepening A* (IDA*). However, in open fields with sparse obstacles and continuous coordinate values, IDA* suffers from severe performance degradation, spending excessive CPU cycles recalculating states.",
+      "question": "What is the primary cause of this performance degradation in IDA* within continuous, sparse environments, and how can it be mitigated?",
       "options": [
-        "A) The JVM fails to garbage collect `ThreadLocal` instances because the `UserContext` class uses a custom classloader.",
-        "B) Because the `taskExecutor` reuses worker threads, the `ThreadLocal` values set on these threads persist indefinitely after the task completes, preventing `UserContext` instances from being garbage collected.",
-        "C) The `taskExecutor` holds a strong reference to the runnable task, which keeps the `ThreadLocal` key alive in the main thread's map.",
-        "D) The `ThreadLocalMap` in Java uses strong references for keys, which prevents the garbage collector from reclaiming the `ThreadLocal` instance once it goes out of scope."
+        "A) The 'f-value explosion' phenomenon where IDA* performs a new iteration for every tiny increment in the cost of a path; it can be mitigated by using a threshold increment equal to the minimum step cost, or by using memory-bounded algorithms like SMA*.",
+        "B) The lack of a closed list causes IDA* to get stuck in infinite loops in open spaces; it can be mitigated by forcing the heuristic to be strictly non-monotonic (h(n) > h(n') + c(n, n')).",
+        "C) In sparse environments, IDA* suffers from high memory thrashing; it can be mitigated by increasing the pruning threshold to f(n) * (1 + epsilon) to enforce uniform-cost search characteristics.",
+        "D) IDA* is inherently incompatible with admissible heuristics; it can be resolved by replacing the heuristic with a constant value h(n) = 0 to force it to behave like Depth-First Search."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Because the `taskExecutor` reuses worker threads, the `ThreadLocal` values set on these threads persist indefinitely after the task completes, preventing `UserContext` instances from being garbage collected.",
-      "explanation": "In an application server or thread pool scenario (like Spring's `ThreadPoolTaskExecutor`), threads are kept alive and reused for subsequent tasks. When a thread sets a value in a `ThreadLocal`, that value is stored in the thread's internal `ThreadLocalMap`. If `remove()` is not explicitly called in a `finally` block, the reference to the `UserContext` remains bound to the thread. Since the thread never dies, the GC cannot reclaim the `UserContext` or any objects it references, resulting in a severe memory leak over time."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The 'f-value explosion' phenomenon where IDA* performs a new iteration for every tiny increment in the cost of a path; it can be mitigated by using a threshold increment equal to the minimum step cost, or by using memory-bounded algorithms like SMA*.",
+      "explanation": "In continuous environments with sparse obstacles, path costs (f-values) can increase by microscopic real-valued increments. Since IDA* only prunes paths exceeding the current f-bound, it may start a complete new iteration to expand only a single or very few states that slightly exceed the previous bound. This is called the 'f-value explosion'. This can be mitigated by setting the next bound increment to a coarser step size, or by transitioning to memory-bounded search variants like SMA* or IDA*_CR (which uses a tracking array to group cost thresholds)."
     }
   ]
 }
