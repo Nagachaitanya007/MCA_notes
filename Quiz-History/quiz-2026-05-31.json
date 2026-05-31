@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
+  "topic": "Memory Management & Garbage Collection Tuning",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput payment processing service experiences intermittent data races and duplicate payment processing. A custom thread-safe collection uses lock striping based on key identity hashes to ensure exclusive access per account. Here is the class:\n\njava\n@Component\npublic class AccountLockRegistry {\n    private final Lock[] locks = new Lock[256];\n    \n    public AccountLockRegistry() {\n        for (int i = 0; i < locks.length; i++) {\n            locks[i] = new ReentrantLock();\n        }\n    }\n    \n    public void executeLocked(Account account, Runnable action) {\n        int stripe = Math.abs(System.identityHashCode(account) % locks.length);\n        Lock lock = locks[stripe];\n        lock.lock();\n        try {\n            action.run();\n        } finally {\n            lock.unlock();\n        }\n    }\n}\n\n\nIn this system, `Account` objects are JPA entities loaded via a Spring Boot / Spring Data JPA layer. During heavy concurrent load, multiple threads are observed executing the supposedly locked block for the exact same database record simultaneously.",
-      "question": "What is the primary cause of this concurrency failure?",
+      "scenario": "You are debugging a production issue where your Spring Boot application's Metaspace is continuously growing until it throws an `java.lang.OutOfMemoryError: Metaspace`. You locate this class used for dynamic event routing: \n\njava\n@Service\npublic class EventRoutingService {\n    public void routeEvent(String tenantId, Event event) {\n        ProxyFactory factory = new ProxyFactory(new DefaultEventHandler());\n        factory.addAdvice(new TenantInterceptor(tenantId));\n        EventHandler proxy = (EventHandler) factory.getProxy();\n        proxy.handle(event);\n    }\n}\n",
+      "question": "What is the primary cause of this Metaspace OOM?",
       "options": [
-        "A) System.identityHashCode returns different hash codes for Spring/Hibernate dynamic proxy wrappers representing the same underlying database entity.",
-        "B) The modulus operator % on System.identityHashCode can return a negative value if the hash code is Integer.MIN_VALUE, bypassing the lock array bounds.",
-        "C) ReentrantLock instances are garbage collected when they are indexed in a raw array without volatile wrappers.",
-        "D) Spring's proxy mechanism wraps the AccountLockRegistry and intercepts the Runnable, causing it to execute on a different background thread."
+        "A) The `DefaultEventHandler` instance is never garbage collected because it is pinned by the `ProxyFactory` classloader.",
+        "B) Every call to `ProxyFactory.getProxy()` dynamically generates a new class definition in Metaspace, which cannot be GC'ed because the classloader loading them remains active.",
+        "C) The `TenantInterceptor` holds a strong reference to `tenantId` in the heap, causing a heap leak that overflows into Metaspace.",
+        "D) Spring's transactional proxy mechanism caches every dynamically generated proxy instance in a global concurrent map by default."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) System.identityHashCode returns different hash codes for Spring/Hibernate dynamic proxy wrappers representing the same underlying database entity.",
-      "explanation": "In an environment utilizing ORMs like Hibernate, entities are frequently wrapped in dynamic proxies (e.g., ByteBuddy interceptors) to facilitate lazy loading or transaction dirty checking. Since `System.identityHashCode` evaluates the memory address of the actual object instance passed to it, different proxy wrapper instances representing the same physical database record will yield different identity hashes. This leads to thread-synchronization failures because threads execute on different lock stripes despite logical entity equality."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Every call to `ProxyFactory.getProxy()` dynamically generates a new class definition in Metaspace, which cannot be GC'ed because the classloader loading them remains active.",
+      "explanation": "Using Spring's `ProxyFactory` programmatically without caching the generated proxy classes causes a new class to be dynamically defined in the JVM for every invocation. In Java, metadata for these dynamically created classes is stored in Metaspace. Because the classloader loading these dynamic classes remains alive (typically the application classloader), the garbage collector cannot unload these dynamic classes, leading to continuous Metaspace growth and eventual exhaustion."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production memory leak that degrades performance in a microservice. A custom metadata cache was implemented using `WeakHashMap` to allow entries to be automatically evicted when keys are no longer referenced elsewhere. Here is the implementation:\n\njava\npublic class CustomMetadataCache {\n    private final Map<UserSession, SessionMetadata> cache = new WeakHashMap<>();\n\n    public void cacheMetadata(UserSession session, String role, String token) {\n        SessionMetadata metadata = new SessionMetadata(session, role, token);\n        cache.put(session, metadata);\n    }\n\n    private static class SessionMetadata {\n        private final UserSession session; \n        private final String role;\n        private final String token;\n\n        public SessionMetadata(UserSession session, String role, String token) {\n            this.session = session;\n            this.role = role;\n            this.token = token;\n        }\n    }\n}\n\n\nEven when external references to `UserSession` objects go out of scope, heap analysis shows that none of the map entries are ever garbage collected.",
-      "question": "Why does this custom collection implementation fail to release the keys?",
+      "scenario": "You are debugging a production issue where a high-throughput financial application experiences frequent, unpredictable stop-the-world (STW) pauses. Looking at the GC logs, you see frequent `G1 Humongous Allocation` messages followed by `To-space exhausted` and Full GC cycles. The heap size is set to 32GB (`-Xmx32g`), but the pauses occur when the heap usage is only at 50% of its capacity.",
+      "question": "What is the primary cause and the most effective tuning strategy to mitigate this issue without increasing the overall heap size?",
       "options": [
-        "A) The JVM GC ignores WeakHashMap entries if the G1GC garbage collector is active.",
-        "B) The value object SessionMetadata holds a strong reference back to the key UserSession, creating a strong reference cycle that prevents GC of the weak key.",
-        "C) WeakHashMap only cleans up keys if they are initialized using a custom ReferenceQueue registered via reflection.",
-        "D) The session parameter inside the SessionMetadata constructor is implicitly promoted to a thread-local variable."
+        "A) The humongous allocations are bypassing the Young Generation and entering the Old Generation directly. The solution is to decrease `-XX:NewRatio` to allocate more space to the Young Generation.",
+        "B) Humongous objects (>50% of G1 region size) are allocated in contiguous regions of the Old Generation, causing fragmentation and triggering premature Full GCs. The solution is to increase `-XX:G1HeapRegionSize` (e.g., to 16m or 32m) to reduce the number of objects classified as humongous.",
+        "C) The G1 collector is not initiating concurrent cycles early enough. The solution is to increase `-XX:InitiatingHeapOccupancyPercent` to defer the marking cycle.",
+        "D) The JVM is running out of Metaspace due to dynamic class definitions. The solution is to tune `-XX:MaxMetaspaceSize`."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The value object SessionMetadata holds a strong reference back to the key UserSession, creating a strong reference cycle that prevents GC of the weak key.",
-      "explanation": "In a `WeakHashMap`, the key is wrapped inside a `WeakReference`, but the value object is held via a strong reference. If the value object (`SessionMetadata`) contains a strong reference to the key object (`UserSession`), then the key is strongly reachable from the map's table array via the value reference. This strong reference cycle prevents the Garbage Collector from identifying the key as weakly reachable, rendering the `WeakHashMap` mechanism useless and causing a silent memory leak."
+      "correct_answer_text": "B) Humongous objects (>50% of G1 region size) are allocated in contiguous regions of the Old Generation, causing fragmentation and triggering premature Full GCs. The solution is to increase `-XX:G1HeapRegionSize` (e.g., to 16m or 32m) to reduce the number of objects classified as humongous.",
+      "explanation": "In G1GC, any object that is larger than 50% of a G1 region size is considered a 'Humongous Object'. These objects are allocated directly into the Old Generation as a contiguous set of regions. This causes severe heap fragmentation, leading to 'To-space exhausted' errors and triggering costly Full GC cycles even when the overall heap usage is relatively low. Increasing `-XX:G1HeapRegionSize` (up to 32MB) increases the threshold for what constitutes a humongous object, allowing normal objects to be allocated in the Young Generation and cleaned up during minor GCs."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue in a Spring Boot application where users occasionally see sensitive information belonging to other users. You pinpoint the issue to a custom collection used to accumulate auditing events during the lifecycle of an HTTP request within a Spring `@Transactional` service:\n\njava\n@Service\npublic class AuditService {\n    private static final ThreadLocal<List<AuditEvent>> auditBuffer = \n        ThreadLocal.withInitial(ArrayList::new);\n\n    @Transactional\n    public void processAction(String userId, String action) {\n        auditBuffer.get().add(new AuditEvent(userId, action));\n        // execute business logic and database updates\n        flushAuditLogs();\n    }\n\n    private void flushAuditLogs() {\n        List<AuditEvent> events = auditBuffer.get();\n        if (events.size() >= 5) {\n            saveToDatabase(events);\n            auditBuffer.get().clear(); \n        }\n    }\n}\n\n\nThe application runs on an embedded Tomcat container with a default thread pool of 200. During periods of low traffic, users report that audit events from User A are occasionally appended to the list of User B.",
-      "question": "What is the root cause of this data pollution?",
+      "scenario": "You are debugging a production issue where a Spring Boot application's heap memory usage shows a slow, steady upward saw-tooth pattern that never returns to baseline, eventually leading to `java.lang.OutOfMemoryError: Java heap space`. The heap dump reveals millions of `ThreadLocalMap$Entry` instances. You identify the following thread pool configuration and execution logic: \n\njava\npublic void process(UserRequest request) {\n    taskExecutor.execute(() -> {\n        contextHolder.set(new UserContext(request.getUserId()));\n        doWork();\n        // No cleanup performed\n    });\n}\n",
+      "question": "What is the primary cause of this memory leak?",
       "options": [
-        "A) Spring's @Transactional proxy executes flushAuditLogs() on a separate asynchronous transaction thread pool.",
-        "B) The ThreadLocal context is not cleared when the request completes if the buffer has fewer than 5 events, leaking state to subsequent requests handled by the recycled thread.",
-        "C) ArrayList is not synchronized, causing cross-thread pointer adjustments when JVM GC compacts the heap.",
-        "D) Tomcat's thread pool uses deep copy cloning for ThreadLocal variables, causing all threads to share the same underlying memory reference."
+        "A) The JVM fails to garbage collect `ThreadLocal` instances because the `UserContext` class uses a custom classloader.",
+        "B) Because the `taskExecutor` reuses worker threads, the `ThreadLocal` values set on these threads persist indefinitely after the task completes, preventing `UserContext` instances from being garbage collected.",
+        "C) The `taskExecutor` holds a strong reference to the runnable task, which keeps the `ThreadLocal` key alive in the main thread's map.",
+        "D) The `ThreadLocalMap` in Java uses strong references for keys, which prevents the garbage collector from reclaiming the `ThreadLocal` instance once it goes out of scope."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The ThreadLocal context is not cleared when the request completes if the buffer has fewer than 5 events, leaking state to subsequent requests handled by the recycled thread.",
-      "explanation": "Web servers like Tomcat pool and recycle worker threads to handle incoming HTTP requests. When a ThreadLocal is modified during a request, it must be cleared (e.g., using `try-finally` and `ThreadLocal.remove()`) before the thread is returned to the pool. Because the cleanup mechanism (`auditBuffer.get().clear()`) is conditionally executed only when there are 5 or more events, threads with fewer than 5 events return to the pool containing stale data. A subsequent request assigned to that same thread will read or append to the previous user's `AuditEvent` list."
+      "correct_answer_text": "B) Because the `taskExecutor` reuses worker threads, the `ThreadLocal` values set on these threads persist indefinitely after the task completes, preventing `UserContext` instances from being garbage collected.",
+      "explanation": "In an application server or thread pool scenario (like Spring's `ThreadPoolTaskExecutor`), threads are kept alive and reused for subsequent tasks. When a thread sets a value in a `ThreadLocal`, that value is stored in the thread's internal `ThreadLocalMap`. If `remove()` is not explicitly called in a `finally` block, the reference to the `UserContext` remains bound to the thread. Since the thread never dies, the GC cannot reclaim the `UserContext` or any objects it references, resulting in a severe memory leak over time."
     }
   ]
 }
