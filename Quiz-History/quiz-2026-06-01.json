@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
+  "topic": "Memory Management & Garbage Collection Tuning",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where `ConcurrentHashMap` is used to cache results from a database query. The cache is updated every hour using a scheduled task, but sometimes the updates are missed and stale data is returned to users.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "You are debugging a production issue where a Spring-based web application deployed on Apache Tomcat suffers from a gradual heap memory leak under high load, eventually leading to `OutOfMemoryError`. Profiling indicates that millions of `byte[]` arrays are retained. A code review reveals the following class:\n\njava\n@Component\n@Scope(\"prototype\")\npublic class RequestContextProcessor {\n    private static final ThreadLocal<byte[]> processingBuffer = ThreadLocal.withInitial(() -> new byte[1024 * 1024]); // 1MB buffer\n\n    @Transactional\n    public void processRequest(InputStream input) {\n        byte[] buffer = processingBuffer.get();\n        // Read input into buffer and process...\n        // No explicit cleanup is performed\n    }\n}\n",
+      "question": "What is the primary cause of this memory leak and how does GC react to it?",
       "options": [
-        "A) Lack of synchronization on the `ConcurrentHashMap` instance",
-        "B) Incorrect usage of `ConcurrentHashMap.compute()` method",
-        "C) Failure to properly handle `ConcurrentModificationException`",
-        "D) Insufficient initial capacity of the `ConcurrentHashMap`"
+        "A) Since the bean is marked as `@Scope(\"prototype\")`, the Spring `ApplicationContext` keeps a hard reference to every instantiated proxy, preventing the `RequestContextProcessor` and its static thread locals from being garbage collected.",
+        "B) The Tomcat web container reuses worker threads from a thread pool; because `ThreadLocal.remove()` is never called, the large `byte[]` arrays remain strongly reachable through the thread's `ThreadLocalMap` (with the `Thread` acting as a GC Root), preventing garbage collection.",
+        "C) The `@Transactional` proxy forces the JVM to escalate the thread-local allocation to the JVM Metaspace, where standard Garbage Collection cycles (like G1GC Mixed Sweeps) cannot reclaim heap-allocated arrays.",
+        "D) Every invocation of the transactional proxy creates a new instance of the dynamic proxy class which overrides the static `ThreadLocal` reference, resulting in ClassLoader leaks that prevent GC from freeing the old heap references."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Incorrect usage of `ConcurrentHashMap.compute()` method",
-      "explanation": "The `ConcurrentHashMap.compute()` method is not properly handling the update operation, leading to stale data being returned. This is because `compute()` will return `null` if the update operation is not properly synchronized, causing the old value to be returned instead of the updated one."
+      "correct_answer_text": "B) The Tomcat web container reuses worker threads from a thread pool; because `ThreadLocal.remove()` is never called, the large `byte[]` arrays remain strongly reachable through the thread's `ThreadLocalMap` (with the `Thread` acting as a GC Root), preventing garbage collection.",
+      "explanation": "In Java, `ThreadLocal` variables are stored in a `ThreadLocalMap` inside each `Thread` instance. The keys are weak references to the `ThreadLocal` objects, but the values (the 1MB `byte[]` arrays) are strong references. Because Tomcat reuses application threads in a pool, these threads never exit. If `ThreadLocal.remove()` is not explicitly called, the strong references to the `byte[]` arrays persist as long as the thread is alive (acting as a GC root), creating a severe memory leak that GC cannot reclaim."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a custom implementation of `List<String>` using `ArrayList` as the underlying collection is throwing a `ConcurrentModificationException`. The code snippet is: `List<String> list = new ArrayList<>(); list.add(\"hello\"); list.remove(0);`. However, the `remove()` call is done from a separate thread.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "You are debugging a production issue where a low-latency microservice using the G1 Garbage Collector (G1GC) exhibits frequent, long Stop-The-World (STW) pauses due to 'To-space exhausted' or 'Evacuation Failure' errors. Looking at the GC logs, you see a high frequency of 'G1 Humongous Allocation' messages, despite the total heap usage staying well below 50%. The application processes many large JSON payloads that exceed 2MB in size.",
+      "question": "What is the primary cause of this issue and the most effective way to resolve it?",
       "options": [
-        "A) Incorrect synchronization on the `ArrayList` instance",
-        "B) Lack of thread-safety in the custom `List` implementation",
-        "C) Insufficient locking mechanism for the `remove()` operation",
-        "D) Failure to properly handle the `ConcurrentModificationException`"
+        "A) Decrease `-XX:InitiatingHeapOccupancyPercent` (IHOP) to force G1GC to run Full GC cycles more aggressively, which bypasses the allocation of humongous objects entirely.",
+        "B) Increase the G1 region size using `-XX:G1HeapRegionSize` (e.g., to 8m or 16m) so that the 2MB payloads do not qualify as humongous objects (which must be at least 50% of the region size) and can be allocated normally in the young generation.",
+        "C) Switch to the Parallel GC collector, because Parallel GC doesn't segment heap memory and therefore avoids the Metaspace and Tenured generation fragmentation caused by humongous objects.",
+        "D) Increase `-XX:SurvivorRatio` to allocate more memory to the Survivor spaces, allowing the humongous objects to age properly before being promoted to the Old generation."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Lack of thread-safety in the custom `List` implementation",
-      "explanation": "The custom `List` implementation is not thread-safe, and the `remove()` operation is being performed from a separate thread, causing the `ConcurrentModificationException`. To fix this, the custom implementation should use a thread-safe collection such as `CopyOnWriteArrayList` or properly synchronize the `remove()` operation using a `ReentrantLock`."
+      "correct_answer_text": "B) Increase the G1 region size using `-XX:G1HeapRegionSize` (e.g., to 8m or 16m) so that the 2MB payloads do not qualify as humongous objects (which must be at least 50% of the region size) and can be allocated normally in the young generation.",
+      "explanation": "In G1GC, any allocation that is at least 50% of the G1 region size is classified as a 'Humongous Allocation'. G1 allocates humongous objects directly in the Old Generation in a contiguous set of regions. This causes severe fragmentation, early GC triggers, and 'To-space exhausted' failures because the GC cannot find contiguous space. By increasing the region size via `-XX:G1HeapRegionSize`, you ensure these objects are smaller than 50% of the region size, allowing them to be allocated in the young generation and collected via standard, efficient young GC cycles."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Spring-based application is experiencing issues with transaction management. The code snippet is: `@Transactional public void updateData() { List<String> data = new ArrayList<>(); data.add(\"hello\"); // ... }`. However, the `data` list is being modified from a separate thread, causing the transaction to fail.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "You are debugging a production issue where a high-throughput trading system experiences severe CPU thrashing and latency spikes. Garbage Collection logs show that ZGC is running continuously in back-to-back cycles. An analysis of the heap dump reveals a massive accumulation of objects inside a `WeakHashMap` used as an application-level cache. The keys are custom `TransactionKey` objects, and the values are `TransactionMetadata` objects. The `TransactionMetadata` object contains a strong reference back to the original `TransactionKey` instance.",
+      "question": "Why does this configuration cause a memory leak and high GC overhead?",
       "options": [
-        "A) Incorrect usage of `@Transactional` annotation",
-        "B) Lack of thread-safety in the `updateData()` method",
-        "C) Insufficient locking mechanism for the `data` list",
-        "D) Failure to properly handle the transaction rollback"
+        "A) `WeakHashMap` does not allow keys to be garbage collected if the values contain a strong reference back to the keys, as this creates a strong reference cycle that prevents the weak reference from being cleared.",
+        "B) ZGC does not support `WeakHashMap` key clearing because ZGC's concurrent marking phase does not process weak, soft, or phantom references to keep pause times low.",
+        "C) Since `TransactionKey` is used in a Spring-managed transactional context, the Spring Proxy intercepts the garbage collector's reference-clearing thread, causing a deadlock in the JVM.",
+        "D) The JVM's Reference Handler thread is single-threaded and gets overwhelmed by the high rate of transactions, causing the internal `ReferenceQueue` of the `WeakHashMap` to overflow into Metaspace."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Lack of thread-safety in the `updateData()` method",
-      "explanation": "The `updateData()` method is not thread-safe, and the `data` list is being modified from a separate thread, causing the transaction to fail. To fix this, the method should be properly synchronized using a `ReentrantLock` or a thread-safe collection such as `CopyOnWriteArrayList` should be used."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) `WeakHashMap` does not allow keys to be garbage collected if the values contain a strong reference back to the keys, as this creates a strong reference cycle that prevents the weak reference from being cleared.",
+      "explanation": "In a `WeakHashMap`, the entry value is held via a strong reference. If the value contains a strong reference back to the key (either directly or transitively), it creates a strong reference chain: `WeakHashMap` -> `Entry` -> `Value` -> `Key`. This defeats the weak reference mechanism of the key because the key is still strongly reachable through the value. Consequently, the key is never garbage collected, causing a memory leak, heap exhaustion, and continuous GC cycles as the JVM desperately attempts to free up space."
     }
   ]
 }
