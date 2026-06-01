@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
-  "mode": "Java",
+  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a Spring-based web application deployed on Apache Tomcat suffers from a gradual heap memory leak under high load, eventually leading to `OutOfMemoryError`. Profiling indicates that millions of `byte[]` arrays are retained. A code review reveals the following class:\n\njava\n@Component\n@Scope(\"prototype\")\npublic class RequestContextProcessor {\n    private static final ThreadLocal<byte[]> processingBuffer = ThreadLocal.withInitial(() -> new byte[1024 * 1024]); // 1MB buffer\n\n    @Transactional\n    public void processRequest(InputStream input) {\n        byte[] buffer = processingBuffer.get();\n        // Read input into buffer and process...\n        // No explicit cleanup is performed\n    }\n}\n",
-      "question": "What is the primary cause of this memory leak and how does GC react to it?",
+      "scenario": "An autonomous drone inspection startup is deploying a real-time crack detection system on edge devices to monitor concrete bridge health. The camera captures high-resolution images, but the latency budget is strictly under 50 milliseconds per frame. The initial PyTorch Mobile model uses a standard ResNet-50 backbone, which achieves high accuracy but takes 450 milliseconds per frame. Additionally, the training dataset is highly skewed: 98% of the images contain no cracks, while only 2% contain concrete defects.",
+      "question": "Which architecture modification and loss function pair should the lead AI engineer choose to satisfy the strict real-time latency constraints on edge hardware while preventing the model from ignoring the minority class?",
       "options": [
-        "A) Since the bean is marked as `@Scope(\"prototype\")`, the Spring `ApplicationContext` keeps a hard reference to every instantiated proxy, preventing the `RequestContextProcessor` and its static thread locals from being garbage collected.",
-        "B) The Tomcat web container reuses worker threads from a thread pool; because `ThreadLocal.remove()` is never called, the large `byte[]` arrays remain strongly reachable through the thread's `ThreadLocalMap` (with the `Thread` acting as a GC Root), preventing garbage collection.",
-        "C) The `@Transactional` proxy forces the JVM to escalate the thread-local allocation to the JVM Metaspace, where standard Garbage Collection cycles (like G1GC Mixed Sweeps) cannot reclaim heap-allocated arrays.",
-        "D) Every invocation of the transactional proxy creates a new instance of the dynamic proxy class which overrides the static `ThreadLocal` reference, resulting in ClassLoader leaks that prevent GC from freeing the old heap references."
+        "A) Replace ResNet-50 with MobileNetV3-Large using Depthwise Separable Convolutions, and replace Cross-Entropy Loss with Focal Loss with gamma=2.",
+        "B) Retain ResNet-50 but apply 8-bit post-training quantization (PTQ) to accelerate inference, and use weighted Cross-Entropy Loss with class weights inversely proportional to class frequencies.",
+        "C) Replace ResNet-50 with a standard VGG-16 backbone to reduce model depth, and utilize Dice Loss to handle the spatial segmentation of the thin cracks.",
+        "D) Transition to an Encoder-Decoder UNet with Group Normalization, and optimize the system using Mean Squared Error (MSE) loss on downsampled 128x128 input images."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The Tomcat web container reuses worker threads from a thread pool; because `ThreadLocal.remove()` is never called, the large `byte[]` arrays remain strongly reachable through the thread's `ThreadLocalMap` (with the `Thread` acting as a GC Root), preventing garbage collection.",
-      "explanation": "In Java, `ThreadLocal` variables are stored in a `ThreadLocalMap` inside each `Thread` instance. The keys are weak references to the `ThreadLocal` objects, but the values (the 1MB `byte[]` arrays) are strong references. Because Tomcat reuses application threads in a pool, these threads never exit. If `ThreadLocal.remove()` is not explicitly called, the strong references to the `byte[]` arrays persist as long as the thread is alive (acting as a GC root), creating a severe memory leak that GC cannot reclaim."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Replace ResNet-50 with MobileNetV3-Large using Depthwise Separable Convolutions, and replace Cross-Entropy Loss with Focal Loss with gamma=2.",
+      "explanation": "MobileNetV3 uses depthwise separable convolutions which drastically reduce the number of Multiply-Accumulate (MAC) operations, allowing the model to fit within the 50ms edge computing latency budget where ResNet-50 fails. For the extreme 98/2 class imbalance, standard Cross-Entropy loss is dominated by the easy-to-classify background examples. Focal Loss solves this by adding a modulating factor (1 - p)^gamma to the loss, dynamically down-weighting the loss contribution of easy examples during training and forcing the model to focus on the rare crack features."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a low-latency microservice using the G1 Garbage Collector (G1GC) exhibits frequent, long Stop-The-World (STW) pauses due to 'To-space exhausted' or 'Evacuation Failure' errors. Looking at the GC logs, you see a high frequency of 'G1 Humongous Allocation' messages, despite the total heap usage staying well below 50%. The application processes many large JSON payloads that exceed 2MB in size.",
-      "question": "What is the primary cause of this issue and the most effective way to resolve it?",
+      "scenario": "A financial technology company is building an automated algorithmic trading agent that processes tick-by-tick transaction logs of highly volatile stock indexes. The input sequence length is extremely long, exceeding 5,000 timesteps per training window, to capture macro-level daily trends. The engineering team deployed a standard Long Short-Term Memory (LSTM) network. During training, the GPU VRAM is exhausted instantly. When the batch size is reduced to 1, training stability collapses, and the model completely fails to capture dependencies spanning across the early phases of the sequence.",
+      "question": "What architectural and training strategy transition is most appropriate to resolve the VRAM bottleneck while ensuring the network successfully learns long-range dependencies across the entire sequence?",
       "options": [
-        "A) Decrease `-XX:InitiatingHeapOccupancyPercent` (IHOP) to force G1GC to run Full GC cycles more aggressively, which bypasses the allocation of humongous objects entirely.",
-        "B) Increase the G1 region size using `-XX:G1HeapRegionSize` (e.g., to 8m or 16m) so that the 2MB payloads do not qualify as humongous objects (which must be at least 50% of the region size) and can be allocated normally in the young generation.",
-        "C) Switch to the Parallel GC collector, because Parallel GC doesn't segment heap memory and therefore avoids the Metaspace and Tenured generation fragmentation caused by humongous objects.",
-        "D) Increase `-XX:SurvivorRatio` to allocate more memory to the Survivor spaces, allowing the humongous objects to age properly before being promoted to the Old generation."
+        "A) Replace the LSTM with a Gated Recurrent Unit (GRU) to reduce the parameter count by 33%, and apply standard Gradient Clipping with a threshold of 1.0.",
+        "B) Replace the LSTM with a Transformer model utilizing Linear Attention (such as Performer or Linformer) to scale computational complexity to O(T) instead of O(T^2), and train using mixed-precision FP16.",
+        "C) Retain the LSTM architecture but implement Truncated Backpropagation Through Time (TBPTT) with a maximum backward window limit of 100 timesteps.",
+        "D) Keep the LSTM and apply Tensor-Train decomposition to the recurrent weight matrices to compress model memory footprint, coupled with a learning rate warm-up schedule."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Increase the G1 region size using `-XX:G1HeapRegionSize` (e.g., to 8m or 16m) so that the 2MB payloads do not qualify as humongous objects (which must be at least 50% of the region size) and can be allocated normally in the young generation.",
-      "explanation": "In G1GC, any allocation that is at least 50% of the G1 region size is classified as a 'Humongous Allocation'. G1 allocates humongous objects directly in the Old Generation in a contiguous set of regions. This causes severe fragmentation, early GC triggers, and 'To-space exhausted' failures because the GC cannot find contiguous space. By increasing the region size via `-XX:G1HeapRegionSize`, you ensure these objects are smaller than 50% of the region size, allowing them to be allocated in the young generation and collected via standard, efficient young GC cycles."
+      "correct_answer_text": "B) Replace the LSTM with a Transformer model utilizing Linear Attention (such as Performer or Linformer) to scale computational complexity to O(T) instead of O(T^2), and train using mixed-precision FP16.",
+      "explanation": "For sequence lengths (T) greater than 5,000, standard LSTMs suffer from both memory bottlenecks and sequential dependency limitations. Standard Transformers scale quadratically O(T^2) with respect to sequence length, which would worsen VRAM usage. However, Linear Attention Transformers reduce this complexity to O(T), making very long sequences computationally feasible. Mixed-precision (FP16) training further halves the VRAM footprint. While Truncated BPTT (Option C) would solve the memory issue, it limits the gradient flow to 100 timesteps, making it impossible to capture long-range dependencies spanning the 5,000 timesteps."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a high-throughput trading system experiences severe CPU thrashing and latency spikes. Garbage Collection logs show that ZGC is running continuously in back-to-back cycles. An analysis of the heap dump reveals a massive accumulation of objects inside a `WeakHashMap` used as an application-level cache. The keys are custom `TransactionKey` objects, and the values are `TransactionMetadata` objects. The `TransactionMetadata` object contains a strong reference back to the original `TransactionKey` instance.",
-      "question": "Why does this configuration cause a memory leak and high GC overhead?",
+      "scenario": "A smart warehouse relies on automated guided vehicles (AGVs) for inventory transport. You are tasked with developing a video-based collision avoidance system that detects if a worker is walking into an AGV's path within the next 2 seconds (sequence length of 60 frames at 30 FPS). The prototype architecture extracts spatial features from each frame using a frozen CNN backbone, then feeds these temporal feature vectors into a Bidirectional LSTM (Bi-LSTM). Although this model achieves 96% accuracy during offline validation, during real-time deployment the AGVs repeatedly crash into obstacles because the system introduces massive latency.",
+      "question": "What is the primary cause of this real-time failure, and how should the architecture be re-engineered to resolve it while maintaining temporal modeling accuracy?",
       "options": [
-        "A) `WeakHashMap` does not allow keys to be garbage collected if the values contain a strong reference back to the keys, as this creates a strong reference cycle that prevents the weak reference from being cleared.",
-        "B) ZGC does not support `WeakHashMap` key clearing because ZGC's concurrent marking phase does not process weak, soft, or phantom references to keep pause times low.",
-        "C) Since `TransactionKey` is used in a Spring-managed transactional context, the Spring Proxy intercepts the garbage collector's reference-clearing thread, causing a deadlock in the JVM.",
-        "D) The JVM's Reference Handler thread is single-threaded and gets overwhelmed by the high rate of transactions, causing the internal `ReferenceQueue` of the `WeakHashMap` to overflow into Metaspace."
+        "A) The CNN feature maps are too high-dimensional; apply Global Average Pooling (GAP) before feeding them into the Bi-LSTM to reduce spatial dimensionality.",
+        "B) The Bi-LSTM is inherently non-causal because the backward pass requires future frames (up to t+60) to compute hidden states; replace it with a Unidirectional LSTM combined with an attention layer, and feed temporal difference frames into the CNN.",
+        "C) The frozen CNN weights prevent gradient flow during temporal training; unfreeze the final three convolutional layers of the CNN to perform end-to-end backpropagation.",
+        "D) The 60-frame sequence exceeds the memory retention capability of the LSTM; replace the recurrent layers with a 3D Convolutional Network (3D-CNN) using non-overlapping temporal strides."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) `WeakHashMap` does not allow keys to be garbage collected if the values contain a strong reference back to the keys, as this creates a strong reference cycle that prevents the weak reference from being cleared.",
-      "explanation": "In a `WeakHashMap`, the entry value is held via a strong reference. If the value contains a strong reference back to the key (either directly or transitively), it creates a strong reference chain: `WeakHashMap` -> `Entry` -> `Value` -> `Key`. This defeats the weak reference mechanism of the key because the key is still strongly reachable through the value. Consequently, the key is never garbage collected, causing a memory leak, heap exhaustion, and continuous GC cycles as the JVM desperately attempts to free up space."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The Bi-LSTM is inherently non-causal because the backward pass requires future frames (up to t+60) to compute hidden states; replace it with a Unidirectional LSTM combined with an attention layer, and feed temporal difference frames into the CNN.",
+      "explanation": "A Bidirectional LSTM processes the sequence in both forward and backward directions. In a real-time deployment, calculating the backward state at time 't' requires access to future frames (up to 't+N'), creating an artificial delay of 2 seconds (60 frames) before an inference can be made, leading to collisions. Replacing it with a Unidirectional LSTM ensures strict temporal causality (only past/present frames are used). To compensate for the loss of future-context accuracy, adding an attention mechanism over past states highlights critical actions, and feeding temporal difference frames (I_t - I_t-1) provides explicit motion cues directly to the spatial CNN."
     }
   ]
 }
