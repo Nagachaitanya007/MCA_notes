@@ -35,7 +35,8 @@
     "The Trie (Prefix Tree): Mastering High-Performance String Searching",
     "The Skip List: Mastering Probabilistic Indexing & Concurrent Search",
     "The Memory-Sensitive Cache: Custom Implementation with Weak/Soft References & Reference Queues",
-    "The Two-Lock Queue: Customizing High-Throughput Bounded Queues"
+    "The Two-Lock Queue: Customizing High-Throughput Bounded Queues",
+    "The Bidirectional Map (BiMap): Custom Double-Indexed Associative Collections"
   ],
   "JVM Internals (Memory Model, G1/ZGC, Class Loading)": [
     "JVM Internals: The Lifecycle of a Java Object",
