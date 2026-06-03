@@ -96,7 +96,8 @@
     "Designing a Scalable Notification System (Kafka + SQS + Webhooks)",
     "Reliable Notification Delivery: Handling Failure at Scale",
     "Orchestrating Notification Flows: Kafka as the Backbone, SQS as the Buffer",
-    "Decoupled Webhook Dispatching: Bridging Kafka High-Throughput with SQS Rate Limiting"
+    "Decoupled Webhook Dispatching: Bridging Kafka High-Throughput with SQS Rate Limiting",
+    "Idempotency and Deduplication in High-Throughput Notification Systems"
   ],
   "Design a Rate Limiter (Token Bucket vs Leaky Bucket)": [
     "Rate Limiting: The Token Bucket vs. The Leaky Bucket",
