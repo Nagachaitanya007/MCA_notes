@@ -1,48 +1,48 @@
 {
-  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A real-time ride-hailing platform processes GPS coordinates and fare data at a rate of 100,000 requests per second. The fare amount is highly right-skewed due to dynamic surge pricing, and it contains extreme outliers. The downstream deep learning model requires features to be normalized. The data pipeline must maintain a strict 5-millisecond latency budget per request.",
-      "question": "Which preprocessing strategy effectively mitigates skewness and handles outliers while strictly adhering to the latency budget?",
+      "scenario": "A financial analytics firm is deploying a BERT-based model to analyze sentiment in quarterly earnings reports. During production monitoring, engineers observe that domain-specific compound terms such as 'over-leveraged', 'pre-amortization', and regulatory codes are being heavily fragmented into 5 to 7 subwords by the general-domain WordPiece tokenizer. This excessive fragmentation causes the input sequence to frequently hit the model's 512-token limit, truncating vital context, and diluting the attention weights over these critical financial entities, resulting in poor downstream classification accuracy.",
+      "question": "Which of the following strategies is the most technically sound way to resolve this tokenization bottleneck while preserving the model's pre-trained semantic weights?",
       "options": [
-        "A) Apply an online Yeo-Johnson power transformation to dynamically optimize lambda per batch, followed by dynamic Z-score normalization.",
-        "B) Apply a static Log1p transformation to mitigate fare skewness, scale the output using RobustScaler with pre-computed offline parameters, and clip values exceeding [Q1 - 3*IQR, Q3 + 3*IQR].",
-        "C) Compute a Local Outlier Factor (LOF) with k=50 for each incoming batch to filter out anomalies in real-time, followed by Min-Max normalization.",
-        "D) Fit a dynamic Gaussian Mixture Model (GMM) on the streaming data to isolate outliers via Mahalanobis distance, then apply a Box-Cox transformation."
+        "A) Re-train a Byte-Pair Encoding (BPE) tokenizer from scratch on the target financial corpus, initialize all-new token embeddings with random Gaussian noise, and perform full-parameter fine-tuning.",
+        "B) Append the domain-specific terms to the existing tokenizer vocabulary, initialize their embeddings by averaging the embeddings of their constituent subword fragments, and perform domain-adaptive pre-training on the embedding layer and top attention layers while freezing the middle layers.",
+        "C) Increase the maximum sequence length parameter in the model config to 2048 and scale up the positional embedding matrix via linear interpolation without changing the vocabulary.",
+        "D) Implement a character-level Tokenization wrapper (such as Canine) that bypasses the subword vocabulary entirely, using the original pre-trained BERT weights directly on the character streams."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Apply a static Log1p transformation to mitigate fare skewness, scale the output using RobustScaler with pre-computed offline parameters, and clip values exceeding [Q1 - 3*IQR, Q3 + 3*IQR].",
-      "explanation": "To meet a strict 5ms latency budget, computationally heavy or iterative algorithms cannot be run inline. Power transforms like Box-Cox or Yeo-Johnson require dynamic parameter estimation via Maximum Likelihood Estimation (MLE), which is too slow. LOF and GMM have high computational complexities (O(N^2) and iterative EM steps, respectively) that fail under stream constraints. A static Log1p transformation is an O(1) mathematical operation. Using pre-computed offline median and IQR parameters for RobustScaler allows for instantaneous scaling without real-time computation overhead, and IQR-based clipping provides an efficient, robust thresholding mechanism."
+      "correct_answer_text": "B) Append the domain-specific terms to the existing tokenizer vocabulary, initialize their embeddings by averaging the embeddings of their constituent subword fragments, and perform domain-adaptive pre-training on the embedding layer and top attention layers while freezing the middle layers.",
+      "explanation": "Adding domain-specific tokens directly to the vocabulary prevents excessive subword fragmentation and saves context window space. Initializing these new tokens by averaging their constituent subword embeddings (e.g., averaging the embeddings of 'over', '##lever', and '##aged' to initialize 'over-leveraged') provides a highly informative semantic prior, preventing the catastrophic gradient disruptions that occur with random initialization. Freezing the intermediate layers while fine-tuning the embedding and top-level layers ensures efficient adaptation to the new vocabulary without destroying the general-domain linguistic features learned during initial pre-training."
     },
     {
       "id": 2,
-      "scenario": "A clinical genomics platform aims to predict patient drug response. The dataset consists of 20,000 genomic features but only 1,500 patient samples (a high-dimensional, low-sample-size setting: N << P). Roughly 18% of the clinical lab measurements are Missing Completely at Random (MCAR) or Missing at Random (MAR). Inappropriate imputation could lead to severe multicollinearity or rank-deficient matrices.",
-      "question": "Which imputation technique is most mathematically robust for this high-dimensional scenario?",
+      "scenario": "A legal tech startup is building a system to extract compliance metrics from long-form contracts averaging 16,000 tokens per document. They are utilizing a standard Encoder-Decoder Transformer model with Vanilla Multi-Head Self-Attention (MHA). During performance testing on NVIDIA A100 (80GB) GPUs, the system encounters Out-of-Memory (OOM) errors and severe latency spikes. Profiling reveals that the bottleneck is the quadratic memory scaling O(N^2) and high IO overhead caused by materializing the massive intermediate attention matrices in HBM (High Bandwidth Memory).",
+      "question": "To meet a production SLA of under 200ms per document without retraining the model parameters from scratch, which architectural optimization should the engineering team apply?",
       "options": [
-        "A) K-Nearest Neighbors (KNN) Imputation with K=5 based on Euclidean distance calculated across all 20,000 features.",
-        "B) Multiple Imputation by Chained Equations (MICE) utilizing ordinary least squares linear regression as the base estimator.",
-        "C) Matrix completion via Iterative SVD / SoftImpute (nuclear norm regularization) to exploit the low-rank structure of genomic data.",
-        "D) Mean imputation on all clinical features to preserve sample size and prevent mathematical undefining of downstream covariance matrices."
+        "A) Replace the standard MHA layers with dynamic linear attention approximation kernels (like Performer/Random Feature maps) directly during inference.",
+        "B) Integrate FlashAttention-2 to compute exact attention in SRAM blocks without materializing the O(N^2) attention matrix, and compress the KV cache footprint by converting the model to Grouped-Query Attention (GQA) via head-pooling.",
+        "C) Implement a sliding window attention mechanism with a fixed width of 512 tokens, discarding the cross-attention layers of the Decoder.",
+        "D) Force a 16-bit to 8-bit integer quantization (INT8) on the input token ID vectors to downscale the high-dimensional embedding space before passing it to the attention blocks."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Matrix completion via Iterative SVD / SoftImpute (nuclear norm regularization) to exploit the low-rank structure of genomic data.",
-      "explanation": "In high-dimensional spaces where N << P, genomic and clinical features are highly correlated and lie on a lower-dimensional manifold. Matrix completion techniques like SoftImpute utilize nuclear norm regularization to exploit this low-rank structure, providing accurate and stable imputations. Conversely, KNN imputation fails due to the 'curse of dimensionality,' where Euclidean distance measurements become equidistant and lose meaning. MICE with linear regression fails because the system of equations is underdetermined (P > N), causing collinearity and singular matrix errors. Mean imputation drastically reduces variance and artificially inflates covariance, leading to invalid scientific inferences."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Integrate FlashAttention-2 to compute exact attention in SRAM blocks without materializing the O(N^2) attention matrix, and compress the KV cache footprint by converting the model to Grouped-Query Attention (GQA) via head-pooling.",
+      "explanation": "FlashAttention-2 optimizes GPU memory usage by tiling and running softmax reduction on-chip in fast SRAM instead of constantly writing/reading the NxN attention matrix to/from slower HBM, yielding massive speedups without altering the mathematical output of attention. Combining this with Grouped-Query Attention (GQA) drastically reduces the memory bandwidth bottleneck of loading key-value pairs (KV cache) during autoregressive decoding. This conversion can be initialized directly from multi-head models with minimal calibration, preserving accuracy, whereas changing to linear attention kernels requires full retraining because the mathematical formulations of the kernels differ fundamentally from dot-product attention."
     },
     {
       "id": 3,
-      "scenario": "An e-commerce platform wants to predict Customer Lifetime Value (CLV). The target variable (CLV) is heavily right-skewed (Pareto-distributed) with extreme outliers ('whale' spenders). The data science team is comparing a Gradient Boosted Decision Tree (GBDT) model (such as XGBoost) and a Deep Neural Network (DNN) for this regression task.",
-      "question": "What are the fundamental algorithmic impacts of target skewness and outliers on these two architectures, and what preprocessing is required?",
+      "scenario": "A cybersecurity firm trained a decoder-only Transformer model using Rotary Position Embeddings (RoPE) on log sequences with a maximum length of 4,096 tokens. During a red-team simulation, the model is fed continuous system log streams up to 12,000 tokens long. The engineering team observes that beyond 4,096 tokens, the model's perplexity degrades exponentially, and it completely fails to link security incidents occurring at the start of the log with actions at the very end.",
+      "question": "What is the primary technical cause of this failure, and how can it be resolved during inference without training a new model?",
       "options": [
-        "A) XGBoost is highly sensitive to monotonic transformations of independent features, whereas DNNs natively handle skewed targets due to activation functions like ReLU.",
-        "B) XGBoost requires all input features and target variables to be normally distributed to optimize splits, while DNNs are completely invariant to target skewness.",
-        "C) GBDTs are invariant to monotonic transformations of independent features but can produce unstable trees with high variance under extreme target skewness when optimizing MSE; DNNs require target scaling/transformation to prevent gradient explosion and unstable weight updates during backpropagation.",
-        "D) Both architectures are immune to skewed target distributions because gradient-based optimizations automatically normalize loss function landscapes."
+        "A) The absolute positional indices exceed the maximum capacity of the sinusoids; resolve this by switching the model to learnable absolute positional embeddings at runtime.",
+        "B) RoPE fails to extrapolate relative distances beyond the pre-trained context window due to out-of-distribution rotational frequencies; resolve this by applying dynamic NTK-aware (Neural Tangent Kernel) interpolation to scale the frequency base.",
+        "C) The scaling factor of the attention scores (1/sqrt(d_k)) degrades at longer sequences; resolve this by dynamically increasing the scaling denominator proportionally to the sequence length.",
+        "D) The high-dimensional query-key vector spaces collapse into a single singular vector at high distances; resolve this by applying Layer Normalization to the Key and Query matrices individually before the dot product."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) GBDTs are invariant to monotonic transformations of independent features but can produce unstable trees with high variance under extreme target skewness when optimizing MSE; DNNs require target scaling/transformation to prevent gradient explosion and unstable weight updates during backpropagation.",
-      "explanation": "Tree-based models like XGBoost split nodes based on ordering (rank) rather than magnitude, making them invariant to monotonic scaling of independent features. However, for regression, extreme target skewness highly distorts the sum of gradients and Hessians computed for split evaluation (especially under Mean Squared Error loss), leading to sub-optimal trees dominated by outliers. Deep Neural Networks, on the other hand, rely on gradient descent with respect to weight updates. Extremely large skewed target values produce massive gradient updates, causing gradient explosion, making target transformations (such as Log1p or Box-Cox) critical for stable backpropagation in DNNs."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) RoPE fails to extrapolate relative distances beyond the pre-trained context window due to out-of-distribution rotational frequencies; resolve this by applying dynamic NTK-aware (Neural Tangent Kernel) interpolation to scale the frequency base.",
+      "explanation": "Rotary Position Embeddings (RoPE) encode position by rotating query and key vectors in 2D complexes at specific frequencies. When the sequence length surpasses the training limit, the rotation angles reach values unseen during training, leading to severe extrapolation failures. Dynamic NTK-aware interpolation scales the frequency base of the RoPE formulation during inference. This scales down the speed of rotation relative to sequence position, effectively compressing the long context into the frequency range the model was trained on, preventing perplexity explosion without requiring expensive retraining."
     }
   ]
 }
