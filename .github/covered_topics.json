@@ -63,7 +63,8 @@
     "Heap Profiling & Memory Leak Detection",
     "Region-Based Memory Management & Modern Concurrent Collectors",
     "Escape Analysis: Tuning GC by Allocating on the Stack",
-    "Off-Heap Memory Management: Bypassing the Garbage Collector for Ultra-Low Latency"
+    "Off-Heap Memory Management: Bypassing the Garbage Collector for Ultra-Low Latency",
+    "GC Pacing and Memory Limits: Tuning the Tri-Color Collector"
   ],
   "Design a URL Shortener (Key Generation Service, Sharding)": [
     "URL Shortener: Key Generation Service (KGS) & Sharding",
