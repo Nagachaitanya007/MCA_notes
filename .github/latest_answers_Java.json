@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput microservice migrated to Java 21 Virtual Threads experiences severe throughput degradation and thread starvation under load. Profiling reveals the following code block is frequently executed:\n\njava\npublic class DataIngestionService {\n    private final ReentrantLock lock = new ReentrantLock();\n\n    public synchronized String fetchAndProcess(String sourceUrl) {\n        // Simulating external network call\n        try {\n            Thread.sleep(200);\n            return \"Data from \" + sourceUrl;\n        } catch (InterruptedException e) {\n            Thread.currentThread().interrupt();\n            throw new RuntimeException(e);\n        }\n    }\n}\n",
-      "question": "What is the primary cause of this performance degradation when running on Virtual Threads?",
+      "scenario": "You are debugging a production issue where migrating a high-throughput Spring Boot application to Java 21 Virtual Threads led to severe thread starvation and application freezing under heavy database load. A thread dump reveals that many Virtual Threads are in the `PARKED` state, while carrier platform threads are blocked. The following code pattern is used for executing queries:\n\njava\npublic class QueryExecutor {\n    private final Object lock = new Object();\n\n    public List<Result> executeQuery(String query) {\n        synchronized (lock) {\n            // Calls blocking legacy JDBC driver\n            return databaseConnection.run(query);\n        }\n    }\n}\n",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) The use of `Thread.sleep` forces the virtual thread to yield back to the OS scheduler, introducing heavy context-switching overhead.",
-        "B) Executing a blocking operation like `Thread.sleep` inside a `synchronized` block pins the virtual thread to its carrier platform thread, preventing other virtual threads from executing on that carrier thread.",
-        "C) The `synchronized` keyword causes the JVM to permanently escalate the virtual thread to a physical platform thread, exhausting the system's native thread pool.",
-        "D) Virtual threads do not support intrinsic monitor locks, causing the JVM to fall back to serial thread execution."
+        "A) Virtual Threads do not support any form of locking, causing an immediate JVM crash upon entering a synchronized block.",
+        "B) The JVM cannot preempt a Virtual Thread executing inside a `synchronized` block, pinning it to its carrier thread and starving the pool.",
+        "C) The database connection pool detects Virtual Threads as unsafe and systematically rejects their transaction boundaries.",
+        "D) The garbage collector is forced into continuous Stop-The-World phases because virtual thread stacks inside `synchronized` blocks are unmovable."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Executing a blocking operation like `Thread.sleep` inside a `synchronized` block pins the virtual thread to its carrier platform thread, preventing other virtual threads from executing on that carrier thread.",
-      "explanation": "In Java 21, when a virtual thread encounters a blocking operation (like I/O or `Thread.sleep`) inside a `synchronized` block or method, the virtual thread is 'pinned' to its carrier platform thread. This prevents the JVM from parking the virtual thread and mounting another virtual thread onto that carrier thread, resulting in carrier thread starvation. To resolve this, `ReentrantLock` should be used instead of `synchronized` as it does not pin the carrier thread."
+      "correct_answer_text": "B) The JVM cannot preempt a Virtual Thread executing inside a `synchronized` block, pinning it to its carrier thread and starving the pool.",
+      "explanation": "In Java 21, when a Virtual Thread executes a synchronized block or method (or invokes a native method), it pins its carrier thread (the platform thread running it). While pinned, blocking I/O operations (like database queries) block the carrier thread as well, preventing other virtual threads from utilizing that platform thread and leading to carrier thread exhaustion."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue in a Spring Boot application where database writes initiated within a `CompletableFuture` chain are persisting even when the enclosing transactional method fails and rolls back. The service layer is defined as follows:\n\njava\n@Service\npublic class OrderService {\n    @Autowired\n    private OrderRepository orderRepository;\n    @Autowired\n    private AuditLogRepository auditLogRepository;\n    @Autowired\n    private Executor asyncExecutor;\n\n    @Transactional\n    public void placeOrder(Order order) {\n        orderRepository.save(order);\n        \n        CompletableFuture.runAsync(() -> {\n            auditLogRepository.save(new AuditLog(\"Order initiated\"));\n        }, asyncExecutor);\n\n        if (true) { \n            throw new RuntimeException(\"Simulated database failure\"); \n        }\n    }\n}\n",
-      "question": "Why does the transaction rollback fail to revert the write made by `auditLogRepository.save`?",
+      "scenario": "You are debugging a production issue where a developer attempted to parallelize database writes using `CompletableFuture` inside a Spring `@Transactional` service block:\n\njava\n@Service\npublic class OrderService {\n    @Transactional\n    public void processOrder(Order order) {\n        CompletableFuture.runAsync(() -> {\n            paymentRepository.save(order.getPayment());\n        });\n        orderRepository.save(order);\n    }\n}\n\nDuring peak traffic, payment transactions fail to save or bypass the transaction lifecycle of the service method entirely, leaving inconsistent records in the database.",
+      "question": "Why is the async payment save operation behaving inconsistently with the parent transaction context?",
       "options": [
-        "A) Spring's `@Transactional` annotation is not thread-safe and defaults to `Propagation.REQUIRES_NEW` when invoked asynchronously.",
-        "B) The `CompletableFuture` runs on a separate thread from the `asyncExecutor` pool, which does not inherit the transaction context bound to the originator thread via `ThreadLocal`.",
-        "C) The Spring AOP proxy is unable to intercept calls within lambda expressions, causing all repository calls inside them to auto-commit.",
-        "D) `CompletableFuture` executes tasks in a separate OS process, completely isolating it from the JVM's transaction manager."
+        "A) Spring's `@Transactional` aspect interceptor rolls back any transaction that spawns custom non-managed platform threads.",
+        "B) The dynamic proxy generated by Spring for `OrderService` blocks non-main thread connections by default.",
+        "C) The `CompletableFuture` runs on a different thread from the ForkJoinPool, which does not share the ThreadLocal transaction context of the parent thread.",
+        "D) Concurrent writes to separate tables violate ACID properties unless a distributed multi-phase commit coordinator is explicitly configured."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `CompletableFuture` runs on a separate thread from the `asyncExecutor` pool, which does not inherit the transaction context bound to the originator thread via `ThreadLocal`.",
-      "explanation": "Spring's transaction management relies on a `ThreadLocal` variable (`TransactionSynchronizationManager`) to store active transaction resources (like database connections). When `CompletableFuture.runAsync` spawns a task on a thread from the `asyncExecutor`, that task runs on a different thread with no transactional context, causing the repository call to execute in its own autocommit-enabled connection, completely decoupled from the original transaction's rollback."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) The `CompletableFuture` runs on a different thread from the ForkJoinPool, which does not share the ThreadLocal transaction context of the parent thread.",
+      "explanation": "Spring's `@Transactional` system uses ThreadLocal variables (via `TransactionSynchronizationManager`) to bind active database connections to the current thread. When executing tasks asynchronously using `CompletableFuture.runAsync()`, the task runs on a separate worker thread from the ForkJoinPool. This worker thread has no access to the parent thread's ThreadLocal variables, causing it to run outside the existing transaction context."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production memory leak. After migrating a high-throughput chat application from a standard Thread Pool to Java 21 Virtual Threads, the application experiences `java.lang.OutOfMemoryError: Java heap space`. Profiling shows millions of `ThreadLocalMap$Entry` instances occupying the majority of the heap, holding onto massive user session buffers.",
-      "question": "What is the root cause of this memory exhaustion after migrating to Virtual Threads?",
+      "scenario": "You are debugging a production issue where an asynchronous data enrichment pipeline silently swallows failures. When a downstream HTTP call fails, no errors are logged, and the execution chain halts silently without notifying the parent monitoring system:\n\njava\npublic CompletableFuture<Void> processAsync(Request request) {\n    return CompletableFuture.supplyAsync(() -> fetchUserData(request))\n            .thenApply(user -> enrichData(user))\n            .thenAccept(enriched -> saveToDatabase(enriched));\n}\n",
+      "question": "What is the primary reason why exceptions occurring in this pipeline are not being logged or thrown?",
       "options": [
-        "A) Virtual Threads do not garbage-collect `ThreadLocal` values upon termination, resulting in a permanent native memory leak.",
-        "B) The JVM uses a shared global Map for all Virtual Thread `ThreadLocals` which cannot shrink in size once allocated.",
-        "C) Unlike a capped, long-lived Platform Thread pool where a small number of `ThreadLocal` instances are continuously reused, Virtual Threads are cheap, short-lived, and can run in millions, causing the aggregate size of `ThreadLocal` allocations to scale with active tasks rather than CPU cores.",
-        "D) Virtual threads do not support garbage collection of the heap when the carrier thread is pinned."
+        "A) The default `ForkJoinPool` intercepts all uncaught runtime exceptions and silently discards them to maintain pool stability.",
+        "B) Exceptions in a `CompletableFuture` pipeline are captured and stored in the resulting future, remaining unthrown unless explicitly queried or handled.",
+        "C) The `thenAccept` method returns a `CompletableFuture<Void>` which automatically nullifies any previous exceptional states.",
+        "D) The JVM optimizes short-lived async operations by clearing their stack trace frames if they fail within the first few milliseconds."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Unlike a capped, long-lived Platform Thread pool where a small number of `ThreadLocal` instances are continuously reused, Virtual Threads are cheap, short-lived, and can run in millions, causing the aggregate size of `ThreadLocal` allocations to scale with active tasks rather than CPU cores.",
-      "explanation": "In classic concurrency, platform thread pools limit the maximum number of concurrent threads (e.g., 200), capping the memory footprint of `ThreadLocal` variables. With Virtual Threads, applications are designed to spawn millions of threads concurrently. If virtual threads hold onto heavy objects via `ThreadLocal`, the memory consumption scales linearly with the number of concurrent tasks, leading to rapid heap exhaustion. To resolve this, applications should use `ScopedValue` or pass context explicitly."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Exceptions in a `CompletableFuture` pipeline are captured and stored in the resulting future, remaining unthrown unless explicitly queried or handled.",
+      "explanation": "In a `CompletableFuture` pipeline, exceptions are propagated down the dependency graph as an exceptionally completed state rather than being immediately thrown on the execution thread. If the final `CompletableFuture` is not joined via `.join()`, `.get()`, or handled with methods like `.exceptionally()` or `.whenComplete()`, any exception that occurred during the execution steps is completely ignored and silently swallowed."
     }
   ]
 }
