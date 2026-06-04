@@ -47,7 +47,8 @@
     "JVM Internals: The Class Loading Hierarchy, Memory Consistency, and Zero-Pause Collectors",
     "JVM Hardware Bridge: Memory Barriers, GC Barriers, and Class Initialization Locks",
     "JVM Memory Mechanics: Thread-Local Allocation Buffers (TLABs), Compressed OOPs, and Card Tables",
-    "JVM Execution Mechanics: Stack Frames, G1/ZGC Phase Operations, and Class Verification"
+    "JVM Execution Mechanics: Stack Frames, G1/ZGC Phase Operations, and Class Verification",
+    "JVM Metaspace and Class Unloading: The Anatomy of Classloader Leaks"
   ],
   "Design a Real-time Chat System (WebSockets, Redis Pub/Sub)": [
     "Scalable Real-time Chat: WebSockets & Redis Pub/Sub",
