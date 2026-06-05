@@ -14,7 +14,8 @@
     "The \"Thread-Per-Task\" Rebirth: Optimizing I/O-Bound Applications",
     "The Mechanics of Carrier Threads: How Virtual Threads Mount, Unmount, and Pin",
     "Hybrid Async Architectures: Orchestrating Virtual Threads with CompletableFuture",
-    "Introduction to Java Concurrency & Multithreading with Virtual Threads and CompletableFuture"
+    "Introduction to Java Concurrency & Multithreading with Virtual Threads and CompletableFuture",
+    "CompletableFuture Pipeline Mechanics: Thread Hand-offs, Memory Barriers, and Async Stage Propagation"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
