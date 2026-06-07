@@ -26,7 +26,8 @@
     "Idempotency & Request Tracking: The \"Safely Try Again\" Strategy",
     "Distributed Error Translation & Context Propagation",
     "Graceful Degradation: Designing Resilient Fallback Paths",
-    "Bulkhead Isolation: Preventing Resource Exhaustion in Distributed Failures"
+    "Bulkhead Isolation: Preventing Resource Exhaustion in Distributed Failures",
+    "The Transactional Outbox Pattern: Solving the Dual-Write Failure"
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections",
