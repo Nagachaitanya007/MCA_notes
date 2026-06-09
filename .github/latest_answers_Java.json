@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
+  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `Map<String, String>` implementation is causing an `OutOfMemoryError`. The `Map` is initialized with a default size and load factor, but its entries are never removed. The code snippet looks like this: `Map<String, String> cache = new `HashMap<String, String>`(1000, 0.75f);`.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "You are debugging a production issue where a Java 21 Spring Boot service, configured to use Virtual Threads via `AsyncTaskExecutor`, experiences severe latency spikes and thread exhaustion under high load. Thread dumps show that many `ForkJoinPool-1-worker-` carrier threads are in `PARKED` or `BLOCKED` states. A code audit reveals the following code snippet inside a critical path:\n\njava\npublic synchronized String fetchDataFromLegacyService() {\n    // Blocks for ~200ms making an HTTP call\n    return restTemplate.getForObject('https://legacy-api.internal/data', String.class);\n}\n",
+      "question": "What is the primary cause of the carrier thread exhaustion?",
       "options": [
-        "A) The `HashMap` has reached its initial capacity and needs to be resized.",
-        "B) The `HashMap` has a high load factor, causing excessive collisions.",
-        "C) The `HashMap` is not being garbage collected due to strong references.",
-        "D) The `HashMap` is being accessed concurrently by multiple threads."
+        "A) The `synchronized` keyword pins the virtual thread to its carrier thread during the blocking network I/O, preventing the carrier thread from executing other virtual threads.",
+        "B) `RestTemplate` is incompatible with virtual threads and forces the JVM to upgrade the virtual thread to a physical platform thread.",
+        "C) The carrier thread pool runs out of memory because the JVM cannot dynamically scale the carrier pool when using `synchronized` blocks.",
+        "D) Virtual threads do not support network socket operations, causing a deadlock between the OS socket buffer and the carrier thread scheduler."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The `HashMap` is not being garbage collected due to strong references.",
-      "explanation": "The `HashMap` is not being garbage collected because it is still strongly referenced by the application. Even though the entries are never removed, the `HashMap` itself is still in memory, causing an `OutOfMemoryError`. This is because the JVM will only garbage collect objects that are no longer strongly reachable."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The `synchronized` keyword pins the virtual thread to its carrier thread during the blocking network I/O, preventing the carrier thread from executing other virtual threads.",
+      "explanation": "When a virtual thread executes a block guarded by `synchronized` (or a synchronized method) and blocks on I/O, the virtual thread is 'pinned' to its carrier platform thread. The JVM cannot unmount it. This starves the underlying carrier `ForkJoinPool`, leading to thread exhaustion. To fix this, standard Java locks like `ReentrantLock` should be used instead, which allow the virtual thread to unmount smoothly during blocking operations."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a `List<Integer>` implementation is causing a `ConcurrentModificationException`. The code snippet looks like this: `List<Integer> numbers = new `ArrayList<Integer>`(); numbers.add(1); numbers.add(2); for (Integer number : numbers) { numbers.remove(number); }`.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "You are debugging a production issue where a developer attempted to optimize a Spring Boot service by parallelizing database operations using `CompletableFuture`. The main transaction is started via `@Transactional`. Inside the method, the following code is executed:\n\njava\n@Transactional\npublic void processOrders(List<Order> orders) {\n    List<CompletableFuture<Void>> futures = orders.stream()\n        .map(order -> CompletableFuture.runAsync(() -> {\n            order.setStatus(Status.PROCESSED);\n            orderRepository.save(order);\n        }))\n        .toList();\n    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();\n}\n\n\nDuring execution, the application throws `LazyInitializationException` when accessing related entities, and the database updates are not committed within the parent transaction context.",
+      "question": "Why does the asynchronous processing fail to participate in the parent transaction?",
       "options": [
-        "A) The `ArrayList` is being iterated over using an iterator.",
-        "B) The `ArrayList` is being modified structurally while being iterated over.",
-        "C) The `ArrayList` has reached its initial capacity and needs to be resized.",
-        "D) The `ArrayList` is being accessed concurrently by multiple threads."
+        "A) Spring's `@Transactional` relies on `ThreadLocal` storage via `TransactionSynchronizationManager` to bind the Hibernate Session and transaction state to the current thread, which does not propagate to the asynchronous threads used by `CompletableFuture`.",
+        "B) The database connection pool HikariCP locks the transaction to the specific CPU core, and context switching causes a transaction mismatch.",
+        "C) `CompletableFuture` tasks are executed by the ForkJoinPool common pool, which runs with a security manager that blocks database access.",
+        "D) The Spring transaction proxy intercepts only direct interface calls and actively rolls back any nested asynchronous tasks to prevent concurrent modification."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `ArrayList` is being modified structurally while being iterated over.",
-      "explanation": "The `ConcurrentModificationException` is thrown because the `ArrayList` is being modified structurally (i.e., elements are being removed) while it is being iterated over. This is not allowed because the iterator is not designed to handle such modifications. To fix this issue, you should use an iterator that supports modification, such as the `ListIterator` interface."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Spring's `@Transactional` relies on `ThreadLocal` storage via `TransactionSynchronizationManager` to bind the Hibernate Session and transaction state to the current thread, which does not propagate to the asynchronous threads used by `CompletableFuture`.",
+      "explanation": "Spring's transaction management is thread-bound. `TransactionSynchronizationManager` holds the database connection and transaction state in a `ThreadLocal`. When `CompletableFuture.runAsync` executes, it runs on a different thread (by default, the ForkJoinPool common pool), which lacks the transaction context and the Hibernate Session, leading to detached entity errors and missing transaction boundaries."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a custom `Set` implementation is causing a `NullPointerException`. The custom `Set` implementation uses a `HashSet` internally and overrides the `add` method as follows: `public boolean add(`String` element) { return internalSet.add(element.toString()); }`. However, the `element` parameter is sometimes `null`, causing the `NullPointerException`.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "You are migrating a legacy high-throughput service to Java 21 virtual threads. The service uses a library containing a static helper class that caches non-thread-safe JSON parsers using `ThreadLocal`:\n\njava\nprivate static final ThreadLocal<ObjectMapper> mapperCache = ThreadLocal.withInitial(ObjectMapper::new);\n\n\nUnder high traffic, the service experiences severe `OutOfMemoryError` (OOM) on the heap, despite virtual threads being garbage collected immediately after processing a request.",
+      "question": "What is the root cause of this memory leak under virtual threads?",
       "options": [
-        "A) The `HashSet` is not being initialized properly.",
-        "B) The `add` method is not handling `null` elements correctly.",
-        "C) The `HashSet` is being accessed concurrently by multiple threads.",
-        "D) The `toString` method is being called on a `null` object."
+        "A) Virtual threads maintain their own independent `ThreadLocal` maps. Spawning millions of virtual threads creates millions of `ThreadLocal` map instances containing heavy `ObjectMapper` instances, overwhelming the heap.",
+        "B) `ThreadLocal` variables are stored in the JVM Metaspace, which does not undergo standard garbage collection when virtual threads terminate.",
+        "C) The carrier thread pool holds references to all virtual thread local maps indefinitely to prevent context-switching overhead.",
+        "D) Virtual threads do not support weak references, causing the keys of the `ThreadLocal` map to remain strongly reachable forever."
       ],
-      "correct_answer_letter": "D",
-      "correct_answer_text": "D) The `toString` method is being called on a `null` object.",
-      "explanation": "The `NullPointerException` is caused by calling the `toString` method on a `null` object. When the `element` parameter is `null`, calling `element.toString()` will throw a `NullPointerException`. To fix this issue, you should add a null check before calling the `toString` method, for example: `public boolean add(`String` element) { return element == null ? false : internalSet.add(element.toString()); }`."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Virtual threads maintain their own independent `ThreadLocal` maps. Spawning millions of virtual threads creates millions of `ThreadLocal` map instances containing heavy `ObjectMapper` instances, overwhelming the heap.",
+      "explanation": "With traditional platform thread pools, the number of threads is bounded (e.g., 200), so at most 200 `ObjectMapper` instances are cached. Virtual threads are designed to be short-lived and created in millions. Since each virtual thread has its own `ThreadLocal` map, this design instantiates millions of `ObjectMapper` objects on the heap simultaneously, quickly causing an OOM. The modern solution is to use `ScopedValue` or thread-safe shared instances."
     }
   ]
 }
