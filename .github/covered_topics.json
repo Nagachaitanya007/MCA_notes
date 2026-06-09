@@ -70,7 +70,8 @@
     "Escape Analysis: Tuning GC by Allocating on the Stack",
     "Off-Heap Memory Management: Bypassing the Garbage Collector for Ultra-Low Latency",
     "GC Pacing and Memory Limits: Tuning the Tri-Color Collector",
-    "Thread-Local Allocation Buffers (TLABs): Eliminating Allocation Bottlenecks"
+    "Thread-Local Allocation Buffers (TLABs): Eliminating Allocation Bottlenecks",
+    "GC Safepoints and Thread Suspension: Tuning the Hidden Latency Killers"
   ],
   "Design a URL Shortener (Key Generation Service, Sharding)": [
     "URL Shortener: Key Generation Service (KGS) & Sharding",
