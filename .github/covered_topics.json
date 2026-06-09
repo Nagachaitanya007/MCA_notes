@@ -113,7 +113,8 @@
     "Choosing Your Throttle: Token Bucket vs. Leaky Bucket",
     "Architecting Traffic Control: Token Bucket vs. Leaky Bucket",
     "Scaling API Protection: Token Bucket vs. Leaky Bucket Implementation",
-    "Mastering Traffic Shaping: Token Bucket vs Leaky Bucket"
+    "Mastering Traffic Shaping: Token Bucket vs Leaky Bucket",
+    "Algorithmic Traffic Control: Token Bucket vs. Leaky Bucket"
   ],
   "Design a Distributed Cache (Consistent Hashing, LRU)": [
     "Distributed Cache Design: Consistent Hashing & LRU",
