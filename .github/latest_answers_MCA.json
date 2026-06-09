@@ -1,48 +1,48 @@
 {
-  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
+  "topic": "Machine Learning: Classification vs Regression Scenarios",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A multinational financial services provider is deploying an XGBoost model to automate credit underwriting. During a pre-deployment fairness audit, the compliance team discovers a significant Disparate Impact Ratio of 0.62 against a protected demographic group, even though this protected attribute was omitted from the training data. High-dimensional transaction histories contain strong proxy variables that the model has exploited. The engineering team must mitigate this bias and satisfy the GDPR 'Right to Explanation' (Article 22) requiring local feature attributions for rejected applicants, all while maintaining a strict real-time inference latency budget of under 50 milliseconds.",
-      "question": "Which system design and algorithmic combination best mitigates the bias while adhering to both the latency and compliance constraints?",
+      "scenario": "A real-world industrial problem statement: In a banking application, a machine learning model is required to predict the credit limit for customers. The dataset contains features such as income, credit history, and demographics, with the target variable being the credit limit. The model needs to handle imbalanced data, where customers with high credit limits are less frequent.",
+      "question": "What type of machine learning algorithm is best suited for this task?",
       "options": [
-        "A) Apply an in-processing Adversarial Debiasing neural network to eliminate proxy relationships, and generate real-time local explanations using KernelSHAP with 1,000 background samples.",
-        "B) Apply a pre-processing Disparate Impact Remover to the transaction history features, and use the path-dependent TreeSHAP algorithm to generate real-time local attributions during inference.",
-        "C) Implement an Equalized Odds post-processing threshold adjustment on the XGBoost output probabilities, and deploy Integrated Gradients to provide local attributions.",
-        "D) Apply a post-processing Reject Option Classification to adjust decisions, and generate local explanations using an optimized LIME framework with super-pixel segmentations."
+        "A) Logistic Regression",
+        "B) Decision Trees",
+        "C) Random Forest Regression",
+        "D) Support Vector Regression"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Apply a pre-processing Disparate Impact Remover to the transaction history features, and use the path-dependent TreeSHAP algorithm to generate real-time local attributions during inference.",
-      "explanation": "Disparate Impact Remover edits the marginal distributions of the features to remove historical bias while preserving rank-ordering, addressing the proxy variable issue without adding computational overhead during inference. For explainability, TreeSHAP is mathematically rigorous (satisfying local accuracy, missingness, and consistency axioms) and optimizes the Shapley value calculation for tree ensembles from exponential time O(2^M) to polynomial time O(TLD^2), allowing local feature attributions to be calculated in milliseconds, well within the 50ms constraint. Adversarial debiasing (Option A) is computationally heavy and KernelSHAP is too slow for real-time inference due to its sampling nature. Integrated Gradients (Option C) is designed for differentiable neural networks and cannot be natively applied to non-differentiable decision trees like XGBoost."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Random Forest Regression",
+      "explanation": "Random Forest Regression is suitable for handling imbalanced data and complex interactions between features. It can also handle high-dimensional spaces and provides good performance with a large number of features."
     },
     {
       "id": 2,
-      "scenario": "An AI healthcare startup trains a ResNet-50 deep convolutional neural network to classify dermatological lesions. The model achieves an outstanding 95% AUC-ROC in laboratory validation. However, when deployed across a diverse group of clinical sites, performance drops to 68% AUC-ROC. The engineering team suspects the model has learned a 'shortcut' (spurious correlation) by associating the presence of surgical marker ink, ruler markings, or camera-specific lighting artifacts with malignant classifications. The clinical advisory board demands a diagnostic method that can quantitatively verify if human-interpretable concepts (such as 'surgical ink' or 'ruler markings') are systematically influencing the model's global decisions across the entire validation dataset, rather than merely highlighting pixel-level saliency on individual images.",
-      "question": "Which Explainable AI (XAI) methodology should the team deploy to quantitatively measure the global influence of these abstract concepts on the model's classifications?",
+      "scenario": "A real-world industrial problem statement: In a healthcare application, a machine learning model is required to classify patients as having diabetes or not, based on features such as age, blood pressure, and glucose levels. The dataset contains missing values and noisy data.",
+      "question": "What is the primary consideration when selecting an algorithm for handling this dataset?",
       "options": [
-        "A) Grad-CAM (Gradient-weighted Class Activation Mapping) to visualize the coarse localization maps of the final convolutional layer across the misclassified images.",
-        "B) Integrated Gradients using a pure black image baseline to compute path-based pixel-level attribution maps for every image containing artifacts.",
-        "C) Testing with Concept Activation Vectors (TCAV) to translate internal state representations of hidden layers into user-defined concepts and calculate directional derivatives.",
-        "D) Local Interpretable Model-agnostic Explanations (LIME) applied with randomized super-pixel masking to isolate the regions containing rulers or ink."
+        "A) Computational efficiency",
+        "B) Robustness to missing values",
+        "C) Interpretability of results",
+        "D) Real-time prediction"
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Testing with Concept Activation Vectors (TCAV) to translate internal state representations of hidden layers into user-defined concepts and calculate directional derivatives.",
-      "explanation": "TCAV is designed specifically to quantify the sensitivity of a model's predictions to high-level, human-interpretable concepts (e.g., 'surgical ink'), even if those concepts were not explicitly labeled during model training. It works by training a linear classifier in the activation space of the model's intermediate layers to find a vector representing the concept, and then computing directional derivatives of the model's output along this vector across the dataset. Saliency-based methods like Grad-CAM (Option A), Integrated Gradients (Option B), and LIME (Option D) only provide pixel-level or region-level local attributions. They do not quantitatively measure the global influence of abstract concepts and are highly vulnerable to confirmation bias during human inspection."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Robustness to missing values",
+      "explanation": "In a dataset with missing values, it's essential to choose an algorithm that can handle missing data effectively. Techniques like mean or median imputation, or using algorithms that are inherently robust to missing values, are crucial for maintaining the accuracy of the model."
     },
     {
       "id": 3,
-      "scenario": "A high-frequency payment processing platform handles 20,000 transactions per second (TPS) and utilizes a Random Forest model to flag fraudulent transactions. The dataset is extremely imbalanced, with a positive class (fraud) rate of only 0.05%. Regulators require that any blocked transaction must be accompanied by a mathematically rigorous, local explanation highlighting the top 3 contributing factors. The current system architecture cannot handle the computational overhead of running Shapley value calculations on all 20,000 TPS.",
-      "question": "Which system design pattern and explanation pipeline optimization should be implemented to satisfy both the high-throughput constraint and the regulatory demand?",
+      "scenario": "A real-world industrial problem statement: An e-commerce company requires a machine learning model to predict the likelihood of a user clicking on a product recommendation. The model needs to provide real-time predictions and handle a high volume of data. The company has limited computational resources.",
+      "question": "What type of algorithm would be most suitable for this task, given the constraints?",
       "options": [
-        "A) Route only the flagged (blocked) transactions\u2014which represent 0.05% of the total volume (approx. 10 TPS)\u2014to an asynchronous explanation queue that computes path-dependent TreeSHAP values.",
-        "B) Compress the 400 transaction features into 10 principal components using Kernel PCA, and run KernelSHAP on the compressed space for all incoming transactions.",
-        "C) Build a global surrogate decision tree with a maximum depth of 3 on the entire stream, and use its static paths to provide instantaneous real-time lookup explanations.",
-        "D) Execute LIME concurrently on a GPU cluster by setting the perturbation sample size to N=10 for all 20,000 incoming transactions to minimize latency."
+        "A) Gradient Boosting Machines",
+        "B) Neural Networks",
+        "C) Online Learning with Logistic Regression",
+        "D) Batch Processing with Random Forest"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Route only the flagged (blocked) transactions\u2014which represent 0.05% of the total volume (approx. 10 TPS)\u2014to an asynchronous explanation queue that computes path-dependent TreeSHAP values.",
-      "explanation": "An explanation is only legally required for blocked transactions. By decoupling the transaction path from the explanation path, the platform only needs to compute explanations for the 0.05% of transactions that are flagged (10 TPS on average, instead of 20,000 TPS). Running TreeSHAP asynchronously on this subset ensures that the primary transaction pathway maintains its high throughput and low latency. Utilizing path-dependent TreeSHAP avoids the heavy computational burden of background dataset sampling. Option B destroys feature interpretability through PCA. Option C (Global Surrogate) lacks the local fidelity and mathematical rigor required by regulators. Option D (reducing LIME perturbations to N=10) yields highly unstable, mathematically invalid explanations."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Online Learning with Logistic Regression",
+      "explanation": "Online learning with logistic regression is suitable for real-time predictions and can handle a high volume of data. It is also computationally efficient, which is essential given the company's limited resources. Online learning allows the model to update its parameters as new data arrives, making it suitable for real-time applications."
     }
   ]
 }
