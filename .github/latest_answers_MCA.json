@@ -1,48 +1,48 @@
 {
-  "topic": "Machine Learning: Classification vs Regression Scenarios",
+  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A real-world industrial problem statement: In a banking application, a machine learning model is required to predict the credit limit for customers. The dataset contains features such as income, credit history, and demographics, with the target variable being the credit limit. The model needs to handle imbalanced data, where customers with high credit limits are less frequent.",
-      "question": "What type of machine learning algorithm is best suited for this task?",
+      "scenario": "Real-world Industrial Problem Statement: A manufacturing company wants to develop a quality control system that uses computer vision to classify products as defective or non-defective based on images. The images are taken from a production line with varying lighting conditions and the products have complex designs, resulting in high-dimensional image data.",
+      "question": "What type of deep learning architecture is most suitable for this image classification task, considering the high-dimensional image data and need for real-time classification?",
       "options": [
-        "A) Logistic Regression",
-        "B) Decision Trees",
-        "C) Random Forest Regression",
-        "D) Support Vector Regression"
+        "A) Shallow Neural Networks",
+        "B) Convolutional Neural Networks (CNNs)",
+        "C) Recurrent Neural Networks (RNNs)",
+        "D) Autoencoders"
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Random Forest Regression",
-      "explanation": "Random Forest Regression is suitable for handling imbalanced data and complex interactions between features. It can also handle high-dimensional spaces and provides good performance with a large number of features."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Convolutional Neural Networks (CNNs)",
+      "explanation": "Convolutional Neural Networks (CNNs) are most suitable for image classification tasks due to their ability to extract features from images using convolutional and pooling layers, handling high-dimensional image data, and robustness to varying lighting conditions."
     },
     {
       "id": 2,
-      "scenario": "A real-world industrial problem statement: In a healthcare application, a machine learning model is required to classify patients as having diabetes or not, based on features such as age, blood pressure, and glucose levels. The dataset contains missing values and noisy data.",
-      "question": "What is the primary consideration when selecting an algorithm for handling this dataset?",
+      "scenario": "Real-world Industrial Problem Statement: A healthcare organization wants to develop a system that can predict patient outcomes based on their medical history, which includes time-stamped data such as medication prescriptions, lab results, and diagnoses. The organization wants to use this system to identify high-risk patients and provide proactive care.",
+      "question": "What type of deep learning architecture is most suitable for modeling the sequence data and predicting patient outcomes in this scenario?",
       "options": [
-        "A) Computational efficiency",
-        "B) Robustness to missing values",
-        "C) Interpretability of results",
-        "D) Real-time prediction"
+        "A) Convolutional Neural Networks (CNNs)",
+        "B) Recurrent Neural Networks (RNNs)",
+        "C) Long Short-Term Memory (LSTM) Networks",
+        "D) Transformers"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Robustness to missing values",
-      "explanation": "In a dataset with missing values, it's essential to choose an algorithm that can handle missing data effectively. Techniques like mean or median imputation, or using algorithms that are inherently robust to missing values, are crucial for maintaining the accuracy of the model."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Long Short-Term Memory (LSTM) Networks",
+      "explanation": "Long Short-Term Memory (LSTM) Networks are a type of Recurrent Neural Network (RNN) that is particularly well-suited for modeling sequence data, such as time-stamped medical history, due to their ability to learn long-term dependencies and handle vanishing gradients."
     },
     {
       "id": 3,
-      "scenario": "A real-world industrial problem statement: An e-commerce company requires a machine learning model to predict the likelihood of a user clicking on a product recommendation. The model needs to provide real-time predictions and handle a high volume of data. The company has limited computational resources.",
-      "question": "What type of algorithm would be most suitable for this task, given the constraints?",
+      "scenario": "Real-world Industrial Problem Statement: A company wants to develop a chatbot that can understand and respond to customer queries in real-time. However, the customer queries are often skewed towards a few popular topics, and the company wants to ensure that the chatbot is not biased towards these topics.",
+      "question": "What technique can be used to handle the skewed data and ensure that the chatbot is not biased towards popular topics?",
       "options": [
-        "A) Gradient Boosting Machines",
-        "B) Neural Networks",
-        "C) Online Learning with Logistic Regression",
-        "D) Batch Processing with Random Forest"
+        "A) Data augmentation",
+        "B) Transfer learning",
+        "C) Class weights",
+        "D) Over-sampling the minority class"
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) Online Learning with Logistic Regression",
-      "explanation": "Online learning with logistic regression is suitable for real-time predictions and can handle a high volume of data. It is also computationally efficient, which is essential given the company's limited resources. Online learning allows the model to update its parameters as new data arrives, making it suitable for real-time applications."
+      "correct_answer_text": "C) Class weights",
+      "explanation": "Class weights can be used to handle skewed data by assigning different weights to different classes during training, which helps to reduce the bias towards the majority class and improves the performance on the minority class."
     }
   ]
 }

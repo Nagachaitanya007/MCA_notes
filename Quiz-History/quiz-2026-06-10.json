@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
-  "mode": "Java",
+  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot microservice randomly throws `NullPointerException` inside a read-only transactional service. The configurations are loaded lazily using a double-checked locking pattern as shown below:\n\njava\n@Service\npublic class ConfigurationService {\n    private ConfigData configData;\n\n    @Transactional(readOnly = true)\n    public ConfigData getConfig() {\n        if (configData == null) {\n            synchronized (this) {\n                if (configData == null) {\n                    configData = new ConfigData('PROD_DB', fetchSecrets());\n                }\n            } \n        }\n        return configData;\n    }\n}\n\nHeap dumps show that `configData` is indeed non-null when the failure occurs, yet some threads still read uninitialized or null fields within the `ConfigData` object.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "Real-world Industrial Problem Statement: A manufacturing company wants to develop a quality control system that uses computer vision to classify products as defective or non-defective based on images. The images are taken from a production line with varying lighting conditions and the products have complex designs, resulting in high-dimensional image data.",
+      "question": "What type of deep learning architecture is most suitable for this image classification task, considering the high-dimensional image data and need for real-time classification?",
       "options": [
-        "A) The Spring `@Transactional` proxy wraps the service in a JDK dynamic proxy, causing the `synchronized(this)` monitor to lock on the proxy instance instead of the target bean instance.",
-        "B) The compiler, JVM, or CPU can reorder the instructions during the initialization of `ConfigData`, publishing the non-null reference to `configData` before its constructor execution completes because the field is not `volatile`.",
-        "C) The JVM ClassLoader subsystem initializes `ConfigData` lazily, causing a race condition in the Metaspace class-loading lock during concurrent execution.",
-        "D) The G1 Garbage Collector relocates the `ConfigData` instance concurrently, violating the memory visibility guarantee of the double-checked lock."
+        "A) Shallow Neural Networks",
+        "B) Convolutional Neural Networks (CNNs)",
+        "C) Recurrent Neural Networks (RNNs)",
+        "D) Autoencoders"
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The compiler, JVM, or CPU can reorder the instructions during the initialization of `ConfigData`, publishing the non-null reference to `configData` before its constructor execution completes because the field is not `volatile`.",
-      "explanation": "According to the Java Memory Model (JMM), without a `volatile` modifier on the `configData` field, write operations can be reordered by the compiler, JIT, or the processor. Specifically, the assignment to the `configData` reference can happen BEFORE the constructor memory initialization is completed. A concurrent thread executing the first `if (configData == null)` check might see a non-null reference pointing to a partially-initialized object, resulting in random `NullPointerException` or inconsistent states."
+      "correct_answer_text": "B) Convolutional Neural Networks (CNNs)",
+      "explanation": "Convolutional Neural Networks (CNNs) are most suitable for image classification tasks due to their ability to extract features from images using convolutional and pooling layers, handling high-dimensional image data, and robustness to varying lighting conditions."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a low-latency financial order-matching application migrated from G1GC to ZGC to eliminate stop-the-world pauses. However, during high-throughput bursts, the application experiences massive latency spikes (hundreds of milliseconds) and eventually crashes with a `java.lang.OutOfMemoryError: Java heap space`. Profiling logs reveal that JVM garbage collector threads are running at 100% CPU utilization right before the crash, but there are no stop-the-world pause events recorded.",
-      "question": "Which of the following explains the root cause of this behavior under ZGC?",
+      "scenario": "Real-world Industrial Problem Statement: A healthcare organization wants to develop a system that can predict patient outcomes based on their medical history, which includes time-stamped data such as medication prescriptions, lab results, and diagnoses. The organization wants to use this system to identify high-risk patients and provide proactive care.",
+      "question": "What type of deep learning architecture is most suitable for modeling the sequence data and predicting patient outcomes in this scenario?",
       "options": [
-        "A) ZGC does not support concurrent reference processing, which causes thread-local allocation buffers (TLABs) to exhaust memory.",
-        "B) The application is experiencing an 'Allocation Stall' because the memory allocation rate of the mutator threads exceeds the concurrent reclamation rate of the ZGC threads.",
-        "C) ZGC falls back to a full stop-the-world 'Parallel GC' phase when Metaspace is full, causing all mutator threads to lock.",
-        "D) The colored pointers of ZGC failed to dereference objects larger than 16MB (Humongous objects), resulting in heap fragmentation and premature OOM."
+        "A) Convolutional Neural Networks (CNNs)",
+        "B) Recurrent Neural Networks (RNNs)",
+        "C) Long Short-Term Memory (LSTM) Networks",
+        "D) Transformers"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The application is experiencing an 'Allocation Stall' because the memory allocation rate of the mutator threads exceeds the concurrent reclamation rate of the ZGC threads.",
-      "explanation": "ZGC is designed to be a concurrent, low-latency collector. However, because it runs concurrently with application (mutator) threads, if the application allocates memory faster than ZGC can reclaim it, the free memory will deplete. When this happens, ZGC has to stall (block) the allocating threads to let the GC cycle catch up. These 'Allocation Stalls' look like latency spikes to the application. If the allocation rate remains permanently higher than the reclamation rate, the JVM will eventually throw an `OutOfMemoryError`."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Long Short-Term Memory (LSTM) Networks",
+      "explanation": "Long Short-Term Memory (LSTM) Networks are a type of Recurrent Neural Network (RNN) that is particularly well-suited for modeling sequence data, such as time-stamped medical history, due to their ability to learn long-term dependencies and handle vanishing gradients."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue in a dynamic plugin system built on Spring. The system dynamically loads plugins via custom `ClassLoader` instances, executes short-lived transactional tasks, and then discards the plugin class loader. Over time, the JVM heap and Metaspace memory steadily climb. Profiling with VisualVM reveals that millions of classes loaded by the discarded plugins are still in memory, and the custom `ClassLoader` instances are never being garbage collected.",
-      "question": "What is the primary JVM-level constraint preventing these classes and custom ClassLoaders from being garbage collected?",
+      "scenario": "Real-world Industrial Problem Statement: A company wants to develop a chatbot that can understand and respond to customer queries in real-time. However, the customer queries are often skewed towards a few popular topics, and the company wants to ensure that the chatbot is not biased towards these topics.",
+      "question": "What technique can be used to handle the skewed data and ensure that the chatbot is not biased towards popular topics?",
       "options": [
-        "A) Classes can only be unloaded if the active JVM thread count is below a safe threshold.",
-        "B) A `ClassLoader` and all its loaded classes can only be garbage collected if there are no live references to the `ClassLoader`, no live references to any of its loaded `Class` objects, and no live instances of any class loaded by that `ClassLoader`.",
-        "C) The Spring `@Transactional` proxy creates static class definitions in the system bootstrap `ClassLoader`, bypassing the custom class loader lifecycle.",
-        "D) The JVM G1GC collector does not support Metaspace class unloading unless the flag `-XX:+CMSClassUnloadingEnabled` is explicitly set to true."
+        "A) Data augmentation",
+        "B) Transfer learning",
+        "C) Class weights",
+        "D) Over-sampling the minority class"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) A `ClassLoader` and all its loaded classes can only be garbage collected if there are no live references to the `ClassLoader`, no live references to any of its loaded `Class` objects, and no live instances of any class loaded by that `ClassLoader`.",
-      "explanation": "According to the Java Virtual Machine Specification, a class loader can only be garbage collected (and its loaded classes unloaded) if three conditions are met simultaneously: 1) There are no live instances of any class loaded by that class loader. 2) There are no live references to any `java.lang.Class` object loaded by that class loader. 3) The class loader instance itself is not reachable. In Spring applications, dynamic proxies, static caches, or `ThreadLocal` leaks from thread pools often retain a reference to a single object or class loaded by the plugin, which keeps the entire `ClassLoader` and all its loaded classes alive in memory."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Class weights",
+      "explanation": "Class weights can be used to handle skewed data by assigning different weights to different classes during training, which helps to reduce the bias towards the majority class and improves the performance on the minority class."
     }
   ]
 }
