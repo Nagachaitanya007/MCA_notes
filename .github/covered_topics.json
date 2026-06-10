@@ -39,7 +39,8 @@
     "The Memory-Sensitive Cache: Custom Implementation with Weak/Soft References & Reference Queues",
     "The Two-Lock Queue: Customizing High-Throughput Bounded Queues",
     "The Bidirectional Map (BiMap): Custom Double-Indexed Associative Collections",
-    "The Consistent Hash Ring: Custom Distributed Routing Collection"
+    "The Consistent Hash Ring: Custom Distributed Routing Collection",
+    "The Bloom Filter: Mastering Probabilistic Membership Queries & Space-Efficient Hashing"
   ],
   "JVM Internals (Memory Model, G1/ZGC, Class Loading)": [
     "JVM Internals: The Lifecycle of a Java Object",
