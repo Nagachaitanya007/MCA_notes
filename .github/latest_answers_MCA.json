@@ -1,48 +1,48 @@
 {
-  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "Real-world Industrial Problem Statement: A manufacturing company wants to develop a quality control system that uses computer vision to classify products as defective or non-defective based on images. The images are taken from a production line with varying lighting conditions and the products have complex designs, resulting in high-dimensional image data.",
-      "question": "What type of deep learning architecture is most suitable for this image classification task, considering the high-dimensional image data and need for real-time classification?",
+      "scenario": "Real-world Industrial Problem Statement: A quantitative trading firm is building a high-frequency predictive regression model using Ridge Regression to forecast asset transaction volumes. The volume dataset features highly right-skewed distributions and contains zero values (during market halts) and negative values (representing regulatory adjustments or reversals). The team needs a monotonic transformation to stabilize variance and normalize the feature space without discarding or manually shifting negative values, which carry specific trading signals.",
+      "question": "Which data transformation technique is mathematically most appropriate to resolve this skewness under the given data constraints?",
       "options": [
-        "A) Shallow Neural Networks",
-        "B) Convolutional Neural Networks (CNNs)",
-        "C) Recurrent Neural Networks (RNNs)",
-        "D) Autoencoders"
+        "A) Box-Cox Transformation with a fixed shift parameter lambda_2 set to the absolute minimum of the dataset plus one.",
+        "B) Yeo-Johnson Transformation applied directly to the raw feature vector.",
+        "C) Standard Logarithmic Transformation (log(x + 1)) applied after scaling the feature range to [-1, 1].",
+        "D) Quantile Transformation mapped to a normal distribution using 1,000 quantiles."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Convolutional Neural Networks (CNNs)",
-      "explanation": "Convolutional Neural Networks (CNNs) are most suitable for image classification tasks due to their ability to extract features from images using convolutional and pooling layers, handling high-dimensional image data, and robustness to varying lighting conditions."
+      "correct_answer_text": "B) Yeo-Johnson Transformation applied directly to the raw feature vector.",
+      "explanation": "The Yeo-Johnson transformation is a modification of the Box-Cox transformation that allows for zero and negative values. Unlike Box-Cox, which strictly requires positive inputs (y > 0), Yeo-Johnson uses different power formulas depending on whether the input is positive, zero, or negative, ensuring continuity and monotonicity. Log(x+1) fails for negative values below -1. While Quantile Transformation (Option D) can force any distribution into a normal shape, it disrupts the linear relationships between variables and destroys distance metrics, which severely degrades the performance of linear models like Ridge Regression."
     },
     {
       "id": 2,
-      "scenario": "Real-world Industrial Problem Statement: A healthcare organization wants to develop a system that can predict patient outcomes based on their medical history, which includes time-stamped data such as medication prescriptions, lab results, and diagnoses. The organization wants to use this system to identify high-risk patients and provide proactive care.",
-      "question": "What type of deep learning architecture is most suitable for modeling the sequence data and predicting patient outcomes in this scenario?",
+      "scenario": "Real-world Industrial Problem Statement: An Industrial IoT (IIoT) edge gateway monitors wind turbine telemetry across 120 highly correlated sensor dimensions sampled at 100 Hz. The edge device has strict memory constraints (less than 512MB RAM allocated for ML) and must detect multivariate anomalies (outliers) in real-time. The environment contains heavy background noise and occasional sensor dropouts, making the data non-normally distributed.",
+      "question": "Which outlier detection algorithm offers the best trade-off between memory footprint, handling high-dimensional correlation, and real-time processing constraints?",
       "options": [
-        "A) Convolutional Neural Networks (CNNs)",
-        "B) Recurrent Neural Networks (RNNs)",
-        "C) Long Short-Term Memory (LSTM) Networks",
-        "D) Transformers"
+        "A) Local Outlier Factor (LOF) using Minkowski distance with k=20.",
+        "B) Minimum Covariance Determinant (MCD) to calculate robust Mahalanobis distances.",
+        "C) Isolation Forest trained with a sub-sampling size of 256 and a fixed forest size.",
+        "D) One-Class Support Vector Machine (OC-SVM) with a non-linear Radial Basis Function (RBF) kernel."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) Long Short-Term Memory (LSTM) Networks",
-      "explanation": "Long Short-Term Memory (LSTM) Networks are a type of Recurrent Neural Network (RNN) that is particularly well-suited for modeling sequence data, such as time-stamped medical history, due to their ability to learn long-term dependencies and handle vanishing gradients."
+      "correct_answer_text": "C) Isolation Forest trained with a sub-sampling size of 256 and a fixed forest size.",
+      "explanation": "Isolation Forest is highly efficient for high-dimensional, non-normally distributed datasets on resource-constrained hardware. By isolating anomalies instead of profiling normal points, it exhibits a linear time complexity O(N) and can be configured with a small sub-sampling size (typically 256 samples per tree) which keeps the memory footprint minimal and constant during inference. In contrast, LOF (Option A) requires keeping the entire training dataset in memory to perform O(N^2) nearest-neighbor lookups at inference time. MCD (Option B) assumes a Gaussian distribution and scales poorly with dimensionality. OC-SVM (Option D) requires significant memory and CPU power for kernel calculations in real-time on edge devices."
     },
     {
       "id": 3,
-      "scenario": "Real-world Industrial Problem Statement: A company wants to develop a chatbot that can understand and respond to customer queries in real-time. However, the customer queries are often skewed towards a few popular topics, and the company wants to ensure that the chatbot is not biased towards these topics.",
-      "question": "What technique can be used to handle the skewed data and ensure that the chatbot is not biased towards popular topics?",
+      "scenario": "Real-world Industrial Problem Statement: A healthcare AI platform is developing an algorithmic prognostic tool using clinical trial data to predict patient survival rates post-surgery. The target feature, 'Post-operative Troponin Level,' has 25% missing values. Exploratory data analysis proves that the missingness is not random but depends heavily on observable patient factors such as 'Age' and 'Pre-existing Cardiovascular History' (Missing at Random - MAR condition).",
+      "question": "To prevent biased survival predictions and maintain the variance structure of the clinical dataset, which imputation method should the data science team implement?",
       "options": [
-        "A) Data augmentation",
-        "B) Transfer learning",
-        "C) Class weights",
-        "D) Over-sampling the minority class"
+        "A) Mean Imputation partitioned by age-group deciles.",
+        "B) Multiple Imputation by Chained Equations (MICE) using Predictive Mean Matching (PMM).",
+        "C) K-Nearest Neighbors (KNN) Imputation with K=5 based on Euclidean distance metrics.",
+        "D) Complete Case Analysis (Listwise deletion) of patients missing the post-operative troponin levels."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Class weights",
-      "explanation": "Class weights can be used to handle skewed data by assigning different weights to different classes during training, which helps to reduce the bias towards the majority class and improves the performance on the minority class."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Multiple Imputation by Chained Equations (MICE) using Predictive Mean Matching (PMM).",
+      "explanation": "Under the Missing at Random (MAR) mechanism, simple single imputations like Mean Imputation (Option A) artificially shrink variance and underestimate standard errors, leading to overconfident downstream models. KNN Imputation (Option C) does not model the uncertainty of the missing values. Listwise deletion (Option D) introduces severe selection bias because the missingness is systematically correlated with age and cardiovascular history. MICE using Predictive Mean Matching (PMM) is the gold standard for MAR clinical data; it preserves the natural distribution of the imputed feature by selecting real observed values from matching donors, and it accounts for imputation uncertainty by generating multiple datasets."
     }
   ]
 }

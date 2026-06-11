@@ -1,48 +1,48 @@
 {
-  "topic": "Exception Handling Strategies in Distributed Systems",
-  "mode": "Java",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where the `@Transactional` annotation is not rolling back the database transaction when an exception is thrown from a method marked with `@Async` in a Spring application. The relevant code snippet is: `@Service public class MyService { @Transactional @Async public void myMethod() { ... } }`",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "Real-world Industrial Problem Statement: A quantitative trading firm is building a high-frequency predictive regression model using Ridge Regression to forecast asset transaction volumes. The volume dataset features highly right-skewed distributions and contains zero values (during market halts) and negative values (representing regulatory adjustments or reversals). The team needs a monotonic transformation to stabilize variance and normalize the feature space without discarding or manually shifting negative values, which carry specific trading signals.",
+      "question": "Which data transformation technique is mathematically most appropriate to resolve this skewness under the given data constraints?",
       "options": [
-        "A) The `@Transactional` annotation does not support asynchronous methods.",
-        "B) The `@Async` annotation does not support transactional methods.",
-        "C) The transaction is being rolled back, but the changes are still visible due to a caching issue.",
-        "D) The `@Transactional` annotation is being proxied by a `Proxy` object, which does not propagate the transaction to the asynchronous method."
+        "A) Box-Cox Transformation with a fixed shift parameter lambda_2 set to the absolute minimum of the dataset plus one.",
+        "B) Yeo-Johnson Transformation applied directly to the raw feature vector.",
+        "C) Standard Logarithmic Transformation (log(x + 1)) applied after scaling the feature range to [-1, 1].",
+        "D) Quantile Transformation mapped to a normal distribution using 1,000 quantiles."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The `@Transactional` annotation does not support asynchronous methods.",
-      "explanation": "The `@Transactional` annotation in Spring does not support asynchronous methods out of the box due to how transactional proxies are created and managed by Spring's transaction management system. When a method is annotated with `@Async`, it runs in a separate thread, and transactions do not propagate across threads. To handle transactions in asynchronous methods, additional configuration or a different approach to transaction management may be required, considering the use of `TransactionTemplate` or manually managing transactions."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Yeo-Johnson Transformation applied directly to the raw feature vector.",
+      "explanation": "The Yeo-Johnson transformation is a modification of the Box-Cox transformation that allows for zero and negative values. Unlike Box-Cox, which strictly requires positive inputs (y > 0), Yeo-Johnson uses different power formulas depending on whether the input is positive, zero, or negative, ensuring continuity and monotonicity. Log(x+1) fails for negative values below -1. While Quantile Transformation (Option D) can force any distribution into a normal shape, it disrupts the linear relationships between variables and destroys distance metrics, which severely degrades the performance of linear models like Ridge Regression."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a `NullPointerException` is thrown from a method that is supposed to handle `Optional` objects correctly. The relevant code snippet is: `public void myMethod(Optional<String> param) { String value = param.get(); ... }`. However, sometimes the `param` is not present, and a `NoSuchElementException` is expected instead of `NullPointerException`.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "Real-world Industrial Problem Statement: An Industrial IoT (IIoT) edge gateway monitors wind turbine telemetry across 120 highly correlated sensor dimensions sampled at 100 Hz. The edge device has strict memory constraints (less than 512MB RAM allocated for ML) and must detect multivariate anomalies (outliers) in real-time. The environment contains heavy background noise and occasional sensor dropouts, making the data non-normally distributed.",
+      "question": "Which outlier detection algorithm offers the best trade-off between memory footprint, handling high-dimensional correlation, and real-time processing constraints?",
       "options": [
-        "A) The `Optional` object is not being checked for presence before calling `get()`. ",
-        "B) The `Optional` object is being incorrectly instantiated, leading to a `null` object.",
-        "C) The `get()` method is throwing a `NullPointerException` instead of the expected `NoSuchElementException`.",
-        "D) The method is being called with a `null` argument instead of an `Optional` object."
+        "A) Local Outlier Factor (LOF) using Minkowski distance with k=20.",
+        "B) Minimum Covariance Determinant (MCD) to calculate robust Mahalanobis distances.",
+        "C) Isolation Forest trained with a sub-sampling size of 256 and a fixed forest size.",
+        "D) One-Class Support Vector Machine (OC-SVM) with a non-linear Radial Basis Function (RBF) kernel."
       ],
-      "correct_answer_letter": "D",
-      "correct_answer_text": "D) The method is being called with a `null` argument instead of an `Optional` object.",
-      "explanation": "The primary cause of this issue is that the method `myMethod` is being called with a `null` argument instead of an `Optional` object. When `param` is `null`, calling `param.get()` results in a `NullPointerException` because you are invoking a method on a `null` object. To fix this, you should add a null check or use `Optional.ofNullable` to ensure that `null` values are handled correctly as empty `Optional` instances."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Isolation Forest trained with a sub-sampling size of 256 and a fixed forest size.",
+      "explanation": "Isolation Forest is highly efficient for high-dimensional, non-normally distributed datasets on resource-constrained hardware. By isolating anomalies instead of profiling normal points, it exhibits a linear time complexity O(N) and can be configured with a small sub-sampling size (typically 256 samples per tree) which keeps the memory footprint minimal and constant during inference. In contrast, LOF (Option A) requires keeping the entire training dataset in memory to perform O(N^2) nearest-neighbor lookups at inference time. MCD (Option B) assumes a Gaussian distribution and scales poorly with dimensionality. OC-SVM (Option D) requires significant memory and CPU power for kernel calculations in real-time on edge devices."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a `ConcurrentModificationException` is thrown from a method that iterates over a `List<String>` using a for-each loop while another thread is modifying the list. The relevant code snippet is: `List<String> myList = new ArrayList<>(); ... for (String item : myList) { ... }`.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "Real-world Industrial Problem Statement: A healthcare AI platform is developing an algorithmic prognostic tool using clinical trial data to predict patient survival rates post-surgery. The target feature, 'Post-operative Troponin Level,' has 25% missing values. Exploratory data analysis proves that the missingness is not random but depends heavily on observable patient factors such as 'Age' and 'Pre-existing Cardiovascular History' (Missing at Random - MAR condition).",
+      "question": "To prevent biased survival predictions and maintain the variance structure of the clinical dataset, which imputation method should the data science team implement?",
       "options": [
-        "A) The for-each loop is not thread-safe when used with `List` implementations.",
-        "B) Another thread is structurally modifying the `List` (e.g., adding or removing elements) while the loop is iterating over it.",
-        "C) The `List` implementation being used does not support concurrent access.",
-        "D) The loop is trying to remove elements from the `List` while iterating, which is not allowed with for-each loops."
+        "A) Mean Imputation partitioned by age-group deciles.",
+        "B) Multiple Imputation by Chained Equations (MICE) using Predictive Mean Matching (PMM).",
+        "C) K-Nearest Neighbors (KNN) Imputation with K=5 based on Euclidean distance metrics.",
+        "D) Complete Case Analysis (Listwise deletion) of patients missing the post-operative troponin levels."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Another thread is structurally modifying the `List` (e.g., adding or removing elements) while the loop is iterating over it.",
-      "explanation": "The primary cause of this issue is that another thread is structurally modifying the `List` (e.g., adding or removing elements) while the loop is iterating over it. The for-each loop in Java uses an iterator under the hood. When the underlying collection is structurally modified at any time after the iterator is created, in any way except through the iterator's own `remove` or `add` methods, the iterator will throw a `ConcurrentModificationException`. This is a fail-fast behavior designed to detect and throw exceptions when a collection is modified while it is being iterated over, which can indicate a programming error. To avoid this, you can use thread-safe collections or synchronize access to the collection."
+      "correct_answer_text": "B) Multiple Imputation by Chained Equations (MICE) using Predictive Mean Matching (PMM).",
+      "explanation": "Under the Missing at Random (MAR) mechanism, simple single imputations like Mean Imputation (Option A) artificially shrink variance and underestimate standard errors, leading to overconfident downstream models. KNN Imputation (Option C) does not model the uncertainty of the missing values. Listwise deletion (Option D) introduces severe selection bias because the missingness is systematically correlated with age and cardiovascular history. MICE using Predictive Mean Matching (PMM) is the gold standard for MAR clinical data; it preserves the natural distribution of the imputed feature by selecting real observed values from matching donors, and it accounts for imputation uncertainty by generating multiple datasets."
     }
   ]
 }
