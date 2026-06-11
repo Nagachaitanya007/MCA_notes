@@ -15,7 +15,8 @@
     "The Mechanics of Carrier Threads: How Virtual Threads Mount, Unmount, and Pin",
     "Hybrid Async Architectures: Orchestrating Virtual Threads with CompletableFuture",
     "Introduction to Java Concurrency & Multithreading with Virtual Threads and CompletableFuture",
-    "CompletableFuture Pipeline Mechanics: Thread Hand-offs, Memory Barriers, and Async Stage Propagation"
+    "CompletableFuture Pipeline Mechanics: Thread Hand-offs, Memory Barriers, and Async Stage Propagation",
+    "Java Concurrency & Multithreading with Virtual Threads and CompletableFuture"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
