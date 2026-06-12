@@ -104,7 +104,8 @@
     "Database Scaling Strategies: Sharding Architectures & Replication Models",
     "Data Consistency in Replication: Synchronous vs. Asynchronous Models",
     "Choosing a Sharding Key: How to Avoid Hotspots & Achieve Even Data Distribution",
-    "Multi-Leader Replication: Mastering Write Conflict Resolution"
+    "Multi-Leader Replication: Mastering Write Conflict Resolution",
+    "Leaderless Replication: Mastering Quorum Consensus & Active Anti-Entropy"
   ],
   "Design a Notification System (Kafka + SQS + Webhooks)": [
     "Designing a Scalable Notification System (Kafka + SQS + Webhooks)",
