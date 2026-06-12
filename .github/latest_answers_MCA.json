@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "Real-world Industrial Problem Statement: A quantitative trading firm is building a high-frequency predictive regression model using Ridge Regression to forecast asset transaction volumes. The volume dataset features highly right-skewed distributions and contains zero values (during market halts) and negative values (representing regulatory adjustments or reversals). The team needs a monotonic transformation to stabilize variance and normalize the feature space without discarding or manually shifting negative values, which carry specific trading signals.",
-      "question": "Which data transformation technique is mathematically most appropriate to resolve this skewness under the given data constraints?",
+      "scenario": "Real-world Industrial Problem Statement: A predictive maintenance system for a wind farm processes high-frequency telemetry data (vibration, temperature, wind speed) to predict bearing failures. The vibration amplitude features are highly right-skewed and contain negative values due to zero-point calibration drifts in older sensors. Machine learning models like Support Vector Machines (SVM) and linear regressors are yielding poor performance because they assume normally distributed, homoscedastic feature spaces. The pipeline requires a preprocessing step that stabilizes variance, mitigates extreme skewness, handles negative values natively, and maintains numerical stability without arbitrary data shifts.",
+      "question": "Which transformation strategy is mathematically most appropriate for this scenario?",
       "options": [
-        "A) Box-Cox Transformation with a fixed shift parameter lambda_2 set to the absolute minimum of the dataset plus one.",
-        "B) Yeo-Johnson Transformation applied directly to the raw feature vector.",
-        "C) Standard Logarithmic Transformation (log(x + 1)) applied after scaling the feature range to [-1, 1].",
-        "D) Quantile Transformation mapped to a normal distribution using 1,000 quantiles."
+        "A) Apply a Box-Cox transformation after adding a manually tuned constant offset C to make all values strictly positive.",
+        "B) Use a Yeo-Johnson transformation followed by a Z-score Standardization (StandardScaler).",
+        "C) Perform a standard Logarithmic transformation log(x + 1) followed by MinMax Scaling.",
+        "D) Use a RobustScaler to scale the features based on the Interquartile Range (IQR) without applying any distribution shape transformations."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Yeo-Johnson Transformation applied directly to the raw feature vector.",
-      "explanation": "The Yeo-Johnson transformation is a modification of the Box-Cox transformation that allows for zero and negative values. Unlike Box-Cox, which strictly requires positive inputs (y > 0), Yeo-Johnson uses different power formulas depending on whether the input is positive, zero, or negative, ensuring continuity and monotonicity. Log(x+1) fails for negative values below -1. While Quantile Transformation (Option D) can force any distribution into a normal shape, it disrupts the linear relationships between variables and destroys distance metrics, which severely degrades the performance of linear models like Ridge Regression."
+      "correct_answer_text": "B) Use a Yeo-Johnson transformation followed by a Z-score Standardization (StandardScaler).",
+      "explanation": "The Yeo-Johnson transformation is a generalization of the Box-Cox power transformation that natively handles zero and negative values, making it ideal for the sensor drift scenario without needing arbitrary manual offset shifts. While Box-Cox requires strictly positive data (x > 0), adding an arbitrary constant offset C can heavily distort the distribution tail and alter physical relationships. Log(x+1) only handles non-negative values (x >= 0) and fails if calibration drift drops values below -1. Following Yeo-Johnson with Z-score standardization ensures the transformed features are normally distributed and centered with unit variance, which is a mathematical requirement for distance-based models like SVM."
     },
     {
       "id": 2,
-      "scenario": "Real-world Industrial Problem Statement: An Industrial IoT (IIoT) edge gateway monitors wind turbine telemetry across 120 highly correlated sensor dimensions sampled at 100 Hz. The edge device has strict memory constraints (less than 512MB RAM allocated for ML) and must detect multivariate anomalies (outliers) in real-time. The environment contains heavy background noise and occasional sensor dropouts, making the data non-normally distributed.",
-      "question": "Which outlier detection algorithm offers the best trade-off between memory footprint, handling high-dimensional correlation, and real-time processing constraints?",
+      "scenario": "Real-world Industrial Problem Statement: An automated credit card fraud detection system processes streaming transactions in real-time. The dataset features 120 continuous variables derived from PCA, along with several categorical variables. Outliers in this system represent potential fraudulent activities, which are highly multivariate (interactions between multiple features rather than extreme values in a single feature). The system operates under a strict latency budget where inference must take less than 30 milliseconds per transaction, and the model must handle high-dimensional, sparse data without suffering from the curse of dimensionality.",
+      "question": "Which outlier detection algorithm represents the best trade-off between execution speed, high-dimensional performance, and low false-positive rates?",
       "options": [
-        "A) Local Outlier Factor (LOF) using Minkowski distance with k=20.",
-        "B) Minimum Covariance Determinant (MCD) to calculate robust Mahalanobis distances.",
-        "C) Isolation Forest trained with a sub-sampling size of 256 and a fixed forest size.",
-        "D) One-Class Support Vector Machine (OC-SVM) with a non-linear Radial Basis Function (RBF) kernel."
+        "A) Local Outlier Factor (LOF) calculated using Gower distance over the entire transaction history.",
+        "B) One-Class Support Vector Machine (OC-SVM) with a Radial Basis Function (RBF) kernel.",
+        "C) Isolation Forest (iForest) using randomized subspace partitioning.",
+        "D) Mahalanobis Distance calculation using a dynamic, online covariance matrix update."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) Isolation Forest trained with a sub-sampling size of 256 and a fixed forest size.",
-      "explanation": "Isolation Forest is highly efficient for high-dimensional, non-normally distributed datasets on resource-constrained hardware. By isolating anomalies instead of profiling normal points, it exhibits a linear time complexity O(N) and can be configured with a small sub-sampling size (typically 256 samples per tree) which keeps the memory footprint minimal and constant during inference. In contrast, LOF (Option A) requires keeping the entire training dataset in memory to perform O(N^2) nearest-neighbor lookups at inference time. MCD (Option B) assumes a Gaussian distribution and scales poorly with dimensionality. OC-SVM (Option D) requires significant memory and CPU power for kernel calculations in real-time on edge devices."
+      "correct_answer_text": "C) Isolation Forest (iForest) using randomized subspace partitioning.",
+      "explanation": "Isolation Forest (iForest) isolates anomalies instead of profiling normal points. Because it relies on random partitioning of feature subspaces, it scales exceptionally well to high-dimensional spaces (O(t * d) where t is the number of trees and d is the tree depth) and does not suffer from distance-metric degradation. It easily fits the sub-30ms real-time latency budget. In contrast, LOF has a quadratic inference complexity O(N^2) which is too slow for real-time performance. OC-SVM with an RBF kernel has high training and inference computational overhead, and Mahalanobis Distance assumes a unimodal multivariate normal distribution and requires expensive matrix inversions (O(D^3)), which fail to capture complex, non-linear multivariate fraudulent interactions under strict latency."
     },
     {
       "id": 3,
-      "scenario": "Real-world Industrial Problem Statement: A healthcare AI platform is developing an algorithmic prognostic tool using clinical trial data to predict patient survival rates post-surgery. The target feature, 'Post-operative Troponin Level,' has 25% missing values. Exploratory data analysis proves that the missingness is not random but depends heavily on observable patient factors such as 'Age' and 'Pre-existing Cardiovascular History' (Missing at Random - MAR condition).",
-      "question": "To prevent biased survival predictions and maintain the variance structure of the clinical dataset, which imputation method should the data science team implement?",
+      "scenario": "Real-world Industrial Problem Statement: A healthcare monitoring system tracks real-time physiological telemetry (heart rate, SpO2, systolic and diastolic blood pressures) from ICU wearable sensors. Due to transient network dropouts and sensor disconnections, the data stream frequently exhibits Missing at Random (MAR) patterns. The downstream clinical alert system uses an ensemble classifier that cannot process missing values. Crucially, the features are highly correlated (e.g., changes in heart rate correlate with blood pressure fluctuations), and the system must maintain an end-to-end imputation latency of under 50 milliseconds to prevent clinical alert delays.",
+      "question": "Which imputation strategy balances high accuracy (preserving multivariate relationships) with the required real-time computational performance?",
       "options": [
-        "A) Mean Imputation partitioned by age-group deciles.",
-        "B) Multiple Imputation by Chained Equations (MICE) using Predictive Mean Matching (PMM).",
-        "C) K-Nearest Neighbors (KNN) Imputation with K=5 based on Euclidean distance metrics.",
-        "D) Complete Case Analysis (Listwise deletion) of patients missing the post-operative troponin levels."
+        "A) Multivariate Imputation by Chained Equations (MICE) utilizing Predictive Mean Matching with 10 imputations.",
+        "B) A single-pass Iterative Imputer using a lightweight Bayesian Ridge Regressor with low iteration limits (e.g., max_iter=2) on a sliding temporal window.",
+        "C) MissForest (Random Forest-based iterative imputation) applied dynamically to each incoming micro-batch.",
+        "D) K-Nearest Neighbors (KNN) Imputation (k=5) using Euclidean distance computed against the entire historical patient database."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Multiple Imputation by Chained Equations (MICE) using Predictive Mean Matching (PMM).",
-      "explanation": "Under the Missing at Random (MAR) mechanism, simple single imputations like Mean Imputation (Option A) artificially shrink variance and underestimate standard errors, leading to overconfident downstream models. KNN Imputation (Option C) does not model the uncertainty of the missing values. Listwise deletion (Option D) introduces severe selection bias because the missingness is systematically correlated with age and cardiovascular history. MICE using Predictive Mean Matching (PMM) is the gold standard for MAR clinical data; it preserves the natural distribution of the imputed feature by selecting real observed values from matching donors, and it accounts for imputation uncertainty by generating multiple datasets."
+      "correct_answer_text": "B) A single-pass Iterative Imputer using a lightweight Bayesian Ridge Regressor with low iteration limits (e.g., max_iter=2) on a sliding temporal window.",
+      "explanation": "In real-time environments with a sub-50ms latency budget, highly iterative and ensemble-based imputation methods like MissForest and standard MICE (with multiple imputations and predictive mean matching) are computationally prohibitive due to their O(Iterations * Trees/Regressions) complexity. KNN Imputation scales with the size of the reference database O(N * D), making it slow for massive streaming histories. A single-pass Iterative Imputer using a lightweight linear model like Bayesian Ridge Regression over a sliding temporal window models the strong correlations among the vital signs efficiently, ensuring high accuracy while keeping inference time well within the millisecond scale."
     }
   ]
 }

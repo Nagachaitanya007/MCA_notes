@@ -1,48 +1,48 @@
 {
-  "topic": "Exception Handling Strategies in Distributed Systems",
-  "mode": "Java",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a distributed saga orchestrator calls a Spring-managed microservice. The service updates a local database and then publishes an event to an external Kafka broker. If the Kafka publish fails with a `RuntimeException`, the local database transaction does not roll back, leaving the system in an inconsistent state. Below is the relevant code snippet:\n\njava\n@Service\npublic class OrderService {\n    @Autowired\n    private OrderRepository orderRepository;\n    @Autowired\n    private KafkaTemplate<String, Object> kafkaTemplate;\n\n    public void createOrder(Order order) {\n        saveAndNotify(order);\n    }\n\n    @Transactional(rollbackFor = Exception.class)\n    public void saveAndNotify(Order order) {\n        orderRepository.save(order);\n        kafkaTemplate.send(\"order-topic\", order);\n    }\n}\n",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "Real-world Industrial Problem Statement: A predictive maintenance system for a wind farm processes high-frequency telemetry data (vibration, temperature, wind speed) to predict bearing failures. The vibration amplitude features are highly right-skewed and contain negative values due to zero-point calibration drifts in older sensors. Machine learning models like Support Vector Machines (SVM) and linear regressors are yielding poor performance because they assume normally distributed, homoscedastic feature spaces. The pipeline requires a preprocessing step that stabilizes variance, mitigates extreme skewness, handles negative values natively, and maintains numerical stability without arbitrary data shifts.",
+      "question": "Which transformation strategy is mathematically most appropriate for this scenario?",
       "options": [
-        "A) The `rollbackFor = Exception.class` attribute does not cover unchecked exceptions like `RuntimeException` thrown by `KafkaTemplate`.",
-        "B) Spring AOP proxies bypass the transaction interceptor when a method calls another method within the same bean (self-invocation), meaning no transaction is started.",
-        "C) The transaction is committed eagerly by the `OrderRepository` before the execution flow reaches the `KafkaTemplate` code line.",
-        "D) The `KafkaTemplate` automatically starts a parallel thread execution, causing the transaction context to be lost in the child thread."
+        "A) Apply a Box-Cox transformation after adding a manually tuned constant offset C to make all values strictly positive.",
+        "B) Use a Yeo-Johnson transformation followed by a Z-score Standardization (StandardScaler).",
+        "C) Perform a standard Logarithmic transformation log(x + 1) followed by MinMax Scaling.",
+        "D) Use a RobustScaler to scale the features based on the Interquartile Range (IQR) without applying any distribution shape transformations."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Spring AOP proxies bypass the transaction interceptor when a method calls another method within the same bean (self-invocation), meaning no transaction is started.",
-      "explanation": "Spring's declarative transaction management (`@Transactional`) relies on Spring AOP proxies. When a client calls a method on a Spring-managed bean, the call goes through the proxy, which executes the transactional interceptor. However, in this scenario, `createOrder` is called on the proxy, but it internally invokes `saveAndNotify(order)` via a direct local method call (`this.saveAndNotify(order)`). This self-invocation bypasses the proxy wrapper entirely. As a result, the `@Transactional` annotation on `saveAndNotify` is ignored, no transaction context is created, and the database operation commits immediately, preventing any rollback when the `KafkaTemplate` throws an exception."
+      "correct_answer_text": "B) Use a Yeo-Johnson transformation followed by a Z-score Standardization (StandardScaler).",
+      "explanation": "The Yeo-Johnson transformation is a generalization of the Box-Cox power transformation that natively handles zero and negative values, making it ideal for the sensor drift scenario without needing arbitrary manual offset shifts. While Box-Cox requires strictly positive data (x > 0), adding an arbitrary constant offset C can heavily distort the distribution tail and alter physical relationships. Log(x+1) only handles non-negative values (x >= 0) and fails if calibration drift drops values below -1. Following Yeo-Johnson with Z-score standardization ensures the transformed features are normally distributed and centered with unit variance, which is a mathematical requirement for distance-based models like SVM."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a high-throughput, reactive Spring WebFlux gateway experiences sudden thread starvation and high latency during a downstream microservice outage. Your team implemented a fallback path using `onErrorResume` to fetch data from a legacy relational database using JDBC. Below is the code snippet:\n\njava\npublic Mono<Response> getServiceData(String id) {\n    return webClient.get()\n        .uri(\"/data/\" + id)\n        .retrieve()\n        .bodyToMono(Response.class)\n        .onErrorResume(ex -> Mono.just(jdbcCacheRepository.findById(id))); \n}\n",
-      "question": "Why does this exception handling strategy lead to thread starvation under high load?",
+      "scenario": "Real-world Industrial Problem Statement: An automated credit card fraud detection system processes streaming transactions in real-time. The dataset features 120 continuous variables derived from PCA, along with several categorical variables. Outliers in this system represent potential fraudulent activities, which are highly multivariate (interactions between multiple features rather than extreme values in a single feature). The system operates under a strict latency budget where inference must take less than 30 milliseconds per transaction, and the model must handle high-dimensional, sparse data without suffering from the curse of dimensionality.",
+      "question": "Which outlier detection algorithm represents the best trade-off between execution speed, high-dimensional performance, and low false-positive rates?",
       "options": [
-        "A) `Mono.just()` is evaluated eagerly during assembly time, which executes the blocking JDBC call before the reactive stream is even subscribed to.",
-        "B) The `onErrorResume` block runs on the Reactor Netty event loop thread, and executing the blocking JDBC call `jdbcCacheRepository.findById` there starves the non-blocking event loop.",
-        "C) Netty event loop threads default to a priority of 1, allowing the JDBC connection pool threads to starve them of CPU slices.",
-        "D) The exception thrown by `WebClient` leaks memory because JVM garbage collection cannot clean up active stack traces on reactive boundary boundaries."
+        "A) Local Outlier Factor (LOF) calculated using Gower distance over the entire transaction history.",
+        "B) One-Class Support Vector Machine (OC-SVM) with a Radial Basis Function (RBF) kernel.",
+        "C) Isolation Forest (iForest) using randomized subspace partitioning.",
+        "D) Mahalanobis Distance calculation using a dynamic, online covariance matrix update."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `onErrorResume` block runs on the Reactor Netty event loop thread, and executing the blocking JDBC call `jdbcCacheRepository.findById` there starves the non-blocking event loop.",
-      "explanation": "In Spring WebFlux, the execution of downstream operators (including `onErrorResume`) occurs on the thread that emits the signal\u2014in this case, the Netty event loop thread handling the `WebClient` request. Running a blocking I/O operation like JDBC (`jdbcCacheRepository.findById`) directly within this context blocks the Netty thread. Since the number of event loop threads is limited (typically matching the CPU core count), a surge in exceptions quickly blocks all available event loop threads, starving the application and preventing it from accepting new connections. To fix this, the blocking call must be offloaded to a separate thread pool using `Mono.fromCallable(() -> jdbcCacheRepository.findById(id)).subscribeOn(Schedulers.boundedElastic())`."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Isolation Forest (iForest) using randomized subspace partitioning.",
+      "explanation": "Isolation Forest (iForest) isolates anomalies instead of profiling normal points. Because it relies on random partitioning of feature subspaces, it scales exceptionally well to high-dimensional spaces (O(t * d) where t is the number of trees and d is the tree depth) and does not suffer from distance-metric degradation. It easily fits the sub-30ms real-time latency budget. In contrast, LOF has a quadratic inference complexity O(N^2) which is too slow for real-time performance. OC-SVM with an RBF kernel has high training and inference computational overhead, and Mahalanobis Distance assumes a unimodal multivariate normal distribution and requires expensive matrix inversions (O(D^3)), which fail to capture complex, non-linear multivariate fraudulent interactions under strict latency."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue in a high-throughput distributed messaging application that consumes millions of messages per minute. During validation failures, the consumer throws a custom `ValidationException`. APM tools and GC logs show severe performance degradation, high CPU overhead, and massive allocations of `Throwable` and `StackTraceElement` instances, causing frequent Garbage Collection pauses.",
-      "question": "Which of the following approaches is the most effective JVM-level optimization to eliminate this performance and memory overhead without refactoring the application architecture to use non-exception flow control?",
+      "scenario": "Real-world Industrial Problem Statement: A healthcare monitoring system tracks real-time physiological telemetry (heart rate, SpO2, systolic and diastolic blood pressures) from ICU wearable sensors. Due to transient network dropouts and sensor disconnections, the data stream frequently exhibits Missing at Random (MAR) patterns. The downstream clinical alert system uses an ensemble classifier that cannot process missing values. Crucially, the features are highly correlated (e.g., changes in heart rate correlate with blood pressure fluctuations), and the system must maintain an end-to-end imputation latency of under 50 milliseconds to prevent clinical alert delays.",
+      "question": "Which imputation strategy balances high accuracy (preserving multivariate relationships) with the required real-time computational performance?",
       "options": [
-        "A) Enable the JVM flag `-XX:-StackTraceInThrowable` globally to turn off stack generation across all system and application classes.",
-        "B) Wrap the validation code block in a `synchronized` block to limit class loader lookups during exception allocation.",
-        "C) Override the `fillInStackTrace()` method of the custom `ValidationException` class to return `this` and make it a no-op.",
-        "D) Change the class definition of `ValidationException` to extend `Error` instead of `Exception` so the JVM allocates it on the metaspace instead of the heap."
+        "A) Multivariate Imputation by Chained Equations (MICE) utilizing Predictive Mean Matching with 10 imputations.",
+        "B) A single-pass Iterative Imputer using a lightweight Bayesian Ridge Regressor with low iteration limits (e.g., max_iter=2) on a sliding temporal window.",
+        "C) MissForest (Random Forest-based iterative imputation) applied dynamically to each incoming micro-batch.",
+        "D) K-Nearest Neighbors (KNN) Imputation (k=5) using Euclidean distance computed against the entire historical patient database."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Override the `fillInStackTrace()` method of the custom `ValidationException` class to return `this` and make it a no-op.",
-      "explanation": "The primary performance cost of throwing a Java exception is not the creation of the exception object itself, but the native JVM method `fillInStackTrace()`. This method traverses the current execution thread's stack frames to build the array of `StackTraceElement` objects, which is extremely CPU and memory intensive under high throughput. By overriding `public synchronized Throwable fillInStackTrace()` to simply return `this`, the stack trace generation is skipped entirely. This makes exception instantiation nearly as fast as creating a standard lightweight Java object and eliminates the GC overhead of allocating stack trace metadata."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) A single-pass Iterative Imputer using a lightweight Bayesian Ridge Regressor with low iteration limits (e.g., max_iter=2) on a sliding temporal window.",
+      "explanation": "In real-time environments with a sub-50ms latency budget, highly iterative and ensemble-based imputation methods like MissForest and standard MICE (with multiple imputations and predictive mean matching) are computationally prohibitive due to their O(Iterations * Trees/Regressions) complexity. KNN Imputation scales with the size of the reference database O(N * D), making it slow for massive streaming histories. A single-pass Iterative Imputer using a lightweight linear model like Bayesian Ridge Regression over a sliding temporal window models the strong correlations among the vital signs efficiently, ensuring high accuracy while keeping inference time well within the millisecond scale."
     }
   ]
 }
