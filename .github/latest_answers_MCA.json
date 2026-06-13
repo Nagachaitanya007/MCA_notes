@@ -1,48 +1,48 @@
 {
-  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "Real-world Industrial Problem Statement: A predictive maintenance system for a wind farm processes high-frequency telemetry data (vibration, temperature, wind speed) to predict bearing failures. The vibration amplitude features are highly right-skewed and contain negative values due to zero-point calibration drifts in older sensors. Machine learning models like Support Vector Machines (SVM) and linear regressors are yielding poor performance because they assume normally distributed, homoscedastic feature spaces. The pipeline requires a preprocessing step that stabilizes variance, mitigates extreme skewness, handles negative values natively, and maintains numerical stability without arbitrary data shifts.",
-      "question": "Which transformation strategy is mathematically most appropriate for this scenario?",
+      "scenario": "A logistics drone delivery network in a smart city needs real-time path planning. The system uses the A* search algorithm with a dynamically updated heuristic h(n) to account for changing wind patterns and restricted airspace. During peak hours, the pathfinder occasionally returns suboptimal paths instead of the shortest path, even though the heuristic h(n) never overestimates the actual cost to the goal (making it admissible).",
+      "question": "What is the primary cause of this issue, and how can it be resolved?",
       "options": [
-        "A) Apply a Box-Cox transformation after adding a manually tuned constant offset C to make all values strictly positive.",
-        "B) Use a Yeo-Johnson transformation followed by a Z-score Standardization (StandardScaler).",
-        "C) Perform a standard Logarithmic transformation log(x + 1) followed by MinMax Scaling.",
-        "D) Use a RobustScaler to scale the features based on the Interquartile Range (IQR) without applying any distribution shape transformations."
+        "A) The heuristic is admissible but not consistent (monotone). In a graph search, admissibility alone does not guarantee optimality if a node is closed via a suboptimal path before its optimal path is explored. This can be resolved by re-opening closed nodes when a shorter path is found, or by enforcing heuristic consistency.",
+        "B) Dynamic wind patterns cause the heuristic to violate admissibility at runtime. The algorithm must switch to a Dijkstra-based fallback because A* cannot handle dynamic weight adjustments on edges without recalculating the entire search space from scratch.",
+        "C) The branching factor increases exponentially under high-dimensional constraints, causing memory exhaustion. The search space must be pruned using Iterative Deepening A* (IDA*) with a stricter heuristic threshold.",
+        "D) The open list implementation uses a standard FIFO queue instead of a priority queue, violating the greedy selection property of A*. Replacing the queue with a Fibonacci heap will restore optimality."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Use a Yeo-Johnson transformation followed by a Z-score Standardization (StandardScaler).",
-      "explanation": "The Yeo-Johnson transformation is a generalization of the Box-Cox power transformation that natively handles zero and negative values, making it ideal for the sensor drift scenario without needing arbitrary manual offset shifts. While Box-Cox requires strictly positive data (x > 0), adding an arbitrary constant offset C can heavily distort the distribution tail and alter physical relationships. Log(x+1) only handles non-negative values (x >= 0) and fails if calibration drift drops values below -1. Following Yeo-Johnson with Z-score standardization ensures the transformed features are normally distributed and centered with unit variance, which is a mathematical requirement for distance-based models like SVM."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The heuristic is admissible but not consistent (monotone). In a graph search, admissibility alone does not guarantee optimality if a node is closed via a suboptimal path before its optimal path is explored. This can be resolved by re-opening closed nodes when a shorter path is found, or by enforcing heuristic consistency.",
+      "explanation": "In a graph search (as opposed to a tree search), if the heuristic is admissible but not consistent (i.e., it violates the triangle inequality h(n) <= c(n, a, n') + h(n')), A* can reach a node via a suboptimal path first and close it. If a shorter path to that node is discovered later, A* will not re-explore it unless explicitly programmed to re-open closed nodes. Enforcing a consistent heuristic guarantees that the first path found to any node is optimal, eliminating the need to re-open closed nodes."
     },
     {
       "id": 2,
-      "scenario": "Real-world Industrial Problem Statement: An automated credit card fraud detection system processes streaming transactions in real-time. The dataset features 120 continuous variables derived from PCA, along with several categorical variables. Outliers in this system represent potential fraudulent activities, which are highly multivariate (interactions between multiple features rather than extreme values in a single feature). The system operates under a strict latency budget where inference must take less than 30 milliseconds per transaction, and the model must handle high-dimensional, sparse data without suffering from the curse of dimensionality.",
-      "question": "Which outlier detection algorithm represents the best trade-off between execution speed, high-dimensional performance, and low false-positive rates?",
+      "scenario": "An autonomous cybersecurity defense agent uses a Min-Max tree with Alpha-Beta pruning to simulate defender-attacker scenarios for critical infrastructure protection. The state space has an average branching factor of over 150, and decision-making must occur within a strict 500ms Service Level Agreement (SLA). Under heavy simulated attacks, the agent fails to compute a move in time, causing timeouts and default fallback policies to trigger, which are easily exploited.",
+      "question": "Which optimization strategy would most effectively address the real-time constraint while maintaining strategic robustness in this high-dimensional game tree?",
       "options": [
-        "A) Local Outlier Factor (LOF) calculated using Gower distance over the entire transaction history.",
-        "B) One-Class Support Vector Machine (OC-SVM) with a Radial Basis Function (RBF) kernel.",
-        "C) Isolation Forest (iForest) using randomized subspace partitioning.",
-        "D) Mahalanobis Distance calculation using a dynamic, online covariance matrix update."
+        "A) Replace the evaluation function with a Monte Carlo Tree Search (MCTS) that uses uniform random rollouts without selection or expansion phases to minimize computational latency.",
+        "B) Implement Transposition Tables with iterative deepening and move-ordering heuristics (such as the killer heuristic) to maximize alpha-beta pruning efficiency early in the search, allowing the algorithm to return the best move found within the time limit.",
+        "C) Convert the minimax search into a Depth-First Search (DFS) with a fixed depth of 2, bypassing the alpha-beta pruning overhead entirely to guarantee termination within 50ms.",
+        "D) Force the search to prune branches randomly when the remaining execution time drops below 100ms, sacrificing minimax optimality for guaranteed termination."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Isolation Forest (iForest) using randomized subspace partitioning.",
-      "explanation": "Isolation Forest (iForest) isolates anomalies instead of profiling normal points. Because it relies on random partitioning of feature subspaces, it scales exceptionally well to high-dimensional spaces (O(t * d) where t is the number of trees and d is the tree depth) and does not suffer from distance-metric degradation. It easily fits the sub-30ms real-time latency budget. In contrast, LOF has a quadratic inference complexity O(N^2) which is too slow for real-time performance. OC-SVM with an RBF kernel has high training and inference computational overhead, and Mahalanobis Distance assumes a unimodal multivariate normal distribution and requires expensive matrix inversions (O(D^3)), which fail to capture complex, non-linear multivariate fraudulent interactions under strict latency."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Implement Transposition Tables with iterative deepening and move-ordering heuristics (such as the killer heuristic) to maximize alpha-beta pruning efficiency early in the search, allowing the algorithm to return the best move found within the time limit.",
+      "explanation": "Alpha-Beta pruning's efficiency is highly dependent on move ordering. Under perfect ordering, the search complexity is reduced from O(b^d) to O(b^(d/2)). By combining Iterative Deepening (which allows progressive deepening and safe termination when the 500ms timer expires) with Transposition Tables (to cache states) and move-ordering heuristics, the agent can achieve optimal pruning efficiency and make high-quality decisions within the strict SLA."
     },
     {
       "id": 3,
-      "scenario": "Real-world Industrial Problem Statement: A healthcare monitoring system tracks real-time physiological telemetry (heart rate, SpO2, systolic and diastolic blood pressures) from ICU wearable sensors. Due to transient network dropouts and sensor disconnections, the data stream frequently exhibits Missing at Random (MAR) patterns. The downstream clinical alert system uses an ensemble classifier that cannot process missing values. Crucially, the features are highly correlated (e.g., changes in heart rate correlate with blood pressure fluctuations), and the system must maintain an end-to-end imputation latency of under 50 milliseconds to prevent clinical alert delays.",
-      "question": "Which imputation strategy balances high accuracy (preserving multivariate relationships) with the required real-time computational performance?",
+      "scenario": "An automated warehouse Autonomous Mobile Robot (AMR) operates in a highly cluttered environment with narrow corridors, resulting in a skewed spatial distribution. The AMR has a highly constrained onboard embedded system with only 64MB of RAM. Standard A* search frequently runs out of memory (OOM error) because the open list grows exponentially due to the many dead-ends and obstacles in the warehouse.",
+      "question": "Which search algorithm or variant is most appropriate to guarantee finding a solution under these severe memory constraints while handling the highly skewed spatial distribution?",
       "options": [
-        "A) Multivariate Imputation by Chained Equations (MICE) utilizing Predictive Mean Matching with 10 imputations.",
-        "B) A single-pass Iterative Imputer using a lightweight Bayesian Ridge Regressor with low iteration limits (e.g., max_iter=2) on a sliding temporal window.",
-        "C) MissForest (Random Forest-based iterative imputation) applied dynamically to each incoming micro-batch.",
-        "D) K-Nearest Neighbors (KNN) Imputation (k=5) using Euclidean distance computed against the entire historical patient database."
+        "A) Greedy Best-First Search, because it only evaluates the heuristic value h(n) and does not store the path cost g(n), ensuring O(1) space complexity regardless of the environment's complexity.",
+        "B) Standard Depth-First Search (DFS) with a random walk strategy, because it guarantees finding the shortest path in a finite grid while keeping memory consumption bounded by the depth of the tree.",
+        "C) SMA* (Simplified Memory-bounded A*), because it utilizes all available memory up to the limit, prunes the worst leaf nodes when memory is full, and backs up their f-values to their parent nodes to allow regeneration if necessary.",
+        "D) Weighted A* with an inflation factor epsilon > 5, which transforms the search into a depth-first search that completely avoids storing nodes in the open list."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) A single-pass Iterative Imputer using a lightweight Bayesian Ridge Regressor with low iteration limits (e.g., max_iter=2) on a sliding temporal window.",
-      "explanation": "In real-time environments with a sub-50ms latency budget, highly iterative and ensemble-based imputation methods like MissForest and standard MICE (with multiple imputations and predictive mean matching) are computationally prohibitive due to their O(Iterations * Trees/Regressions) complexity. KNN Imputation scales with the size of the reference database O(N * D), making it slow for massive streaming histories. A single-pass Iterative Imputer using a lightweight linear model like Bayesian Ridge Regression over a sliding temporal window models the strong correlations among the vital signs efficiently, ensuring high accuracy while keeping inference time well within the millisecond scale."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) SMA* (Simplified Memory-bounded A*), because it utilizes all available memory up to the limit, prunes the worst leaf nodes when memory is full, and backs up their f-values to their parent nodes to allow regeneration if necessary.",
+      "explanation": "SMA* is specifically designed for environments with strict memory limits. It behaves like A* until memory is full, at which point it dynamically drops the node with the worst f-value. To avoid losing the search progress entirely, it backs up the forgotten node's f-value to its parent, enabling the search to regenerate the pruned subtree if it turns out to be promising later. This guarantees completeness and optimality if the available memory is sufficient to store the shallowest path."
     }
   ]
 }

@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
-  "mode": "Java",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where migrating your Spring Boot 3.2 application to Java 21 Virtual Threads using `Executors.newVirtualThreadPerTaskExecutor()` resulted in severe thread starvation and latency spikes under heavy database load. Thread dumps show that many virtual threads are in a state that blocks their carrier platform threads. Here is the offending code snippet:\n\njava\npublic class QueryCoordinator {\n    private final ReentrantLock lock = new ReentrantLock();\n\n    public synchronized void processDataWithLegacyDriver(String Query) {\n        // legacyDriver uses synchronized blocks internally for socket I/O\n        legacyDriver.execute(Query);\n    }\n} \n",
-      "question": "What is the primary cause of this thread starvation in the Virtual Thread environment?",
+      "scenario": "A logistics drone delivery network in a smart city needs real-time path planning. The system uses the A* search algorithm with a dynamically updated heuristic h(n) to account for changing wind patterns and restricted airspace. During peak hours, the pathfinder occasionally returns suboptimal paths instead of the shortest path, even though the heuristic h(n) never overestimates the actual cost to the goal (making it admissible).",
+      "question": "What is the primary cause of this issue, and how can it be resolved?",
       "options": [
-        "A) Virtual threads do not support ReentrantLock, causing the carrier thread to deadlock.",
-        "B) The synchronized keyword and internal synchronized socket I/O in the legacy driver cause the virtual thread to pin its carrier platform thread, preventing other virtual threads from executing.",
-        "C) The virtual thread executor is defaulting to a single-threaded scheduler when synchronized blocks are encountered.",
-        "D) Under high load, virtual threads run out of stack memory because synchronized blocks prevent garbage collection of thread stacks."
+        "A) The heuristic is admissible but not consistent (monotone). In a graph search, admissibility alone does not guarantee optimality if a node is closed via a suboptimal path before its optimal path is explored. This can be resolved by re-opening closed nodes when a shorter path is found, or by enforcing heuristic consistency.",
+        "B) Dynamic wind patterns cause the heuristic to violate admissibility at runtime. The algorithm must switch to a Dijkstra-based fallback because A* cannot handle dynamic weight adjustments on edges without recalculating the entire search space from scratch.",
+        "C) The branching factor increases exponentially under high-dimensional constraints, causing memory exhaustion. The search space must be pruned using Iterative Deepening A* (IDA*) with a stricter heuristic threshold.",
+        "D) The open list implementation uses a standard FIFO queue instead of a priority queue, violating the greedy selection property of A*. Replacing the queue with a Fibonacci heap will restore optimality."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The synchronized keyword and internal synchronized socket I/O in the legacy driver cause the virtual thread to pin its carrier platform thread, preventing other virtual threads from executing.",
-      "explanation": "In Java 21, when a virtual thread runs inside a `synchronized` block or method, or executes a native method, it becomes 'pinned' to its carrier platform thread. When pinned, the underlying carrier OS thread cannot be released to run other virtual threads. Because the legacy database driver performs blocking socket I/O inside a `synchronized` block, the carrier thread is forced to block, leading to carrier thread starvation."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The heuristic is admissible but not consistent (monotone). In a graph search, admissibility alone does not guarantee optimality if a node is closed via a suboptimal path before its optimal path is explored. This can be resolved by re-opening closed nodes when a shorter path is found, or by enforcing heuristic consistency.",
+      "explanation": "In a graph search (as opposed to a tree search), if the heuristic is admissible but not consistent (i.e., it violates the triangle inequality h(n) <= c(n, a, n') + h(n')), A* can reach a node via a suboptimal path first and close it. If a shorter path to that node is discovered later, A* will not re-explore it unless explicitly programmed to re-open closed nodes. Enforcing a consistent heuristic guarantees that the first path found to any node is optimal, eliminating the need to re-open closed nodes."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a write operation in a Spring `@Service` bean does not roll back when an asynchronous task fails. The log shows that the transaction commits successfully despite a `RuntimeException` being thrown inside the asynchronous block. Here is the code:\n\njava\n@Service\npublic class RegistrationService {\n    @Autowired\n    private UserRepository userRepository;\n\n    @Transactional\n    public void registerUser(User user) {\n        userRepository.save(user);\n        CompletableFuture.runAsync(() -> {\n            throw new RuntimeException(\"Failed to send welcome pack\");\n        });\n    }\n}\n",
-      "question": "Why does the transaction commit despite the RuntimeException thrown inside the CompletableFuture?",
+      "scenario": "An autonomous cybersecurity defense agent uses a Min-Max tree with Alpha-Beta pruning to simulate defender-attacker scenarios for critical infrastructure protection. The state space has an average branching factor of over 150, and decision-making must occur within a strict 500ms Service Level Agreement (SLA). Under heavy simulated attacks, the agent fails to compute a move in time, causing timeouts and default fallback policies to trigger, which are easily exploited.",
+      "question": "Which optimization strategy would most effectively address the real-time constraint while maintaining strategic robustness in this high-dimensional game tree?",
       "options": [
-        "A) Spring's `@Transactional` proxy cannot intercept CompletableFuture exceptions because they are always wrapped in a checked ExecutionException.",
-        "B) The lambda inside CompletableFuture.runAsync() runs on a separate thread from the ForkJoinPool.commonPool(), meaning it executes in a separate thread context where the Spring transaction context does not propagate.",
-        "C) The UserRepository.save() method automatically starts and commits its own independent transaction before runAsync() executes.",
-        "D) Spring's transaction interceptor only rolls back transactions if the exception is thrown directly from a method annotated with @Async."
+        "A) Replace the evaluation function with a Monte Carlo Tree Search (MCTS) that uses uniform random rollouts without selection or expansion phases to minimize computational latency.",
+        "B) Implement Transposition Tables with iterative deepening and move-ordering heuristics (such as the killer heuristic) to maximize alpha-beta pruning efficiency early in the search, allowing the algorithm to return the best move found within the time limit.",
+        "C) Convert the minimax search into a Depth-First Search (DFS) with a fixed depth of 2, bypassing the alpha-beta pruning overhead entirely to guarantee termination within 50ms.",
+        "D) Force the search to prune branches randomly when the remaining execution time drops below 100ms, sacrificing minimax optimality for guaranteed termination."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The lambda inside CompletableFuture.runAsync() runs on a separate thread from the ForkJoinPool.commonPool(), meaning it executes in a separate thread context where the Spring transaction context does not propagate.",
-      "explanation": "Spring's declarative transaction management (`@Transactional`) relies on a `ThreadLocal` variable (`TransactionSynchronizationManager`) to bind the active database connection and transaction state to the executing thread. When `CompletableFuture.runAsync()` is called, the execution shifts to a worker thread from the `ForkJoinPool` (or a custom executor). Since this thread does not share the same `ThreadLocal` context, the asynchronous task runs outside the active transaction, and any exception thrown there has no impact on the parent thread's transaction state."
+      "correct_answer_text": "B) Implement Transposition Tables with iterative deepening and move-ordering heuristics (such as the killer heuristic) to maximize alpha-beta pruning efficiency early in the search, allowing the algorithm to return the best move found within the time limit.",
+      "explanation": "Alpha-Beta pruning's efficiency is highly dependent on move ordering. Under perfect ordering, the search complexity is reduced from O(b^d) to O(b^(d/2)). By combining Iterative Deepening (which allows progressive deepening and safe termination when the 500ms timer expires) with Transposition Tables (to cache states) and move-ordering heuristics, the agent can achieve optimal pruning efficiency and make high-quality decisions within the strict SLA."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue in a high-throughput Java gateway application. The gateway aggregates responses from multiple internal REST endpoints using `CompletableFuture`. Under sudden traffic spikes, the gateway's throughput drops to near zero and incoming requests start timing out. Thread dumps reveal that all threads in the application's default execution pool are blocked in the `WAITING` state. Here is the code structure used for aggregation:\n\njava\npublic CompletableFuture<UserConfig> getUserConfig(String userId) {\n    return CompletableFuture.supplyAsync(() -> {\n        var profile = fetchProfile(userId).join(); // blocking join inside supplyAsync\n        var preferences = fetchPreferences(userId).join(); // blocking join inside supplyAsync\n        return new UserConfig(profile, preferences);\n    });\n}\n",
-      "question": "What is the architectural root cause of the severe throughput drop in this service?",
+      "scenario": "An automated warehouse Autonomous Mobile Robot (AMR) operates in a highly cluttered environment with narrow corridors, resulting in a skewed spatial distribution. The AMR has a highly constrained onboard embedded system with only 64MB of RAM. Standard A* search frequently runs out of memory (OOM error) because the open list grows exponentially due to the many dead-ends and obstacles in the warehouse.",
+      "question": "Which search algorithm or variant is most appropriate to guarantee finding a solution under these severe memory constraints while handling the highly skewed spatial distribution?",
       "options": [
-        "A) Calling join() inside supplyAsync() causes thread pool starvation on the default ForkJoinPool.commonPool() because workers are blocked waiting for tasks that are queued behind them in the same pool.",
-        "B) The JVM's garbage collector pauses the ForkJoinPool execution because too many CompletableFuture instances are allocated simultaneously.",
-        "C) CompletableFuture.join() triggers thread context switching overhead that forces the kernel to freeze the process under load.",
-        "D) The ForkJoinPool is unable to dynamically scale its thread count because the default configuration limits it to exactly 1 thread on multi-core processors."
+        "A) Greedy Best-First Search, because it only evaluates the heuristic value h(n) and does not store the path cost g(n), ensuring O(1) space complexity regardless of the environment's complexity.",
+        "B) Standard Depth-First Search (DFS) with a random walk strategy, because it guarantees finding the shortest path in a finite grid while keeping memory consumption bounded by the depth of the tree.",
+        "C) SMA* (Simplified Memory-bounded A*), because it utilizes all available memory up to the limit, prunes the worst leaf nodes when memory is full, and backs up their f-values to their parent nodes to allow regeneration if necessary.",
+        "D) Weighted A* with an inflation factor epsilon > 5, which transforms the search into a depth-first search that completely avoids storing nodes in the open list."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Calling join() inside supplyAsync() causes thread pool starvation on the default ForkJoinPool.commonPool() because workers are blocked waiting for tasks that are queued behind them in the same pool.",
-      "explanation": "By default, asynchronous tasks without an explicit executor run on the `ForkJoinPool.commonPool()`. When you execute nested asynchronous tasks and call `.join()` on the inner futures inside the outer task, you block a pool thread. Under load, all pool threads become occupied by outer tasks waiting for inner tasks to finish. However, the inner tasks cannot run because all pool threads are fully occupied (starved) by the waiting outer tasks, resulting in a classic distributed deadlock / thread pool starvation."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) SMA* (Simplified Memory-bounded A*), because it utilizes all available memory up to the limit, prunes the worst leaf nodes when memory is full, and backs up their f-values to their parent nodes to allow regeneration if necessary.",
+      "explanation": "SMA* is specifically designed for environments with strict memory limits. It behaves like A* until memory is full, at which point it dynamically drops the node with the worst f-value. To avoid losing the search progress entirely, it backs up the forgotten node's f-value to its parent, enabling the search to regenerate the pruned subtree if it turns out to be promising later. This guarantees completeness and optimality if the available memory is sufficient to store the shallowest path."
     }
   ]
 }
