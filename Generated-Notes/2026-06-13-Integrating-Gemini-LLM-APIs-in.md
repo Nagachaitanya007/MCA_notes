@@ -1,0 +1,639 @@
+---
+title: Integrating Gemini/LLM APIs into Java Apps: Architectural Blueprints & Production Patterns
+date: 2026-06-13T04:32:17.649061
+---
+
+# Integrating Gemini/LLM APIs into Java Apps: Architectural Blueprints & Production Patterns
+
+---
+
+## 🧱 1. The Core Concept (Basics Refresh)
+
+Integrating Large Language Models (LLMs) like Google's Gemini into enterprise-grade Java applications requires shifting from simple synchronous I/O paradigms to asynchronous, resource-aware, stream-oriented architectures.
+
+### The Java/LLM Ecosystem Landscape
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           Application Layer                             │
+│       (Spring Boot / Quarkus / Helidon / Micronaut Enterprise Apps)     │
+└─────────────────────────────────────┬───────────────────────────────────┘
+                                      │
+       ┌──────────────────────────────┴──────────────────────────────┐
+       ▼                                                             ▼
+┌──────────────────────────────────────────┐   ┌──────────────────────────────────────────┐
+│             LangChain4j                  │   │                Spring AI                 │
+│  - Rich ecosystem, highly modular        │   │  - Strict Spring alignment               │
+│  - Declarative AI Services (interfaces)  │   │  - Classic Spring-style abstractions     │
+│  - Native support for Gemini models      │   │  - Strong integration with Spring Cloud  │
+└──────────────────────────────────────────┘   └──────────────────────────────────────────┘
+       │                                                             │
+       └──────────────────────────────┬──────────────────────────────┘
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        Transport & Protocol Layer                       │
+│  - HTTP/2 (SSE for streaming) / gRPC (multiplexed, low-overhead)        │
+│  - Serialization: Jackson / Protocol Buffers (Vertex AI / Google GenAI) │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 1. LangChain4j
+The de facto standard library for LLM integration in Java. Designed like LangChain (Python/TS) but refactored to fit Java's strict type safety and object-oriented patterns. Features include:
+*   **AI Services**: Declarative interfaces where LLM interactions are represented as Java interfaces with annotations (similar to Spring Data JPA / Retrofit).
+*   **Extensible Integrations**: Native modules for Gemini (`langchain4j-google-ai-gemini` and `langchain4j-vertex-ai-gemini`).
+
+#### 2. Spring AI
+A younger framework, tightly integrated with the Spring ecosystem. It uses standard Spring abstractions (e.g., `ChatModel`, `ChatResponse`) and is highly configurable via properties.
+
+#### 3. Direct/Low-Level Integration (Google GenAI SDK)
+Directly consuming Google’s `google-cloud-vertexai` or the raw REST/gRPC endpoints using Java’s native `HttpClient` or gRPC stubs. This provides maximum control over serialization, connection pooling, and latency tuning at the cost of boilerplates.
+
+---
+
+### Protocol Abstractions: HTTP/2 (SSE) vs. gRPC
+
+When integrating Gemini, you interact with either the **Google AI API** (developer-oriented, rapid prototyping) or **Vertex AI API** (enterprise-grade, IAM protected, SLA guaranteed). Both expose interfaces over two transport options:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            Transport Comparison                             │
+├──────────────────────┬──────────────────────────────────────────────────────┤
+│ Feature              │ HTTP/2 (Server-Sent Events)    │ gRPC (HTTP/2 Frame) │
+├──────────────────────┼──────────────────────────────────────────────────────┼┤
+│ Payload Format       │ JSON                           │ Protocol Buffers    │
+├──────────────────────┼──────────────────────────────────────────────────────┼┤
+│ Multiplexing         │ Yes (Single TCP Connection)    │ Yes (Native stream) │
+├──────────────────────┼──────────────────────────────────────────────────────┼┤
+│ Serialization Cost   │ High (Char-to-byte / String)   │ Low (Binary)        │
+├──────────────────────┼──────────────────────────────────────────────────────┼┤
+│ Client Overhead      │ Standard Java HttpClient / SSE │ Netty/gRPC channels │
+└──────────────────────┴──────────────────────────────────────────────────────┴┘
+```
+
+---
+
+### Execution Paradigms
+
+1.  **Synchronous (Blocking)**:
+    ```java
+    // Blocks the execution thread until the entire response is generated.
+    ChatResponse response = chatModel.call(new Prompt("Analyze this core dump..."));
+    ```
+    *Use Case*: Offline batch processing, background jobs, scenarios where latency is not user-facing.
+
+2.  **Streaming (Asynchronous / Reactive)**:
+    ```java
+    // Emits token chunks reactively as they are generated by Gemini.
+    Flux<ChatResponse> responseStream = reactiveChatModel.stream(new Prompt("Write a compiler..."));
+    ```
+    *Use Case*: Interactive chat UIs, low perceived latency (Time-to-First-Token - TTFT optimization).
+
+---
+
+## ⚙️ 2. Under the Hood (Internal Mechanics & Architecture)
+
+Integrating LLMs at scale introduces systemic bottlenecks unique to the JVM. We must analyze how Java handles concurrency, serialization, connection management, memory consumption, and backpressure when handling high-throughput GenAI workloads.
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                   JVM Engine Memory & Threading Topology                 │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  HTTP Connection Pool (HTTP/2 Multiplexed Channels)                      │
+│  [ [Channel 1] [Channel 2] [Channel 3] ] ───► Inbound Gemini Streams     │
+│                                                     │                    │
+│                                                     ▼                    │
+│  Concurrency Engine (Java 21 Virtual Threads / Project Reactor)          │
+│  ┌────────────────────────────────────────────────────────────────────┐  │
+│  │ [Carrier Thread 1] ◄── Mounts ── [Virtual Thread (Processing Chat)]│  │
+│  │ [Carrier Thread 2] ◄── Mounts ── [Virtual Thread (Streaming Token)]│  │
+│  └────────────────────────────────────────────────────────────────────┘  │
+│                                                     │                    │
+│                                                     ▼                    │
+│  JVM Heap allocation (High Allocation Pressure Zone)                     │
+│  ┌────────────────────────────────────────────────────────────────────┐  │
+│  │  Jackson Parser Buffer ──► String Chunk ──► Garbage Collector      │  │
+│  │  (Zero-copy byte buffers prevent GC thrashing)                      │  │
+│  └────────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+### Concurrency Models: Virtual Threads (Loom) vs. Reactive (Reactor/Netty)
+
+With the release of **Java 21 (Project Virtual Threads / Loom)**, the paradigm of handling blocking I/O changed. Because calling Gemini involves long-lived network calls (often 2 to 30 seconds), the threading model chosen dictates the scalability limit of your JVM.
+
+#### Case A: Virtual Threads (Loom)
+*   **How it works**: Virtual threads are lightweight threads managed by the JVM, not the OS. When a call to Gemini blocks (e.g., waiting for the next stream chunk over socket read), the JVM detaches the virtual thread from its carrier OS thread, allowing other virtual threads to execute on that OS thread.
+*   **The Trap (Pinning)**: If your integration library (e.g., an older version of HTTP client or JSON parser) blocks inside a `synchronized` block or native frame, the virtual thread will **pin** the carrier thread. This halts OS-level execution and degrades your server back to standard platform thread performance.
+*   **Solution**: Ensure your HTTP client is non-blocking or virtual-thread-optimized (e.g., Java’s native `java.net.http.HttpClient` or Netty-based clients without synchronized blocks).
+
+#### Case B: Reactive Streams (Project Reactor / WebFlux)
+*   **How it works**: Fully non-blocking event-loop architecture (typically built on Netty). Threads never block. Events (token chunks) flow down a pipeline of operators.
+*   **The Cost**: High cognitive load, complex stack traces, difficult thread-local context propagation (e.g., losing MDC logging context or Spring Security context across thread boundaries).
+
+---
+
+### Serialization Cost & Garbage Collection (GC) Impact
+
+Gemini models (especially Gemini 1.5 Pro) support up to a 2-million token context window. In Java, processing huge contexts results in significant memory allocation.
+
+*   **String Allocation Overhead**: Tokenizing and parsing massive JSON payloads creates millions of short-lived objects (`String`, `Map.Entry`, Jackson node objects). This triggers heavy allocation churn in the **JVM Young Generation**, causing frequent **Stop-the-World (STW)** GC pauses.
+*   **Mitigation Strategy**:
+    *   **Zero-Copy JSON Parsing**: Use streaming parsers (like Jackson’s `JsonParser`) that read directly from incoming byte buffers (`InputStream` or `ByteBuffer`) without loading the entire payload string into memory.
+    *   **GC Selector**: Prefer **ZGC (Generational Z Garbage Collector)** or **G1GC** with aggressively tuned region sizes to handle rapid allocation and deallocation of high-volume short-lived objects.
+
+---
+
+### Connection Pooling & Keep-Alives (HTTP/2 vs. HTTP/1.1)
+
+Under high load, creating a new TCP connection (and completing the TLS handshake) for every Gemini request adds several hundred milliseconds of latency.
+
+*   **HTTP/1.1 Limitations**: Connection pooling in HTTP/1.1 is limited. If you have 500 concurrent chat operations, you need 500 open TCP connections. You run the risk of socket starvation (`java.net.BindException`).
+*   **HTTP/2 Multiplexing**: Both Google AI and Vertex AI support HTTP/2. A single physical TCP connection can multiplex thousands of concurrent streams.
+*   **Configuration Rule**: Ensure your Java HTTP client explicitly enforces HTTP/2 protocol negotiations (`HttpClient.Version.HTTP_2`) and configures a keep-alive timeout compatible with the Google Front End (GFE) load balancers (typically 1-4 minutes of inactivity).
+
+---
+
+### Context Window & Memory Management
+
+Managing the context window of chat conversations is a critical client-side responsibility. If you blindly append every message to the chat history, you will quickly blow past the context window limits or incur massive API costs.
+
+#### 1. JTokkit for Token Estimation
+To avoid hitting hard API limits or wasting funds, compute tokens locally on the JVM *before* dispatching payloads. JTokkit is a highly optimized Java library for computing Tiktoken values:
+
+```java
+// Example token count estimation using JTokkit
+EncodingRegistry registry = Encodings.newDefaultEncodingRegistry();
+Encoding encoding = registry.getEncoding(EncodingType.CL100K_BASE);
+int tokenCount = encoding.countTokens(userPrompt);
+```
+
+#### 2. Sliding Window Buffer
+Implement a double-ended queue (`Deque`) that automatically drops the oldest messages when the estimated token count of the queue exceeds a defined threshold (e.g., 80% of model capacity).
+
+---
+
+### Backpressure Handling in Streaming
+
+When streaming tokens using Server-Sent Events (SSE) or gRPC, Gemini may generate tokens faster than a slow client (e.g., a mobile app connected via 3G) can consume them.
+
+*   **The Threat**: If the server buffers these generated tokens in a JVM heap memory queue waiting for the slow socket write to finish, you will suffer a **Memory Leak / OutOfMemoryError (OOM)** under high concurrent load.
+*   **The Solution**: Use **Reactive Streams backpressure signals**. The reactive publisher (using Spring WebFlux or RSocket) requests chunks from the Gemini API *only* when the downstream network interface is write-ready.
+
+---
+
+## ⚠️ 3. The Interview Warzone
+
+This section covers actual, high-stakes system design and coding scenarios you will encounter in Staff-level interviews, complete with deep dive designs, trade-offs, and fully written production-ready Java code.
+
+---
+
+### Scenario 1: High-Throughput RAG Pipeline & Rate Limit (429) Resiliency
+
+#### The Scenario
+You are building an enterprise Retrieval-Augmented Generation (RAG) backend engine in Java. It retrieves context chunks from a vector database and sends massive prompts to Gemini 1.5 Flash. Under peak workloads (thousands of requests per minute), the Gemini API returns HTTP 429 (Too Many Requests - Rate Limit Exceeded).
+
+#### The Interviewer’s Probing Questions
+1.  *“How do you design an elastic throttling and retry system in Java that protects the upstream Gemini API without blocking or consuming excessive system threads?”*
+2.  *“How do you differentiate between Token-Per-Minute (TPM) limits and Requests-Per-Minute (RPM) limits in your code?”*
+3.  *“What thread-safe data structures would you use to implement a highly performant rate limiter?”*
+
+#### The Architectural Solution
+
+```
+                 Incoming Prompt Request
+                           │
+                           ▼
+              ┌─────────────────────────┐
+              │    Resilience4j RAG     │
+              │     Rate Limiter        │
+              └────────────┬────────────┘
+                           │
+             Allowed? ─────┼─────── No (Acquire fails) ───► Queue / Reject (Fast-fail)
+                           │
+                           ▼ Yes
+              ┌─────────────────────────┐
+              │    Dynamic Token        │  ◄── Monitor and track TPM/RPM limits
+              │   Bucket Controller     │
+              └────────────┬────────────┘
+                           │
+                           ▼ Execute Call
+              ┌─────────────────────────┐
+              │  Gemini API Endpoint    │
+              └────────────┬────────────┘
+                           │
+        ┌──────────────────┴──────────────────┐
+        │                                     │
+        ▼ HTTP 200                            ▼ HTTP 429
+  Process Payload                     Trigger Exponential Backoff
+                                      (Virtual Thread suspended)
+```
+
+To solve this, we must build a system that combines **Resilience4j** (for circuit breakers and rate limiters) with **Java 21 Virtual Threads** to sleep/retry efficiently without blocking operating system threads. 
+
+We will use a multi-token-bucket approach:
+1.  **Request-Bucket**: Tracks total requests.
+2.  **Token-Bucket**: Evaluates estimated token counts dynamically using a token estimator (e.g., JTokkit).
+
+#### Production-Ready Java Implementation
+
+```java
+package com.faang.ai.rag;
+
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
+import io.github.resilience4j.retry.IntervalFunction;
+import io.github.resilience4j.retry.Retry;
+import io.github.resilience4j.retry.RetryConfig;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
+
+/**
+ * Enterprise RAG execution engine utilizing Java 21 Virtual Threads,
+ * resilient backoff patterns, and dynamic rate-limiting.
+ */
+public class ResilientGeminiClient {
+
+    private static final Logger LOGGER = Logger.getLogger(ResilientGeminiClient.class.getName());
+    
+    // Limits the concurrency locally to prevent hard client-side OOM
+    private final Semaphore concurrentRequestSemaphore;
+    private final HttpClient httpClient;
+    private final Retry retryPipeline;
+    private final CircuitBreaker circuitBreaker;
+
+    public ResilientGeminiClient(int maxConcurrentRequests, int maxRetryAttempts) {
+        this.concurrentRequestSemaphore = new Semaphore(maxConcurrentRequests);
+        
+        // Use Java 21 Virtual Thread-ready HTTP/2 Client
+        this.httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_2)
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
+
+        // Retry config: Exponential Backoff with Jitter for handling 429 Rate Limits
+        RetryConfig retryConfig = RetryConfig.<HttpResponse<String>>custom()
+                .maxAttempts(maxRetryAttempts)
+                .intervalFunction(IntervalFunction.ofExponentialRandomBackoff(
+                        Duration.ofMillis(500), 2.0, 0.5)) // base backoff, multiplier, random jitter
+                .retryOnResult(response -> response.statusCode() == 429)
+                .retryOnException(e -> e instanceof java.io.IOException)
+                .failAfterMaxAttempts(true)
+                .build();
+
+        this.retryPipeline = Retry.of("gemini-retry-engine", retryConfig);
+
+        // Circuit Breaker to prevent cascading failures if Gemini is down
+        CircuitBreakerConfig cbConfig = CircuitBreakerConfig.custom()
+                .failureRateThreshold(50) // Open circuit if 50% requests fail
+                .slowCallRateThreshold(50)
+                .slowCallDurationThreshold(Duration.ofSeconds(15))
+                .waitDurationInOpenState(Duration.ofSeconds(30))
+                .build();
+
+        this.circuitBreaker = CircuitBreaker.of("gemini-circuit-breaker", cbConfig);
+    }
+
+    /**
+     * Executes prompt sending using Virtual Threads for high-throughput concurrency execution.
+     */
+    public CompletableFuture<String> executeRAGQueryAsync(String geminiEndpointUrl, String apiKey, String payload) {
+        // Run execution inside the JVM's virtual thread context
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                // Client-side rate throttling
+                if (!concurrentRequestSemaphore.tryAcquire(5, TimeUnit.SECONDS)) {
+                    throw new RuntimeException("Rate limit engine: High client-side congestion. Request rejected.");
+                }
+                
+                return circuitBreaker.executeCallable(() -> 
+                        retryPipeline.executeCallable(() -> executeCall(geminiEndpointUrl, apiKey, payload))
+                );
+
+            } catch (Exception e) {
+                LOGGER.severe("Failed to process RAG pipeline transaction: " + e.getMessage());
+                throw new RuntimeException("RAG operation failed", e);
+            } finally {
+                concurrentRequestSemaphore.release();
+            }
+        }, Runnable::run); // Virtual Thread executor runs this context
+    }
+
+    private String executeCall(String url, String apiKey, String payload) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + apiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(payload))
+                .timeout(Duration.ofSeconds(30))
+                .build();
+
+        // Virtual Thread will yield here while waiting for Gemini network IO (Non-blocking to OS thread)
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() == 429) {
+            LOGGER.warning("Encountered upstream rate limit (429). Triggering backing retry mechanism.");
+            return response.body(); // Returned to Resilience4j retry context
+        }
+
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Internal API Failure. Response code: " + response.statusCode());
+        }
+
+        return response.body();
+    }
+}
+```
+
+#### Why This Solution Wins
+*   **Virtual Threads Alignment**: `httpClient.send()` is a blocking operation, but in Java 21, it suspends *only the virtual thread*. This keeps the OS carrier thread free to execute other incoming requests, allowing you to achieve massive throughput concurrency with clean, synchronous code.
+*   **Exponential Backoff with Jitter**: Crucial for rate-limiting mitigation. Simple sequential retries create "thundering herd" issues where multiple client retries hit the server at the exact same millisecond. Jitter spreads out the load.
+*   **Circuit Breaker Protection**: If Google’s cloud service experiences a major outage, the circuit breaker opens. This prevents your Java application from wasting resources and threads on operations that are guaranteed to fail.
+
+---
+
+### Scenario 2: Memory-Efficient Multi-User Streaming API under Heavy Load
+
+#### The Scenario
+You are designing a high-scale Spring Boot/Java microservice that streams generated code blocks from Gemini to 10,000 concurrent web clients over Server-Sent Events (SSE). 
+
+#### The Interviewer’s Probing Questions
+1.  *“How do you write a streaming Java endpoint that prevents out-of-memory errors (OOM) when hundreds of slow network clients cannot keep up with the generation speed of Gemini?”*
+2.  *“How do you handle thread confinement and zero-copy string parsing of reactive chunks?”*
+3.  *“What happens if the client abruptly disconnects? How do you prevent resource leaks in your JVM?”*
+
+#### The Architectural Solution
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          Downstream SSE Client                          │
+└────────────────────────────────────▲────────────────────────────────────┘
+                                     │  Pushes Web Tokens
+                                     │  (If client is slow, TCP window closes)
+┌────────────────────────────────────┴────────────────────────────────────┐
+│                       Reactive Backpressure Guard                       │
+│ - Buffer policy: DROP_LATEST / BUFFER (max capacity capped)             │
+│ - Cancel signal terminates upstream request channel to Gemini           │
+└────────────────────────────────────▲────────────────────────────────────┘
+                                     │  Emits JSON String Chunk
+┌────────────────────────────────────┴────────────────────────────────────┐
+│                    Jackson Reactive Streaming Parser                    │
+│ - Parsing direct from byte stream buffers without String replication    │
+└────────────────────────────────────▲────────────────────────────────────┘
+                                     │  gRPC / SSE Stream
+┌────────────────────────────────────┴────────────────────────────────────┐
+│                       Gemini Upstream API Server                        │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+The reactive design must use **Project Reactor** and **Jackson Streaming API**. 
+
+We will expose a WebFlux controller mapping to SSE, ensuring that we register a cancellation listener. If a client disconnects, we terminate the call to the Gemini API, preventing unnecessary API generation costs and freeing memory buffers immediately.
+
+#### Production-Ready Java Implementation
+
+```java
+package com.faang.ai.stream;
+
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ * High-performance Reactive Controller for streaming Gemini tokens
+ * safely under high load with explicit backpressure safety limits.
+ */
+@RestController
+public class HighThroughputGeminiStreamingController {
+
+    private static final Logger LOGGER = Logger.getLogger(HighThroughputGeminiStreamingController.class.getName());
+    private final WebClient webClient;
+    private final JsonFactory jsonFactory;
+
+    public HighThroughputGeminiStreamingController(WebClient.Builder webClientBuilder) {
+        // Enforce high performance HTTP/2 configuration
+        this.webClient = webClientBuilder
+                .baseUrl("https://generativelanguage.googleapis.com")
+                .build();
+        this.jsonFactory = new JsonFactory();
+    }
+
+    @PostMapping(value = "/v1/ai/stream", produces = "text/event-stream")
+    public Flux<ServerSentEvent<String>> streamGeminiResponse(@RequestBody String promptPayload) {
+        return webClient.post()
+                .uri("/v1beta/models/gemini-1.5-flash:streamGenerateContent?key=${GEMINI_API_KEY}")
+                .header("Content-Type", "application/json")
+                .bodyValue(promptPayload)
+                .retrieve()
+                .bodyToFlux(byte[].class) // Process raw bytes to avoid intermediate string allocations
+                .publishOn(Schedulers.boundedElastic()) // Run deserialization on dedicated IO Thread Pool
+                .flatMap(this::parseRawBytesToJsonTokens)
+                // Backpressure defense: Buffer up to 128 elements max. If exceeded, stop consuming from upstream
+                .onBackpressureBuffer(128, 
+                        dropped -> LOGGER.warning("Backpressure limit hit! Dropped packet chunk: " + dropped),
+                        reactor.core.publisher.BufferOverflowStrategy.DROP_LATEST)
+                .map(tokenString -> ServerSentEvent.<String>builder()
+                        .data(tokenString)
+                        .event("token-chunk")
+                        .build())
+                .timeout(Duration.ofSeconds(45)) // Safeguard against silent hanging connections
+                .doOnCancel(() -> LOGGER.log(Level.INFO, "Downstream client disconnected. Cancelling upstream Gemini call."))
+                .doOnError(err -> LOGGER.log(Level.SEVERE, "Streaming failure", err))
+                .onErrorReturn(ServerSentEvent.builder("Generation encountered an error.").build());
+    }
+
+    /**
+     * Parse raw bytes directly using Jackson Streaming API.
+     * Prevents large object overhead in Young Generation space of GC.
+     */
+    private Flux<String> parseRawBytesToJsonTokens(byte[] rawBytes) {
+        return Flux.create(sink -> {
+            try (JsonParser parser = jsonFactory.createParser(rawBytes)) {
+                while (!parser.isClosed() && parser.nextToken() != null) {
+                    // Extract only the specific nested text tokens
+                    // Structure: { "candidates": [ { "content": { "parts": [ { "text": "generated token" } ] } } ] }
+                    if ("text".equals(parser.currentName())) {
+                        parser.nextToken();
+                        String tokenValue = parser.getValueAsString();
+                        if (tokenValue != null) {
+                            sink.next(tokenValue);
+                        }
+                    }
+                }
+                sink.complete();
+            } catch (IOException e) {
+                sink.error(new RuntimeException("Error parsing stream chunk natively", e));
+            }
+        });
+    }
+}
+```
+
+#### Why This Solution Wins
+*   **Low Heap Memory Impact**: By deserializing `byte[]` arrays natively with the non-blocking Jackson Streaming `JsonParser` inside a stateless stream, we bypass loading huge JSON payloads into JVM memory as intermediate Strings.
+*   **Resilience Against Slow Consumers**: `.onBackpressureBuffer(128, ...)` is the core shield. If a client's network buffer is full, Spring WebFlux will pause requesting more byte chunks from the TCP socket buffer. Once the local 128-slot buffer is saturated, it drops newer tokens, protecting the JVM from expanding memory lists and throwing an OOM.
+*   **Leak Prevention on Disconnect**: The `.doOnCancel()` operator hooks directly into the WebFlux Netty cancellation channel. When a user closes their browser window, a cancel signal cascades up the reactive stream, dropping the WebClient connection to Gemini and freeing all native buffers instantly.
+
+---
+
+### Scenario 3: Real-Time Token Tracking & Audit Ledger
+
+#### The Scenario
+Your company requires charging internal business units based on their real-time Gemini usage. You must design an auditing layer that intercepts all streaming incoming/outgoing payloads, calculates exact token consumption, and publishes usage events to an Apache Kafka pipeline.
+
+#### The Interviewer’s Probing Questions
+1.  *“Where do you intercept the input and output streams to calculate tokens without impacting critical-path latency?”*
+2.  *“If the audit logging system experiences a database write failure, do you fail the chat transaction or do you keep it alive? Explain the trade-offs.”*
+3.  *“How would you utilize the Decorator pattern or AOP (Aspect-Oriented Programming) in Java to implement this cleanly?”*
+
+#### The Architectural Solution
+
+```
+                                  Client Request
+                                        │
+                                        ▼
+                   ┌─────────────────────────────────────────┐
+                   │    Aspect-Oriented Audit Interceptor    │
+                   └────────────────────┬────────────────────┘
+                                        │
+                       ┌────────────────┴────────────────┐
+                       ▼ (Sync Task)                     ▼ (Async Task)
+           ┌──────────────────────┐            ┌───────────────────┐
+           │ Calculate Input      │            │ Stream Execution  │
+           │ Token Count          │            │ to Gemini API     │
+           │ (JTokkit local CPU)  │            └─────────┬─────────┘
+           └──────────────────────┘                      │
+                                                         ▼
+                                               ┌───────────────────┐
+                                               │ Capture Output    │
+                                               │ Tokens Reactively │
+                                               └─────────┬─────────┘
+                                                         │
+                                                         ▼
+                                               ┌───────────────────┐
+                                               │ Dispatch Auditing │
+                                               │ Event to Kafka    │
+                                               │ (Non-blocking)    │
+                                               └───────────────────┘
+```
+
+#### Production-Ready Java Implementation
+
+```java
+package com.faang.ai.audit;
+
+import com.knuddels.jtokkit.Encodings;
+import com.knuddels.jtokkit.api.Encoding;
+import com.knuddels.jtokkit.api.EncodingRegistry;
+import com.knuddels.jtokkit.api.EncodingType;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
+
+import java.time.Instant;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.logging.Logger;
+
+/**
+ * Aspect-Oriented real-time auditing engine.
+ * Computes exact incoming/outgoing tokens with zero overhead on the system's main process path.
+ */
+@Aspect
+@Component
+public class GeminiAuditingAspect {
+
+    private static final Logger LOGGER = Logger.getLogger(GeminiAuditingAspect.class.getName());
+    private final Encoding tokenEncoder;
+    private final AuditKafkaProducer auditKafkaProducer;
+
+    public GeminiAuditingAspect(AuditKafkaProducer auditKafkaProducer) {
+        EncodingRegistry registry = Encodings.newDefaultEncodingRegistry();
+        // CL100K_BASE is the industry standard encoding used by modern models (similar to Gemini tokenizers)
+        this.tokenEncoder = registry.getEncoding(EncodingType.CL100K_BASE);
+        this.auditKafkaProducer = auditKafkaProducer;
+    }
+
+    @Around("@annotation(AuditableGeminiCall)")
+    public Object auditGeminiTransaction(ProceedingJoinPoint joinPoint) throws Throwable {
+        String transactionId = UUID.randomUUID().toString();
+        Instant startTime = Instant.now();
+        
+        // Extract input prompt payload from method arguments
+        Object[] args = joinPoint.getArgs();
+        String inputPrompt = (args.length > 0 && args[0] instanceof String) ? (String) args[0] : "";
+        
+        // Calculate input tokens synchronously (low latency local execution)
+        int inputTokens = tokenEncoder.countTokens(inputPrompt);
+
+        // Execute target method (expected to return Flux<String> for streaming)
+        Object proceedResult = joinPoint.proceed();
+
+        if (proceedResult instanceof Flux) {
+            @SuppressWarnings("unchecked")
+            Flux<String> originalStream = (Flux<String>) proceedResult;
+            
+            StringBuilder responseBuffer = new StringBuilder();
+
+            return originalStream
+                    .doOnNext(responseBuffer::append) // Accumulate token stream asynchronously
+                    .doOnComplete(() -> {
+                        // Calculate output tokens once stream finishes
+                        int outputTokens = tokenEncoder.countTokens(responseBuffer.toString());
+                        long latencyMs = Duration.between(startTime, Instant.now()).toMillis();
+                        
+                        // Fire-and-forget logging to Kafka to avoid blocking the user response path
+                        CompletableFuture.runAsync(() -> {
+                            AuditRecord auditRecord = new AuditRecord(
+                                    transactionId, inputTokens, outputTokens, latencyMs, Instant.now()
+                            );
+                            auditKafkaProducer.sendAuditRecord(auditRecord);
+                        }).exceptionally(ex -> {
+                            LOGGER.severe("Audit delivery channel failed to send event: " + ex.getMessage());
+                            return null;
+                        });
+                    });
+        }
+
+        return proceedResult;
+    }
+
+    public static record AuditRecord(
+            String txnId, int inputTokens, int outputTokens, long durationMs, Instant recordedAt
+    ) {}
+
+    @Component
+    public static class AuditKafkaProducer {
+        public void sendAuditRecord(AuditRecord record) {
+            // Production grade Kafka Template publishing logic would live here
+            LOGGER.info("AUDIT METRIC PRODUCED: " + record);
+        }
+    }
+}
+```
+
+#### Why This Solution Wins
+*   **Aspect-Oriented Programming (AOP)**: Decouples clean business logic from non-functional concerns (auditing and billing telemetry). Your core integration class is untouched, keeping code readable.
+*   **Zero Critical-Path Latency Overhead**: The token count for output generation runs asynchronously *after* the client has completed receipt of the payload stream (`doOnComplete`). It does not delay the response stream.
+*   **Asynchronous Audit Offloading**: Audit writes to Kafka are run on a detached worker pool via `CompletableFuture.runAsync()`. If Kafka experiences network degradation, the user's prompt transaction does not block, ensuring high resilience.
