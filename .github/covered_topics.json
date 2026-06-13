@@ -28,7 +28,8 @@
     "Distributed Error Translation & Context Propagation",
     "Graceful Degradation: Designing Resilient Fallback Paths",
     "Bulkhead Isolation: Preventing Resource Exhaustion in Distributed Failures",
-    "The Transactional Outbox Pattern: Solving the Dual-Write Failure"
+    "The Transactional Outbox Pattern: Solving the Dual-Write Failure",
+    "Handling Partial Failures in Scatter-Gather Architectures"
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections",
