@@ -55,7 +55,8 @@
     "JVM Memory Mechanics: Thread-Local Allocation Buffers (TLABs), Compressed OOPs, and Card Tables",
     "JVM Execution Mechanics: Stack Frames, G1/ZGC Phase Operations, and Class Verification",
     "JVM Metaspace and Class Unloading: The Anatomy of Classloader Leaks",
-    "JVM Concurrency Barriers: G1's SATB Write Barrier vs. ZGC's Self-Healing Load Barrier"
+    "JVM Concurrency Barriers: G1's SATB Write Barrier vs. ZGC's Self-Healing Load Barrier",
+    "JVM Memory Architecture: ZGC Colored Pointers and Virtual Memory Multi-Mapping"
   ],
   "Design a Real-time Chat System (WebSockets, Redis Pub/Sub)": [
     "Scalable Real-time Chat: WebSockets & Redis Pub/Sub",
