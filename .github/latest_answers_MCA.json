@@ -1,48 +1,48 @@
 {
-  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "topic": "Clustering Scenarios: K-Means vs DBSCAN vs Hierarchical",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A logistics drone delivery network in a smart city needs real-time path planning. The system uses the A* search algorithm with a dynamically updated heuristic h(n) to account for changing wind patterns and restricted airspace. During peak hours, the pathfinder occasionally returns suboptimal paths instead of the shortest path, even though the heuristic h(n) never overestimates the actual cost to the goal (making it admissible).",
-      "question": "What is the primary cause of this issue, and how can it be resolved?",
+      "scenario": "A ride-sharing enterprise is deploying an automated system to detect high-density passenger pickup zones in a major metropolitan city using historical GPS coordinates. The dataset contains millions of coordinate pairs, high levels of noise (due to GPS signal degradation around high-rise buildings), and irregular, non-spherical spatial patterns that trace the structural outlines of organic street layouts and public plazas. The engineering team requires a clustering model that handles noise without skewing cluster centroids and scales efficiently during peak hours.",
+      "question": "Which clustering strategy and configuration is best suited to satisfy these geometric, noise-resistance, and performance requirements?",
       "options": [
-        "A) The heuristic is admissible but not consistent (monotone). In a graph search, admissibility alone does not guarantee optimality if a node is closed via a suboptimal path before its optimal path is explored. This can be resolved by re-opening closed nodes when a shorter path is found, or by enforcing heuristic consistency.",
-        "B) Dynamic wind patterns cause the heuristic to violate admissibility at runtime. The algorithm must switch to a Dijkstra-based fallback because A* cannot handle dynamic weight adjustments on edges without recalculating the entire search space from scratch.",
-        "C) The branching factor increases exponentially under high-dimensional constraints, causing memory exhaustion. The search space must be pruned using Iterative Deepening A* (IDA*) with a stricter heuristic threshold.",
-        "D) The open list implementation uses a standard FIFO queue instead of a priority queue, violating the greedy selection property of A*. Replacing the queue with a Fibonacci heap will restore optimality."
+        "A) Run K-Means clustering with K optimized via the Elbow method, using Cosine distance to account for spatial orientation variations.",
+        "B) Run DBSCAN utilizing a KD-Tree spatial index for neighborhood queries, setting MinPts based on twice the dataset dimensionality and identifying epsilon using a k-distance elbow plot.",
+        "C) Run Agglomerative Hierarchical Clustering using Ward's linkage method, utilizing a cophenetic correlation threshold to dynamically prune the dendrogram.",
+        "D) Run a hybrid model using K-Means to partition the space into Voronoi cells, followed by Hierarchical clustering on the centroids to capture non-spherical shapes."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The heuristic is admissible but not consistent (monotone). In a graph search, admissibility alone does not guarantee optimality if a node is closed via a suboptimal path before its optimal path is explored. This can be resolved by re-opening closed nodes when a shorter path is found, or by enforcing heuristic consistency.",
-      "explanation": "In a graph search (as opposed to a tree search), if the heuristic is admissible but not consistent (i.e., it violates the triangle inequality h(n) <= c(n, a, n') + h(n')), A* can reach a node via a suboptimal path first and close it. If a shorter path to that node is discovered later, A* will not re-explore it unless explicitly programmed to re-open closed nodes. Enforcing a consistent heuristic guarantees that the first path found to any node is optimal, eliminating the need to re-open closed nodes."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Run DBSCAN utilizing a KD-Tree spatial index for neighborhood queries, setting MinPts based on twice the dataset dimensionality and identifying epsilon using a k-distance elbow plot.",
+      "explanation": "DBSCAN is ideal for spatial data because it can identify clusters of arbitrary shapes and explicitly segregates noise/outliers without letting them distort cluster boundaries (unlike K-Means, which forces every point into a cluster and deforms centroids). Standard DBSCAN has a quadratic time complexity O(N^2), but using a spatial indexing structure like a KD-Tree or R-Tree reduces neighborhood query complexity to O(N log N), making it highly scalable. The k-distance plot is the standard, empirically sound method to determine the optimal epsilon parameter."
     },
     {
       "id": 2,
-      "scenario": "An autonomous cybersecurity defense agent uses a Min-Max tree with Alpha-Beta pruning to simulate defender-attacker scenarios for critical infrastructure protection. The state space has an average branching factor of over 150, and decision-making must occur within a strict 500ms Service Level Agreement (SLA). Under heavy simulated attacks, the agent fails to compute a move in time, causing timeouts and default fallback policies to trigger, which are easily exploited.",
-      "question": "Which optimization strategy would most effectively address the real-time constraint while maintaining strategic robustness in this high-dimensional game tree?",
+      "scenario": "An e-commerce platform wants to segment its customer base of 5 million active users based on 150 high-dimensional features, which include demographic metrics, temporal activity patterns, and sparse product category purchase frequencies. The data science team observed that their initial K-Means pipeline yielded poorly defined, overlapping clusters with high intra-cluster variance, and any attempt to run Agglomerative Hierarchical Clustering on the full dataset resulted in Out-Of-Memory (OOM) errors on their compute cluster.",
+      "question": "What is the most robust architectural solution to resolve both the scalability limitations and the poor cluster separation caused by high-dimensional sparsity?",
       "options": [
-        "A) Replace the evaluation function with a Monte Carlo Tree Search (MCTS) that uses uniform random rollouts without selection or expansion phases to minimize computational latency.",
-        "B) Implement Transposition Tables with iterative deepening and move-ordering heuristics (such as the killer heuristic) to maximize alpha-beta pruning efficiency early in the search, allowing the algorithm to return the best move found within the time limit.",
-        "C) Convert the minimax search into a Depth-First Search (DFS) with a fixed depth of 2, bypassing the alpha-beta pruning overhead entirely to guarantee termination within 50ms.",
-        "D) Force the search to prune branches randomly when the remaining execution time drops below 100ms, sacrificing minimax optimality for guaranteed termination."
+        "A) Apply Gower's distance metric to the raw 150-dimensional features, then use a GPU-accelerated Single-Linkage Hierarchical Clustering algorithm to eliminate memory limits.",
+        "B) Apply one-hot encoding to all categorical variables, normalize continuous features, and execute Mini-Batch K-Means using Manhattan distance to mitigate the curse of dimensionality.",
+        "C) Apply Principal Component Analysis (PCA) to reduce the feature space while retaining 90% of the variance, run K-Means++ on the reduced space, and evaluate cluster quality using the Silhouette Coefficient.",
+        "D) Map the data to a 2D space using t-SNE (t-Distributed Stochastic Neighbor Embedding) to preserve local structures, then apply standard K-Means to identify exact customer segment boundaries."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Implement Transposition Tables with iterative deepening and move-ordering heuristics (such as the killer heuristic) to maximize alpha-beta pruning efficiency early in the search, allowing the algorithm to return the best move found within the time limit.",
-      "explanation": "Alpha-Beta pruning's efficiency is highly dependent on move ordering. Under perfect ordering, the search complexity is reduced from O(b^d) to O(b^(d/2)). By combining Iterative Deepening (which allows progressive deepening and safe termination when the 500ms timer expires) with Transposition Tables (to cache states) and move-ordering heuristics, the agent can achieve optimal pruning efficiency and make high-quality decisions within the strict SLA."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Apply Principal Component Analysis (PCA) to reduce the feature space while retaining 90% of the variance, run K-Means++ on the reduced space, and evaluate cluster quality using the Silhouette Coefficient.",
+      "explanation": "In high-dimensional spaces, distance metrics lose their contrast (the curse of dimensionality), making K-Means with Euclidean distance perform poorly as distances between pairs of points converge. Dimensionality reduction via PCA projectively eliminates noise and correlation, leaving a lower-dimensional continuous space where Euclidean distance is mathematically meaningful. K-Means++ ensures smart centroid initialization to avoid local minima, and the Silhouette Coefficient validates cluster separation. Hierarchical clustering (Option A) has O(N^2) memory complexity, making 5 million points impossible to process directly even on typical GPU clusters."
     },
     {
       "id": 3,
-      "scenario": "An automated warehouse Autonomous Mobile Robot (AMR) operates in a highly cluttered environment with narrow corridors, resulting in a skewed spatial distribution. The AMR has a highly constrained onboard embedded system with only 64MB of RAM. Standard A* search frequently runs out of memory (OOM error) because the open list grows exponentially due to the many dead-ends and obstacles in the warehouse.",
-      "question": "Which search algorithm or variant is most appropriate to guarantee finding a solution under these severe memory constraints while handling the highly skewed spatial distribution?",
+      "scenario": "A smart manufacturing facility is deploying an edge-based IoT gateway to monitor real-time vibration sensor streams from 10,000 industrial rotating machines. The system must process streams dynamically to isolate novel, unseen machine states (anomalies and drifts) under strict hardware constraints (low RAM, slow CPU). The system cannot store raw historical time-series data locally and must update its cluster representations incrementally as new data packages arrive.",
+      "question": "Which clustering algorithm is designed to dynamically construct a tree of compact summaries to support streaming data under severe memory and CPU constraints?",
       "options": [
-        "A) Greedy Best-First Search, because it only evaluates the heuristic value h(n) and does not store the path cost g(n), ensuring O(1) space complexity regardless of the environment's complexity.",
-        "B) Standard Depth-First Search (DFS) with a random walk strategy, because it guarantees finding the shortest path in a finite grid while keeping memory consumption bounded by the depth of the tree.",
-        "C) SMA* (Simplified Memory-bounded A*), because it utilizes all available memory up to the limit, prunes the worst leaf nodes when memory is full, and backs up their f-values to their parent nodes to allow regeneration if necessary.",
-        "D) Weighted A* with an inflation factor epsilon > 5, which transforms the search into a depth-first search that completely avoids storing nodes in the open list."
+        "A) BIRCH (Balanced Iterative Reducing and Clustering using Hierarchies) to dynamically construct a Clustering Feature (CF) Tree.",
+        "B) Incremental DBSCAN with a sliding temporal window of 100,000 observations, processing density parameters dynamically.",
+        "C) Divisive Hierarchical Clustering (DIANA) run recursively on micro-batches of the sensor stream.",
+        "D) K-Medoids using the PAM (Partitioning Around Medoids) algorithm updated continuously via a sliding window."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) SMA* (Simplified Memory-bounded A*), because it utilizes all available memory up to the limit, prunes the worst leaf nodes when memory is full, and backs up their f-values to their parent nodes to allow regeneration if necessary.",
-      "explanation": "SMA* is specifically designed for environments with strict memory limits. It behaves like A* until memory is full, at which point it dynamically drops the node with the worst f-value. To avoid losing the search progress entirely, it backs up the forgotten node's f-value to its parent, enabling the search to regenerate the pruned subtree if it turns out to be promising later. This guarantees completeness and optimality if the available memory is sufficient to store the shallowest path."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) BIRCH (Balanced Iterative Reducing and Clustering using Hierarchies) to dynamically construct a Clustering Feature (CF) Tree.",
+      "explanation": "BIRCH is specifically engineered for clustering massive or streaming datasets in resource-constrained environments. It processes data incrementally in a single pass to build a Clustering Feature (CF) Tree, which acts as a lossy compression of the data preserving the zero-th, first, and second moments of clusters. This avoids keeping raw data points in memory. DBSCAN and standard Hierarchical algorithms (Options B and C) require storing and querying historical point-to-point distance matrices, which is computationally and memory-prohibitive for real-time edge gateways."
     }
   ]
 }
