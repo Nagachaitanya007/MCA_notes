@@ -16,7 +16,8 @@
     "Hybrid Async Architectures: Orchestrating Virtual Threads with CompletableFuture",
     "Introduction to Java Concurrency & Multithreading with Virtual Threads and CompletableFuture",
     "CompletableFuture Pipeline Mechanics: Thread Hand-offs, Memory Barriers, and Async Stage Propagation",
-    "Java Concurrency & Multithreading with Virtual Threads and CompletableFuture"
+    "Java Concurrency & Multithreading with Virtual Threads and CompletableFuture",
+    "Scaling Safely with Virtual Threads: Overcoming the Pinning and ThreadLocal Memory Traps"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
