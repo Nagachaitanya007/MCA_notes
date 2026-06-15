@@ -139,6 +139,7 @@
     "Design a Distributed ID Generator (Snowflake ID)",
     "Distributed ID Generation: The Snowflake Approach",
     "Scalable Unique ID Generation: Designing a Distributed Snowflake Generator",
-    "Designing a Distributed ID Generator (Snowflake ID)"
+    "Designing a Distributed ID Generator (Snowflake ID)",
+    "Bit-Level Engineering: Designing a Distributed Snowflake ID Generator"
   ]
 }
