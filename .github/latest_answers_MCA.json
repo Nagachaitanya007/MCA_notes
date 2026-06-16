@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "A high-frequency financial trading platform processes real-time transaction amounts ranging from $0.01 to over $10,000,000. The raw data exhibits extreme right-skewness and contains valid, high-value transaction outliers that are critical for downstream fraudulent detection models (specifically Linear SVM and Gradient Boosted Decision Trees). Standard scaling yields sub-optimal performance because extreme values compress the inlier distribution into an extremely narrow range, while standard Box-Cox transformation fails due to occasional negative/zero adjustment entries in the pipeline.",
-      "question": "Which mathematical preprocessing pipeline should the machine learning engineer implement to stabilize variance and minimize the influence of extreme values without discarding critical outlier data?",
+      "scenario": "A real-world industrial problem statement: A company is analyzing customer purchase data to build a predictive model for sales forecasting. However, the dataset contains outliers in the form of extremely high purchase amounts from a few customers, which are skewing the mean and standard deviation of the data.",
+      "question": "What is the most appropriate method to handle these outliers in order to improve the accuracy of the predictive model?",
       "options": [
-        "A) Apply a Yeo-Johnson Power Transformation to handle zero/negative values, followed by a RobustScaler to scale features using the median and interquartile range (IQR).",
-        "B) Apply a MinMax Scaling to bound the range between 0 and 1, followed by a Box-Cox transformation using a constant shift parameter (y + lambda).",
-        "C) Apply 3-sigma Winsorization to cap extreme values at the 99th percentile, followed by Standard Scaling to achieve a zero-mean and unit variance.",
-        "D) Apply a standard Log1p transformation followed by L2 Normalization across the feature vector to handle variance scaling."
+        "A) Winsorization",
+        "B) Trimming",
+        "C) Robust regression",
+        "D) Deleting the outliers"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Apply a Yeo-Johnson Power Transformation to handle zero/negative values, followed by a RobustScaler to scale features using the median and interquartile range (IQR).",
-      "explanation": "Yeo-Johnson is a modification of the Box-Cox transformation that supports zero and negative values, making it mathematically robust for datasets with adjustment entries. Following this with a RobustScaler is optimal because it scales features using the median and IQR (IQR = 75th percentile - 25th percentile). Unlike StandardScaler or MinMaxScaler, which are highly sensitive to extreme outliers and compress the variance of normal transactions, RobustScaler ensures that the core of the distribution is spaced out properly, preventing gradient saturation in linear algorithms while preserving the relative distance and signal of legitimate high-value outliers."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Robust regression",
+      "explanation": "Robust regression methods, such as the least absolute deviation (LAD) or the least median of squares (LMS), are designed to be less affected by outliers than traditional least squares regression methods, making them more suitable for handling datasets with outliers."
     },
     {
       "id": 2,
-      "scenario": "A healthcare analytics platform processes a clinical trial dataset containing 500-dimensional genomic and proteomic patient features. Around 15% of the values are Missing Not At Random (MNAR), as certain expensive genomic panels were only ordered for critically ill patients. The downstream clinical classification model must run in an emergency room setting with a strict real-time inference latency constraint of under 30 milliseconds per patient record.",
-      "question": "Which preprocessing and imputation strategy balances mathematical rigor (preserving the structural bias of MNAR data and high-dimensional correlations) with the strict real-time inference latency constraints?",
+      "scenario": "Real-world industrial problem statement: In a high-dimensional dataset of customer attributes, some features have missing values. The dataset needs to be preprocessed to handle these missing values before applying a machine learning algorithm for customer segmentation.",
+      "question": "Which of the following methods for handling missing values would be most suitable if the dataset is large and the missing values are scattered across different features?",
       "options": [
-        "A) Train an iterative MissForest (Random Forest) imputer offline, and run the complete iterative imputation sequence dynamically at runtime for each incoming patient vector.",
-        "B) Implement a Multivariate Imputation by Chained Equations (MICE) using Bayesian Ridge regression, executing 10 Gibbs sampling iterations during the real-time API call.",
-        "C) Create binary missingness indicator features offline, train a Generative Adversarial Imputation Network (GAIN) offline, and execute a single forward pass of the GAIN generator during online inference.",
-        "D) Use simple Mean/Median Imputation at runtime to meet the latency SLA, as downstream non-linear models like XGBoost can naturally deduce the missingness patterns without assistance."
+        "A) Mean imputation",
+        "B) Median imputation",
+        "C) K-Nearest Neighbors (KNN) imputation",
+        "D) Multiple Imputation by Chained Equations (MICE)"
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Create binary missingness indicator features offline, train a Generative Adversarial Imputation Network (GAIN) offline, and execute a single forward pass of the GAIN generator during online inference.",
-      "explanation": "To handle MNAR data, keeping track of *why* data is missing is critical; hence, creating explicit binary missingness indicators is mathematically necessary to prevent loss of signal. For high-dimensional data (500 features), simple mean imputation destroys feature correlations, whereas iterative techniques like MICE or MissForest are highly computationally expensive and cannot guarantee a sub-30ms latency constraint at inference time due to their iterative, multi-estimator design. Training a GAIN (or Deep Autoencoder) offline allows the system to capture highly non-linear feature interactions. At runtime, the generator imputes the vector in a single forward matrix multiplication pass (GPU/CPU optimized), providing high-fidelity imputations well within the millisecond budget."
+      "correct_answer_letter": "D",
+      "correct_answer_text": "D) Multiple Imputation by Chained Equations (MICE)",
+      "explanation": "Multiple Imputation by Chained Equations (MICE) is a method for handling missing data that works well with large datasets and missing values scattered across different features. It involves creating multiple versions of the complete dataset by imputing missing values based on the relationships between variables."
     },
     {
       "id": 3,
-      "scenario": "An industrial IoT platform monitors vibration metrics from 100 power-generation turbines. Each turbine streams 50 features per second. The data exhibits significant concept drift due to seasonal ambient temperature variations, which shifts the baseline of 'normal' operating parameters. Static thresholding and daily offline-retrained models are failing, either yielding high false-alarm rates during seasonal transitions or missing critical mechanical failures.",
-      "question": "Which unsupervised outlier detection algorithm is computationally and theoretically suited to adapt dynamically to this streaming environment without incurring severe memory footprint overhead?",
+      "scenario": "Real-world industrial problem statement: A company is building a real-time predictive model to forecast electricity demand based on historical weather and usage data. However, the distribution of the usage data is highly skewed, which is affecting the performance of the model.",
+      "question": "What transformation can be applied to the skewed usage data to reduce its skewness and improve the model's performance?",
       "options": [
-        "A) Local Outlier Factor (LOF) configured with a rolling 30-day window stored in an in-memory distributed Redis cluster.",
-        "B) Half-Space Trees (HSTrees), an online, streaming ensemble of random trees that continuously updates tree structures and mass counters on sliding windows of stream data.",
-        "C) A One-Class Support Vector Machine (OC-SVM) with a Radial Basis Function (RBF) kernel, retrained incrementally using stochastic gradient descent (SGD) on every new mini-batch.",
-        "D) A recursive Mahalanobis Distance calculation using Welford's algorithm to update the running covariance matrix across the entire historical stream."
+        "A) Log transformation",
+        "B) Square root transformation",
+        "C) Standardization",
+        "D) Normalization"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Half-Space Trees (HSTrees), an online, streaming ensemble of random trees that continuously updates tree structures and mass counters on sliding windows of stream data.",
-      "explanation": "In a streaming environment with concept drift, traditional outlier detection algorithms fail due to memory or computational constraints. Local Outlier Factor (LOF) requires keeping all historical points in memory to calculate local densities (O(N^2) complexity), which is computationally infeasible for high-frequency IoT streams. One-Class SVM with an RBF kernel does not scale well with online updates and can suffer from catastrophic forgetting or model degradation under drift. Welford's algorithm for Mahalanobis distance assumes a stationary multivariate normal distribution, which fails under complex, non-linear seasonal shifts. Half-Space Trees (HSTrees) are specifically designed for streaming anomaly detection; they use a fixed-size ensemble of trees where node work is updated in O(1) time and constant memory, naturally adapting to concept drift by decaying older data and updating mass counts over sliding windows."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Log transformation",
+      "explanation": "The log transformation is commonly used to reduce skewness in positively skewed data, as it compresses the upper end of the scale and expands the lower end, making the data more symmetric and normal-like, which can improve the performance of many machine learning models."
     }
   ]
 }

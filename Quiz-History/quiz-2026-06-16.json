@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
-  "mode": "Java",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot application running on Tomcat experiences a slow, continuous memory leak leading to an `OutOfMemoryError: Java heap space` after 48 hours. Upon analyzing the heap dump, you discover thousands of instances of `byte[]` retained by thread-local maps. The application uses the following class to store contextual transactional metadata:\n\njava\n@Component\npublic class TransactionContextHolder {\n    private static final ThreadLocal<byte[]> context = new ThreadLocal<>();\n\n    public void setContext(byte[] data) {\n        context.set(data);\n    }\n\n    public byte[] getContext() {\n        return context.get();\n    }\n\n    @Transactional\n    public void clear() {\n        context.remove();\n    }\n}\n\n\nThis component is invoked from a standard `@RestController` to store and retrieve data within the request lifecycle.",
-      "question": "What is the primary cause of this memory leak?",
+      "scenario": "A real-world industrial problem statement: A company is analyzing customer purchase data to build a predictive model for sales forecasting. However, the dataset contains outliers in the form of extremely high purchase amounts from a few customers, which are skewing the mean and standard deviation of the data.",
+      "question": "What is the most appropriate method to handle these outliers in order to improve the accuracy of the predictive model?",
       "options": [
-        "A) The Spring `@Transactional` annotation on the `clear()` method causes Spring to wrap the component in a dynamic proxy, which prevents direct execution of the `ThreadLocal.remove()` method when called from outside the proxy context.",
-        "B) The `ThreadLocal` is declared static, preventing the GC from garbage collecting the classloader that loaded the `TransactionContextHolder` bean.",
-        "C) The Tomcat worker threads are reused across requests, and because the `clear()` method is marked `@Transactional`, calling it self-invocatively or failing to execute it due to transaction rollback leaves the byte array bound to the thread.",
-        "D) Spring's transactional interceptor creates a new `ThreadLocal` context on every transaction boundary, shadowing the custom `ThreadLocal` and preventing `remove()` from clearing the original thread's map."
+        "A) Winsorization",
+        "B) Trimming",
+        "C) Robust regression",
+        "D) Deleting the outliers"
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) The Tomcat worker threads are reused across requests, and because the `clear()` method is marked `@Transactional`, calling it self-invocatively or failing to execute it due to transaction rollback leaves the byte array bound to the thread.",
-      "explanation": "In an application server like Tomcat, request-processing threads are pooled and reused indefinitely. When data is bound to a thread via `ThreadLocal`, it remains there until explicitly removed. If `clear()` is bypassed\u2014either due to an unhandled exception before reaching the cleanup phase, or because of a self-invocation issue where the proxy bypasses the transactional cleanup flow\u2014the reference to the heavy `byte[]` persists in the thread's thread-local map. Since the thread never dies, the memory is leaked."
+      "correct_answer_text": "C) Robust regression",
+      "explanation": "Robust regression methods, such as the least absolute deviation (LAD) or the least median of squares (LMS), are designed to be less affected by outliers than traditional least squares regression methods, making them more suitable for handling datasets with outliers."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a high-throughput trading service utilizing the G1 Garbage Collector experiences sporadic latency spikes of up to 1.5 seconds. Garbage collection logs indicate that the G1 allocator is frequently triggering Full GCs, despite the total heap occupancy hovering around 40%. The logs show a highly elevated frequency of 'G1 Humongous Allocation' events.",
-      "question": "What is the primary cause of this issue, and how should it be resolved?",
+      "scenario": "Real-world industrial problem statement: In a high-dimensional dataset of customer attributes, some features have missing values. The dataset needs to be preprocessed to handle these missing values before applying a machine learning algorithm for customer segmentation.",
+      "question": "Which of the following methods for handling missing values would be most suitable if the dataset is large and the missing values are scattered across different features?",
       "options": [
-        "A) Humongous allocations occupy contiguous G1 regions, bypassing the Eden space and allocating directly in the Old generation. This causes premature heap fragmentation. Resolve by increasing `-XX:G1HeapRegionSize`.",
-        "B) The G1 survivor space is too small, causing objects to prematurely age into the Old generation. Resolve by increasing `-XX:SurvivorRatio`.",
-        "C) The JVM is running out of Metaspace due to classloading overhead. Resolve by increasing `-XX:MaxMetaspaceSize`.",
-        "D) The garbage collector threads are saturated due to CPU throttling. Resolve by increasing `-XX:ParallelGCThreads`."
+        "A) Mean imputation",
+        "B) Median imputation",
+        "C) K-Nearest Neighbors (KNN) imputation",
+        "D) Multiple Imputation by Chained Equations (MICE)"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Humongous allocations occupy contiguous G1 regions, bypassing the Eden space and allocating directly in the Old generation. This causes premature heap fragmentation. Resolve by increasing `-XX:G1HeapRegionSize`.",
-      "explanation": "In G1GC, any object that is larger than 50% of a G1 region is considered a 'Humongous' object. These objects are allocated directly in the Old generation as contiguous sequences of regions. Frequent allocation of such objects leads to rapid heap fragmentation and triggers premature Full GCs to reclaim fragmented spaces. Increasing the G1 region size using `-XX:G1HeapRegionSize` prevents these objects from being classified as humongous, allowing them to be managed efficiently in the Young generation."
+      "correct_answer_letter": "D",
+      "correct_answer_text": "D) Multiple Imputation by Chained Equations (MICE)",
+      "explanation": "Multiple Imputation by Chained Equations (MICE) is a method for handling missing data that works well with large datasets and missing values scattered across different features. It involves creating multiple versions of the complete dataset by imputing missing values based on the relationships between variables."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a microservice exhibits intermittent latency spikes of several seconds. GC logs show extremely long 'Time Spent in Safepoint' (often over 2 seconds), but the actual GC pause time (the work done by the collector) is under 15ms. The application relies heavily on parallel streams and long-running `for` loops processing millions of primitive array elements.",
-      "question": "What is the primary cause of this discrepancy?",
+      "scenario": "Real-world industrial problem statement: A company is building a real-time predictive model to forecast electricity demand based on historical weather and usage data. However, the distribution of the usage data is highly skewed, which is affecting the performance of the model.",
+      "question": "What transformation can be applied to the skewed usage data to reduce its skewness and improve the model's performance?",
       "options": [
-        "A) The JVM is waiting for application threads executing countable loops to reach a safepoint, because the HotSpot compiler by default does not insert safepoint polls inside countable `int` loops.",
-        "B) CPU execution is bottlenecked by operating system page faults during physical memory access.",
-        "C) Thread-local allocation buffers (TLABs) are too small, forcing the threads to block while waiting for a global lock during allocation.",
-        "D) A deadlock on a Spring bean initialization block prevents threads from yielding to the VM thread."
+        "A) Log transformation",
+        "B) Square root transformation",
+        "C) Standardization",
+        "D) Normalization"
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) The JVM is waiting for application threads executing countable loops to reach a safepoint, because the HotSpot compiler by default does not insert safepoint polls inside countable `int` loops.",
-      "explanation": "For the JVM to perform tasks like garbage collection, it must bring all application threads to a 'safepoint'. By default, HotSpot JIT compilers omit safepoint checks in countable `int` loops to optimize performance. If a thread is running a long-lived countable loop, it will not yield until the loop finishes. This forces the JVM to wait, causing the 'Time Spent in Safepoint' (TTSP) to skyrocket while the actual GC phase remains short. This can be resolved by enabling `-XX:+UseCountedLoopSafepoints` or refactoring the loops."
+      "correct_answer_text": "A) Log transformation",
+      "explanation": "The log transformation is commonly used to reduce skewness in positively skewed data, as it compresses the upper end of the scale and expands the lower end, making the data more symmetric and normal-like, which can improve the performance of many machine learning models."
     }
   ]
 }
