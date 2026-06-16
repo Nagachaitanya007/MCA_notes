@@ -30,7 +30,8 @@
     "Graceful Degradation: Designing Resilient Fallback Paths",
     "Bulkhead Isolation: Preventing Resource Exhaustion in Distributed Failures",
     "The Transactional Outbox Pattern: Solving the Dual-Write Failure",
-    "Handling Partial Failures in Scatter-Gather Architectures"
+    "Handling Partial Failures in Scatter-Gather Architectures",
+    "The Self-Healing Reconciliation Loop: Handling Distributed State Discrepancies"
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections",
