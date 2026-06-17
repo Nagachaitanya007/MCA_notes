@@ -44,7 +44,8 @@
     "The Two-Lock Queue: Customizing High-Throughput Bounded Queues",
     "The Bidirectional Map (BiMap): Custom Double-Indexed Associative Collections",
     "The Consistent Hash Ring: Custom Distributed Routing Collection",
-    "The Bloom Filter: Mastering Probabilistic Membership Queries & Space-Efficient Hashing"
+    "The Bloom Filter: Mastering Probabilistic Membership Queries & Space-Efficient Hashing",
+    "The Lock-Free Stack: Mastering CAS and Lock-Free Custom Collections"
   ],
   "JVM Internals (Memory Model, G1/ZGC, Class Loading)": [
     "JVM Internals: The Lifecycle of a Java Object",
