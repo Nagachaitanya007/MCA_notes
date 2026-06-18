@@ -67,7 +67,8 @@
     "The Anatomy of Real-time Connectivity: WebSockets & Redis Pub/Sub",
     "Designing a Resilient Real-Time Chat System: WebSocket Orchestration and Pub/Sub Routing",
     "State Sync and Message Routing in Multi-Node WebSocket Systems",
-    "Cross-Server Message Delivery Pipeline in Distributed WebSocket Chat"
+    "Cross-Server Message Delivery Pipeline in Distributed WebSocket Chat",
+    "Designing a Real-time Chat System with WebSockets and Redis Pub/Sub"
   ],
   "Memory Management & Garbage Collection Tuning": [
     "Java Memory Management & Garbage Collection Tuning",
