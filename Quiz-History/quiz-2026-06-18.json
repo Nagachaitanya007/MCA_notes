@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
-  "mode": "Java",
+  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue in a high-throughput Spring Boot application running on JDK 17 with `G1GC`. After several days of operation, the application crashes with `java.lang.OutOfMemoryError: Metaspace`. You trace the leak to a custom dynamic rule engine service:\n\njava\n@Service\npublic class RuleEngine {\n    private final ThreadLocal<MyClassLoader> loaderCache = ThreadLocal.withInitial(() -> \n        new MyClassLoader(Thread.currentThread().getContextClassLoader())\n    );\n\n    public void executeRule(String ruleId, byte[] bytecode) throws Exception {\n        MyClassLoader loader = loaderCache.get();\n        Class<?> ruleClass = loader.defineClass(\"Rule_\" + ruleId, bytecode);\n        Runnable ruleInstance = (Runnable) ruleClass.getDeclaredConstructor().newInstance();\n        ruleInstance.run();\n    }\n}\n",
-      "question": "What is the primary cause of this Metaspace memory leak?",
+      "scenario": "A leading e-commerce company wants to develop a chatbot that can understand and respond to customer queries in real-time, handling a large volume of conversations simultaneously. The chatbot will be trained on a large dataset of customer interactions, but the dataset is highly skewed, with a large majority of queries related to order tracking and returns.",
+      "question": "What would be the most appropriate technique to handle the skewed dataset and improve the chatbot's performance on less frequent query types?",
       "options": [
-        "A) The dynamic classes loaded via `defineClass` are allocated in the JVM Code Cache, not Metaspace, meaning Code Cache exhaustion is masquerading as a Metaspace OOM.",
-        "B) The `ThreadLocal` pins the custom `MyClassLoader` instance to persistent pool threads (e.g., Tomcat/Spring worker pool). Since the loader is never garbage collected, all classes defined by it remain pinned in Metaspace indefinitely.",
-        "C) The JVM prevents garbage collection of classes defined dynamically inside a `ThreadLocal` unless an explicit JVM flag `-XX:+UnlockDiagnosticVMOptions` is provided.",
-        "D) G1GC does not perform Metaspace metadata cleanup unless a Full GC is triggered, and low heap usage prevents the JVM from ever cleaning Metaspace."
+        "A) Oversampling the minority class",
+        "B) Undersampling the majority class",
+        "C) Using class weights to adjust the loss function",
+        "D) Using transfer learning with a pre-trained language model"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `ThreadLocal` pins the custom `MyClassLoader` instance to persistent pool threads (e.g., Tomcat/Spring worker pool). Since the loader is never garbage collected, all classes defined by it remain pinned in Metaspace indefinitely.",
-      "explanation": "A class can only be garbage collected (and its metadata freed from Metaspace) when its defining `ClassLoader` is itself garbage collected. In this scenario, the custom `MyClassLoader` is cached inside a `ThreadLocal` variable bound to persistent pool worker threads. Because these worker threads are reused indefinitely, the `ThreadLocal` map on those threads keeps a strong reference to the `MyClassLoader` instance. As new dynamic rules are continuously defined via `defineClass` under the same persistent class loader instances, Metaspace grows monotonically until an `OutOfMemoryError` occurs. Cleaning up requires calling `ThreadLocal.remove()` and allocating dynamic classes under transient loaders."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Using class weights to adjust the loss function",
+      "explanation": "Using class weights to adjust the loss function is a common technique to handle class imbalance in datasets. By assigning higher weights to the less frequent classes, the model is incentivized to perform better on those classes, which can improve overall performance and reduce the impact of the skew."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a low-latency Spring Boot trading application was migrated from `G1GC` to `ZGC` on Java 17 to eliminate garbage collection pauses. Under heavy write loads with high allocation rates of short-lived objects, the application experiences unexpected latency spikes of tens of milliseconds. Monitoring tools reveal that these latency spikes match 'Allocation Stalls' recorded in the GC logs.",
-      "question": "What is the primary cause of these latency spikes under Java 17 ZGC?",
+      "scenario": "A language translation model using the Transformer architecture is being developed to translate text from English to Spanish. However, the model is struggling to capture long-range dependencies in the input text, resulting in poor translation quality.",
+      "question": "What modification to the Transformer architecture would be most likely to improve the model's ability to capture long-range dependencies?",
       "options": [
-        "A) ZGC's load barriers fail to handle references pointing to humongous arrays, triggering a fallback to a single-threaded parallel Stop-The-World compaction phase.",
-        "B) On Java 17, ZGC is a single-generational collector; high allocation rates of short-lived objects outpace the concurrent collection rate, forcing allocating application threads to block (stall) until a GC cycle frees up space.",
-        "C) ZGC's colored pointers introduce heavy CPU cache thrashing when processing transient transactional data, causing the OS kernel to preempt thread execution.",
-        "D) The application is experiencing class loading bottlenecks due to Spring's dynamic AOP proxy generation bypassing Thread Local Allocation Buffers (TLABs)."
+        "A) Increasing the number of attention heads",
+        "B) Increasing the dimensionality of the input embeddings",
+        "C) Adding recurrent neural network (RNN) layers to the model",
+        "D) Using a different attention mechanism, such as hierarchical attention"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) On Java 17, ZGC is a single-generational collector; high allocation rates of short-lived objects outpace the concurrent collection rate, forcing allocating application threads to block (stall) until a GC cycle frees up space.",
-      "explanation": "Prior to JDK 21, `ZGC` is strictly single-generational. It treats all objects (young and old) the same way. When high allocation rates of short-lived objects occur, the concurrent garbage collector can be outpaced by the application's allocations. Because the JVM has no separate young generation to rapidly collect short-lived metadata, it experiences 'Allocation Stalls'\u2014wherein allocating application threads are forced to stall and wait for the concurrent GC cycle to reclaim memory, defeating the low-latency target of ZGC."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Increasing the number of attention heads",
+      "explanation": "The Transformer architecture relies on self-attention mechanisms to capture dependencies between different parts of the input sequence. Increasing the number of attention heads allows the model to capture a wider range of dependencies and can improve its ability to capture long-range dependencies."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Spring Boot enterprise platform utilizing custom class loaders for plugin isolation crashes at startup with a `java.lang.LinkageError: loader constraint violation`. This occurred after dynamic proxy generation attempted to link a plugin-specific implementation of a service class that references a shared dependency configured in both the parent and child ClassLoaders.",
-      "question": "Which JVM specification rule regarding Class Loading is violated to trigger this LinkageError?",
+      "scenario": "A sentiment analysis model is being developed to analyze customer reviews of products. The model uses a tokenization approach that splits text into individual words, but it is struggling to handle out-of-vocabulary (OOV) words and typos.",
+      "question": "What tokenization approach would be most suitable for handling OOV words and typos in this scenario?",
       "options": [
-        "A) A child `ClassLoader` is strictly prohibited from resolving the same class name as its parent class loader, regardless of the delegation hierarchy.",
-        "B) The JVM Verifier prevents dynamic proxies from being cast to non-public interfaces loaded by class loaders outside the system class loader hierarchy.",
-        "C) Dynamic proxies generated by Spring AOP cannot bypass JVM access control rules if the target class loader does not have parent delegation enabled.",
-        "D) Loader constraints dictate that if a class and an interface loaded by different ClassLoaders share a method signature, any type in that signature must resolve to the identical class instance in both loaders."
+        "A) Word-level tokenization with a dictionary-based approach",
+        "B) Subword-level tokenization using WordPiece or BPE",
+        "C) Character-level tokenization",
+        "D) Using a pre-trained language model with a fixed vocabulary"
       ],
-      "correct_answer_letter": "D",
-      "correct_answer_text": "D) Loader constraints dictate that if a class and an interface loaded by different ClassLoaders share a method signature, any type in that signature must resolve to the identical class instance in both loaders.",
-      "explanation": "Loader constraints ensure type safety in the JVM when multiple class loaders are present. Under JVM Spec rules, if class `C` implements interface `I`, and both reference a type `T` in their method signatures, both the class loader of `C` and the class loader of `I` must resolve `T` to the *exact same* `Class` object in memory. If they resolve it to different `Class` objects (due to independent classpaths/delegation), a `LinkageError: loader constraint violation` is thrown. This is highly common when dynamic proxies try to bridge types between parent and child class loaders."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Subword-level tokenization using WordPiece or BPE",
+      "explanation": "Subword-level tokenization approaches, such as WordPiece or BPE, can handle OOV words and typos more effectively than word-level tokenization. These approaches split words into subwords, which can capture the meaning of OOV words and typos, and can also reduce the vocabulary size."
     }
   ]
 }
