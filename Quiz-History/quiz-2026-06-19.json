@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
-  "mode": "Java",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot service suffers from progressive performance degradation and eventual `OutOfMemoryError: Java heap space`. The service processes batch requests using a shared thread pool. Here is the suspicious code snippet:\n\njava\n@Service\npublic class OrderProcessingService {\n    private static final ThreadLocal<List<Order>> orderCache = ThreadLocal.withInitial(ArrayList::new);\n\n    @Transactional\n    public void processBatch(List<OrderDto> dtos) {\n        for (OrderDto dto : dtos) {\n            Order order = convertAndValidate(dto);\n            orderCache.get().add(order);\n        }\n        persistOrders(orderCache.get());\n    }\n}\n",
-      "question": "What is the primary cause of this memory leak leading to GC overhead and eventual JVM failure?",
+      "scenario": "A real-world industrial problem statement: An e-commerce company is trying to build a recommendation system using their sales data, but the dataset contains a significant number of missing values and outliers, causing the model to perform poorly.",
+      "question": "What is the most suitable technique for handling missing values in this dataset?",
       "options": [
-        "A) The `@Transactional` proxy caches the `ThreadLocal` state across different classloaders, causing a leak in the Metaspace.",
-        "B) Since the thread pool reuses threads indefinitely, omitting `orderCache.remove()` prevents the accumulated `Order` objects in the `ThreadLocalMap` from being garbage collected, even after the transaction completes.",
-        "C) The `ArrayList` instantiated inside the `ThreadLocal` triggers thread synchronization lock contention, forcing the JVM to bypass standard Eden space allocation.",
-        "D) Spring's transactional aspect retains a hard reference to any `ThreadLocal` variable initialized inside a `@Service` bean, bypassing garbage collection."
+        "A) Mean imputation",
+        "B) Median imputation",
+        "C) Imputation using regression",
+        "D) Listwise deletion"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Since the thread pool reuses threads indefinitely, omitting `orderCache.remove()` prevents the accumulated `Order` objects in the `ThreadLocalMap` from being garbage collected, even after the transaction completes.",
-      "explanation": "In an application server or thread pool scenario (like Spring's default task executors or Tomcat's worker threads), threads are reused to handle multiple requests. If a `ThreadLocal` variable is modified and not explicitly cleared via `.remove()`, the value remains bound to the thread. Because the thread lives indefinitely, the references in `ThreadLocalMap` remain alive, preventing the `Order` objects and the `ArrayList` from ever being garbage collected. This accumulates memory over time, leading to severe GC overhead and an `OutOfMemoryError`."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Imputation using regression",
+      "explanation": "Imputation using regression is a suitable technique for handling missing values in this dataset because it uses the relationship between variables to estimate the missing values, which can help to reduce bias and improve the model's performance."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a Java application running with the G1 Garbage Collector (G1GC) exhibits frequent, highly disruptive Full GC pauses. Upon analyzing the GC logs, you observe a significant number of `To-space exhausted` (or `Evacuation Failure`) warnings, accompanied by an unusually high occurrence of humongous allocations where individual objects exceed 50% of the G1 region size.",
-      "question": "Which of the following approaches is the most effective tuning strategy to mitigate this specific G1GC issue without increasing the overall heap size?",
+      "scenario": "A real-world industrial problem statement: A company is building a predictive model to forecast energy consumption, but the dataset is highly skewed, with a few extreme values affecting the model's performance.",
+      "question": "What is the best approach to handle skewed data in this scenario?",
       "options": [
-        "A) Decrease the value of `-XX:G1ReservePercent` to leave less reserve space for emergency evacuations.",
-        "B) Increase the G1 region size using `-XX:G1HeapRegionSize` to prevent these large objects from being classified as humongous.",
-        "C) Increase the ratio of young to old generation using `-XX:NewRatio` to force faster promotion.",
-        "D) Switch from G1GC to the Parallel Garbage Collector, which handles humongous objects natively inside the Eden space."
+        "A) Log transformation",
+        "B) Standardization",
+        "C) Removing outliers",
+        "D) Normalization"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Increase the G1 region size using `-XX:G1HeapRegionSize` to prevent these large objects from being classified as humongous.",
-      "explanation": "In G1GC, any object that is larger than 50% of a G1 region is considered a 'Humongous Object' and is allocated directly in the Old Generation as a contiguous set of regions. Humongous allocations can lead to severe heap fragmentation and premature Full GCs or evacuation failures (`To-space exhausted`). By increasing the region size using `-XX:G1HeapRegionSize` (e.g., from 4MB to 16MB or 32MB), these objects will fit within a standard region, allowing them to be allocated in the Eden space and collected efficiently during normal minor GCs."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Log transformation",
+      "explanation": "Log transformation is a suitable technique for handling skewed data because it can reduce the effect of extreme values and make the data more normally distributed, which can improve the model's performance."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Spring Boot application using Hibernate and PostgreSQL experiences a sudden surge in JVM heap memory usage and high CPU utilization. Thread dumps reveal hundreds of threads blocked waiting for database connections from the HikariCP pool. You find the following code in a key service:\n\njava\n@Transactional\npublic void processTransaction(Long id) {\n    User user = userRepository.findById(id).orElseThrow();\n    byte[] data = externalHttpClient.fetchLargePayload(user.getApiUrl());\n    user.setPayload(data);\n    userRepository.save(user);\n}\n\n\nAssume `externalHttpClient.fetchLargePayload` performs a blocking network call taking 5 to 10 seconds to respond.",
-      "question": "What is the primary mechanism causing high JVM memory usage and GC degradation under load in this scenario?",
+      "scenario": "A real-world industrial problem statement: A financial institution is building a real-time credit scoring system that needs to handle high-dimensional data and make predictions within a short time frame.",
+      "question": "What is the most suitable algorithm for handling high-dimensional data in this real-time scenario?",
       "options": [
-        "A) Because the network call is executed within a `@Transactional` boundary, the database connection is held open during the 5-10 second network I/O, exhausting the HikariCP pool and keeping transaction state, Hibernate L1 cache, and large payloads alive in the JVM heap, preventing their garbage collection.",
-        "B) The blocking HTTP client bypasses Spring's transaction proxy, forcing the JVM to clone the `User` object into the Metaspace for every network retry.",
-        "C) Hibernate is forced to continuously flush its dirty state to the system's virtual swap memory, causing the OS to trigger emergency Stop-The-World (STW) pauses.",
-        "D) The JDBC driver attempts to serialize the `externalHttpClient` state inside the transaction log, causing an evacuation failure in the G1 Survivor space."
+        "A) Principal Component Analysis (PCA)",
+        "B) t-Distributed Stochastic Neighbor Embedding (t-SNE)",
+        "C) Linear Discriminant Analysis (LDA)",
+        "D) Random Forest"
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Because the network call is executed within a `@Transactional` boundary, the database connection is held open during the 5-10 second network I/O, exhausting the HikariCP pool and keeping transaction state, Hibernate L1 cache, and large payloads alive in the JVM heap, preventing their garbage collection.",
-      "explanation": "Spring's `@Transactional` binds a database connection to the current thread for the duration of the method. When a slow, blocking network call is performed inside this transaction, the connection is held active and idle for 5-10 seconds. Under load, this quickly exhausts the HikariCP connection pool. Consequently, hundreds of threads wait for connections while holding reference chains to their respective Transaction contexts, Hibernate Persistence Contexts (L1 cache), and large payload byte arrays. This prevents the garbage collector from reclaiming these heavy objects, leading to high heap pressure, constant GC thrashing, and potential OOM."
+      "correct_answer_text": "A) Principal Component Analysis (PCA)",
+      "explanation": "Principal Component Analysis (PCA) is a suitable algorithm for handling high-dimensional data in this real-time scenario because it can reduce the dimensionality of the data while retaining most of the information, which can improve the model's performance and reduce the computational time."
     }
   ]
 }

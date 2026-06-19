@@ -1,48 +1,48 @@
 {
-  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A leading e-commerce company wants to develop a chatbot that can understand and respond to customer queries in real-time, handling a large volume of conversations simultaneously. The chatbot will be trained on a large dataset of customer interactions, but the dataset is highly skewed, with a large majority of queries related to order tracking and returns.",
-      "question": "What would be the most appropriate technique to handle the skewed dataset and improve the chatbot's performance on less frequent query types?",
+      "scenario": "A real-world industrial problem statement: An e-commerce company is trying to build a recommendation system using their sales data, but the dataset contains a significant number of missing values and outliers, causing the model to perform poorly.",
+      "question": "What is the most suitable technique for handling missing values in this dataset?",
       "options": [
-        "A) Oversampling the minority class",
-        "B) Undersampling the majority class",
-        "C) Using class weights to adjust the loss function",
-        "D) Using transfer learning with a pre-trained language model"
+        "A) Mean imputation",
+        "B) Median imputation",
+        "C) Imputation using regression",
+        "D) Listwise deletion"
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) Using class weights to adjust the loss function",
-      "explanation": "Using class weights to adjust the loss function is a common technique to handle class imbalance in datasets. By assigning higher weights to the less frequent classes, the model is incentivized to perform better on those classes, which can improve overall performance and reduce the impact of the skew."
+      "correct_answer_text": "C) Imputation using regression",
+      "explanation": "Imputation using regression is a suitable technique for handling missing values in this dataset because it uses the relationship between variables to estimate the missing values, which can help to reduce bias and improve the model's performance."
     },
     {
       "id": 2,
-      "scenario": "A language translation model using the Transformer architecture is being developed to translate text from English to Spanish. However, the model is struggling to capture long-range dependencies in the input text, resulting in poor translation quality.",
-      "question": "What modification to the Transformer architecture would be most likely to improve the model's ability to capture long-range dependencies?",
+      "scenario": "A real-world industrial problem statement: A company is building a predictive model to forecast energy consumption, but the dataset is highly skewed, with a few extreme values affecting the model's performance.",
+      "question": "What is the best approach to handle skewed data in this scenario?",
       "options": [
-        "A) Increasing the number of attention heads",
-        "B) Increasing the dimensionality of the input embeddings",
-        "C) Adding recurrent neural network (RNN) layers to the model",
-        "D) Using a different attention mechanism, such as hierarchical attention"
+        "A) Log transformation",
+        "B) Standardization",
+        "C) Removing outliers",
+        "D) Normalization"
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Increasing the number of attention heads",
-      "explanation": "The Transformer architecture relies on self-attention mechanisms to capture dependencies between different parts of the input sequence. Increasing the number of attention heads allows the model to capture a wider range of dependencies and can improve its ability to capture long-range dependencies."
+      "correct_answer_text": "A) Log transformation",
+      "explanation": "Log transformation is a suitable technique for handling skewed data because it can reduce the effect of extreme values and make the data more normally distributed, which can improve the model's performance."
     },
     {
       "id": 3,
-      "scenario": "A sentiment analysis model is being developed to analyze customer reviews of products. The model uses a tokenization approach that splits text into individual words, but it is struggling to handle out-of-vocabulary (OOV) words and typos.",
-      "question": "What tokenization approach would be most suitable for handling OOV words and typos in this scenario?",
+      "scenario": "A real-world industrial problem statement: A financial institution is building a real-time credit scoring system that needs to handle high-dimensional data and make predictions within a short time frame.",
+      "question": "What is the most suitable algorithm for handling high-dimensional data in this real-time scenario?",
       "options": [
-        "A) Word-level tokenization with a dictionary-based approach",
-        "B) Subword-level tokenization using WordPiece or BPE",
-        "C) Character-level tokenization",
-        "D) Using a pre-trained language model with a fixed vocabulary"
+        "A) Principal Component Analysis (PCA)",
+        "B) t-Distributed Stochastic Neighbor Embedding (t-SNE)",
+        "C) Linear Discriminant Analysis (LDA)",
+        "D) Random Forest"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Subword-level tokenization using WordPiece or BPE",
-      "explanation": "Subword-level tokenization approaches, such as WordPiece or BPE, can handle OOV words and typos more effectively than word-level tokenization. These approaches split words into subwords, which can capture the meaning of OOV words and typos, and can also reduce the vocabulary size."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Principal Component Analysis (PCA)",
+      "explanation": "Principal Component Analysis (PCA) is a suitable algorithm for handling high-dimensional data in this real-time scenario because it can reduce the dimensionality of the data while retaining most of the information, which can improve the model's performance and reduce the computational time."
     }
   ]
 }
