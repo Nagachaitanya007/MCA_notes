@@ -17,7 +17,8 @@
     "Introduction to Java Concurrency & Multithreading with Virtual Threads and CompletableFuture",
     "CompletableFuture Pipeline Mechanics: Thread Hand-offs, Memory Barriers, and Async Stage Propagation",
     "Java Concurrency & Multithreading with Virtual Threads and CompletableFuture",
-    "Scaling Safely with Virtual Threads: Overcoming the Pinning and ThreadLocal Memory Traps"
+    "Scaling Safely with Virtual Threads: Overcoming the Pinning and ThreadLocal Memory Traps",
+    "Java Concurrency & Multithreading: Understanding Virtual Threads and CompletableFuture"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
