@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where the JVM is running out of memory due to an excessive number of `java.lang.ref.SoftReference` objects. The application uses `SoftReference` to cache large files, but the cache is not properly cleaned up. The relevant code snippet is: `private Map<String, SoftReference<byte[]>> cache = new HashMap<>();`",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "You are debugging a production issue where a high-throughput Spring Boot service suffers from progressive performance degradation and eventual `OutOfMemoryError: Java heap space`. The service processes batch requests using a shared thread pool. Here is the suspicious code snippet:\n\njava\n@Service\npublic class OrderProcessingService {\n    private static final ThreadLocal<List<Order>> orderCache = ThreadLocal.withInitial(ArrayList::new);\n\n    @Transactional\n    public void processBatch(List<OrderDto> dtos) {\n        for (OrderDto dto : dtos) {\n            Order order = convertAndValidate(dto);\n            orderCache.get().add(order);\n        }\n        persistOrders(orderCache.get());\n    }\n}\n",
+      "question": "What is the primary cause of this memory leak leading to GC overhead and eventual JVM failure?",
       "options": [
-        "A) Frequent `Full GC` cycles are not reclaiming the `SoftReference` objects",
-        "B) Insufficient heap size allocated to the JVM",
-        "C) Lack of `ReferenceQueue` to clean up the `SoftReference` objects",
-        "D) Incorrect usage of `WeakReference` instead of `SoftReference`"
+        "A) The `@Transactional` proxy caches the `ThreadLocal` state across different classloaders, causing a leak in the Metaspace.",
+        "B) Since the thread pool reuses threads indefinitely, omitting `orderCache.remove()` prevents the accumulated `Order` objects in the `ThreadLocalMap` from being garbage collected, even after the transaction completes.",
+        "C) The `ArrayList` instantiated inside the `ThreadLocal` triggers thread synchronization lock contention, forcing the JVM to bypass standard Eden space allocation.",
+        "D) Spring's transactional aspect retains a hard reference to any `ThreadLocal` variable initialized inside a `@Service` bean, bypassing garbage collection."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Frequent `Full GC` cycles are not reclaiming the `SoftReference` objects",
-      "explanation": "The primary cause of this issue is that the `SoftReference` objects are not being reclaimed by the `Full GC` cycles. `SoftReference` objects are used to implement soft caches, which are intended to be reclaimed when the JVM is low on memory. However, if the JVM is not under memory pressure, the `SoftReference` objects may not be reclaimed, leading to a memory leak. The `Full GC` cycles are responsible for reclaiming `SoftReference` objects, but if they are not frequent enough, the memory leak can occur."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Since the thread pool reuses threads indefinitely, omitting `orderCache.remove()` prevents the accumulated `Order` objects in the `ThreadLocalMap` from being garbage collected, even after the transaction completes.",
+      "explanation": "In an application server or thread pool scenario (like Spring's default task executors or Tomcat's worker threads), threads are reused to handle multiple requests. If a `ThreadLocal` variable is modified and not explicitly cleared via `.remove()`, the value remains bound to the thread. Because the thread lives indefinitely, the references in `ThreadLocalMap` remain alive, preventing the `Order` objects and the `ArrayList` from ever being garbage collected. This accumulates memory over time, leading to severe GC overhead and an `OutOfMemoryError`."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where the Spring-based application is experiencing a high number of `java.lang.OutOfMemoryError: Java heap space` errors. The relevant code snippet is: `@Service public class MyService { @Transactional public void doWork() { List<MyObject> objects = new ArrayList<>(); for (int i = 0; i < 1000000; i++) { objects.add(new MyObject()); } } }`. The `MyObject` class is a simple POJO with a few fields.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "You are debugging a production issue where a Java application running with the G1 Garbage Collector (G1GC) exhibits frequent, highly disruptive Full GC pauses. Upon analyzing the GC logs, you observe a significant number of `To-space exhausted` (or `Evacuation Failure`) warnings, accompanied by an unusually high occurrence of humongous allocations where individual objects exceed 50% of the G1 region size.",
+      "question": "Which of the following approaches is the most effective tuning strategy to mitigate this specific G1GC issue without increasing the overall heap size?",
       "options": [
-        "A) The `@Transactional` annotation is causing the `MyObject` instances to be stored in the `Hibernate` session cache",
-        "B) The `MyObject` instances are not being garbage collected due to a memory leak in the `MyService` class",
-        "C) The `ArrayList` is not being properly cleared after the `doWork()` method completes",
-        "D) The `MyObject` class has a high memory footprint due to its large size"
+        "A) Decrease the value of `-XX:G1ReservePercent` to leave less reserve space for emergency evacuations.",
+        "B) Increase the G1 region size using `-XX:G1HeapRegionSize` to prevent these large objects from being classified as humongous.",
+        "C) Increase the ratio of young to old generation using `-XX:NewRatio` to force faster promotion.",
+        "D) Switch from G1GC to the Parallel Garbage Collector, which handles humongous objects natively inside the Eden space."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The `@Transactional` annotation is causing the `MyObject` instances to be stored in the `Hibernate` session cache",
-      "explanation": "The primary cause of this issue is that the `@Transactional` annotation is causing the `MyObject` instances to be stored in the `Hibernate` session cache. When a method is annotated with `@Transactional`, Spring will automatically create a new `Hibernate` session and bind it to the thread. Any objects that are created or loaded within the scope of the `@Transactional` method will be stored in the `Hibernate` session cache, which can lead to a high memory usage if a large number of objects are created. In this case, the `MyObject` instances are being created in a loop and stored in the `Hibernate` session cache, leading to the `OutOfMemoryError`."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Increase the G1 region size using `-XX:G1HeapRegionSize` to prevent these large objects from being classified as humongous.",
+      "explanation": "In G1GC, any object that is larger than 50% of a G1 region is considered a 'Humongous Object' and is allocated directly in the Old Generation as a contiguous set of regions. Humongous allocations can lead to severe heap fragmentation and premature Full GCs or evacuation failures (`To-space exhausted`). By increasing the region size using `-XX:G1HeapRegionSize` (e.g., from 4MB to 16MB or 32MB), these objects will fit within a standard region, allowing them to be allocated in the Eden space and collected efficiently during normal minor GCs."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where the application is experiencing a high number of `java.lang.OutOfMemoryError: GC overhead limit exceeded` errors. The application uses a `ThreadPoolExecutor` to execute tasks concurrently, and the relevant code snippet is: `private final ThreadPoolExecutor executor = new ThreadPoolExecutor(10, 10, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(1000));`. The `ThreadPoolExecutor` is used to execute tasks that may block for a long time.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "You are debugging a production issue where a Spring Boot application using Hibernate and PostgreSQL experiences a sudden surge in JVM heap memory usage and high CPU utilization. Thread dumps reveal hundreds of threads blocked waiting for database connections from the HikariCP pool. You find the following code in a key service:\n\njava\n@Transactional\npublic void processTransaction(Long id) {\n    User user = userRepository.findById(id).orElseThrow();\n    byte[] data = externalHttpClient.fetchLargePayload(user.getApiUrl());\n    user.setPayload(data);\n    userRepository.save(user);\n}\n\n\nAssume `externalHttpClient.fetchLargePayload` performs a blocking network call taking 5 to 10 seconds to respond.",
+      "question": "What is the primary mechanism causing high JVM memory usage and GC degradation under load in this scenario?",
       "options": [
-        "A) The `ThreadPoolExecutor` is not properly configured to handle the workload, leading to a high number of threads being created",
-        "B) The `ThreadPoolExecutor` is not properly sized for the workload, leading to a high number of tasks being queued",
-        "C) The tasks being executed by the `ThreadPoolExecutor` are not properly designed to handle concurrency, leading to a high number of threads being blocked",
-        "D) The `ThreadPoolExecutor` is not properly configured to handle the memory usage of the tasks, leading to a high number of `OutOfMemoryError` errors"
+        "A) Because the network call is executed within a `@Transactional` boundary, the database connection is held open during the 5-10 second network I/O, exhausting the HikariCP pool and keeping transaction state, Hibernate L1 cache, and large payloads alive in the JVM heap, preventing their garbage collection.",
+        "B) The blocking HTTP client bypasses Spring's transaction proxy, forcing the JVM to clone the `User` object into the Metaspace for every network retry.",
+        "C) Hibernate is forced to continuously flush its dirty state to the system's virtual swap memory, causing the OS to trigger emergency Stop-The-World (STW) pauses.",
+        "D) The JDBC driver attempts to serialize the `externalHttpClient` state inside the transaction log, causing an evacuation failure in the G1 Survivor space."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `ThreadPoolExecutor` is not properly sized for the workload, leading to a high number of tasks being queued",
-      "explanation": "The primary cause of this issue is that the `ThreadPoolExecutor` is not properly sized for the workload, leading to a high number of tasks being queued. When the `ThreadPoolExecutor` is not properly sized, it can lead to a high number of tasks being queued, which can cause the JVM to run out of memory. In this case, the `ThreadPoolExecutor` is configured with a fixed pool size of 10 threads, but the queue size is set to 1000, which can lead to a high number of tasks being queued. This can cause the JVM to run out of memory, leading to the `OutOfMemoryError`. To fix this issue, the `ThreadPoolExecutor` should be properly sized for the workload, and the queue size should be adjusted accordingly."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Because the network call is executed within a `@Transactional` boundary, the database connection is held open during the 5-10 second network I/O, exhausting the HikariCP pool and keeping transaction state, Hibernate L1 cache, and large payloads alive in the JVM heap, preventing their garbage collection.",
+      "explanation": "Spring's `@Transactional` binds a database connection to the current thread for the duration of the method. When a slow, blocking network call is performed inside this transaction, the connection is held active and idle for 5-10 seconds. Under load, this quickly exhausts the HikariCP connection pool. Consequently, hundreds of threads wait for connections while holding reference chains to their respective Transaction contexts, Hibernate Persistence Contexts (L1 cache), and large payload byte arrays. This prevents the garbage collector from reclaiming these heavy objects, leading to high heap pressure, constant GC thrashing, and potential OOM."
     }
   ]
 }
