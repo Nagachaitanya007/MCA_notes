@@ -145,7 +145,8 @@
     "Distributed Cache: Balancing Load with Consistent Hashing and LRU",
     "Designing a Distributed Cache with Consistent Hashing and LRU",
     "Distributed Cache Architecture: Seamless Scaling with Consistent Hashing and Local LRU Eviction",
-    "High-Performance Distributed Caching: Consistent Hashing and LRU Eviction Architecture"
+    "High-Performance Distributed Caching: Consistent Hashing and LRU Eviction Architecture",
+    "Mastering Distributed Cache Design: Consistent Hashing & LRU Eviction Under the Hood"
   ],
   "Design a Distributed ID Generator (Snowflake ID)": [
     "Design a Distributed ID Generator (Snowflake ID)",
