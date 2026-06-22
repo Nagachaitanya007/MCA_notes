@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
-  "mode": "Java",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot application deployed to an external Servlet container experiences a progressive memory leak in the JVM Heap after multiple hot redeployments. Eventually, the JVM crashes with an `OutOfMemoryError: Metaspace`. Upon analyzing a heap dump, you identify thousands of active instances of the application's WebappClassLoader holding onto thread-local variables. You isolate the following filter configuration:\n\njava\n@WebFilter(\"/*\")\npublic class TenantFilter implements Filter {\n    @Override\n    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException {\n        String tenantId = req.getParameter(\"tenantId\");\n        TenantContextHolder.setTenantId(tenantId);\n        chain.doFilter(req, res);\n    }\n}\n\nWhere `TenantContextHolder` wraps a static `ThreadLocal<String>`.",
-      "question": "What is the primary cause of this Metaspace and Heap memory leak?",
+      "scenario": "An Automated Guided Vehicle (AGV) system in a smart logistics warehouse uses the A* algorithm to calculate paths in a dynamic 3D grid layout (representing multi-tiered storage racks). Due to unexpected obstacle movements (human operators, automated forklift interventions), path recalculation must happen in real-time. The current heuristic used is Manhattan distance ($h(n)$). As the warehouse scales, memory usage on the AGV's embedded SoC spikes exponentially during peak congestion, leading to OutOfMemory (OOM) errors and pathfinding service crashes.",
+      "question": "Which optimization strategy or heuristic modification is most appropriate to resolve both the real-time latency and memory constraints on the embedded SoC without losing the path quality guarantee completely?",
       "options": [
-        "A) The `TenantFilter` is dynamically instantiating a new `ThreadLocal` object for every incoming HTTP request, filling up the young generation.",
-        "B) The container's worker threads (which survive redeployments) still hold references to the old application class loader through the uncleared `ThreadLocal` values, preventing the class loader and its loaded classes from being garbage collected.",
-        "C) The Spring container generates dynamic CGLIB proxies for `TenantFilter` upon redeployment, which overflows the Code Cache and spills into Metaspace.",
-        "D) The WebappClassLoader does not have permission to collect static variables, causing a permanent root reference to the GC Metaspace."
+        "A) Replace Manhattan distance with Euclidean distance to reduce the number of expanded nodes in 3D space, and fall back to Breadth-First Search (BFS) during high latency.",
+        "B) Transition to Weighted A* ($f(n) = g(n) + \\epsilon \\cdot h(n)$, where $\\epsilon > 1$) to trade admissibility for faster convergence, combined with an iterative deepening variant (IDA*) to bound memory to linear complexity.",
+        "C) Implement a strict admissible heuristic by setting $h(n) = 0$ (Dijkstra's Algorithm) to eliminate heuristic overhead, and allocate static memory blocks on the JVM to prevent heap fragmentation.",
+        "D) Utilize Bidirectional A* with an over-consistent heuristic to prune the search space, ensuring $h(n) \\ge h^*(n)$ to force early termination and limit memory allocation."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The container's worker threads (which survive redeployments) still hold references to the old application class loader through the uncleared `ThreadLocal` values, preventing the class loader and its loaded classes from being garbage collected.",
-      "explanation": "Because worker threads are pooled by the application server and survive redeployments, failing to call `remove()` on a `ThreadLocal` variable means the thread retains a strong reference to the value (the tenant String or associated objects). This value maintains a reference to its loaded class, which keeps the entire `WebappClassLoader` instance alive in memory. Consequently, none of the classes loaded by that class loader can be garbage collected, leading to a Metaspace leak upon multiple redeploys. The correct fix is to clear the thread local in a `finally` block."
+      "correct_answer_text": "B) Transition to Weighted A* ($f(n) = g(n) + \\epsilon \\cdot h(n)$, where $\\epsilon > 1$) to trade admissibility for faster convergence, combined with an iterative deepening variant (IDA*) to bound memory to linear complexity.",
+      "explanation": "Weighted A* introduces a bias towards the goal by multiplying the heuristic by a factor $\\epsilon > 1$. This drastically reduces node expansion and computational latency while ensuring the path cost is bounded within $(1+\\epsilon)$ of the optimal path. Pairing this with Iterative Deepening A* (IDA*) solves the memory bottleneck by performing depth-first searches with a cutoff based on the $f$-value, reducing the memory footprint from exponential ($O(b^d)$) to linear ($O(bd)$)."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a Java application utilizing the G1 garbage collector experiences frequent, long Stop-The-World (STW) pauses. While reviewing the GC logs, you observe a large volume of `G1 Humongous Allocation` messages. The logs show that these allocations bypass the Young generation entirely and are placed directly into the Old generation, triggering premature concurrent marking cycles and subsequent Full GCs. The current JVM parameters include `-Xmx16g -XX:G1HeapRegionSize=2m`.",
-      "question": "Which of the following tuning strategies is the most appropriate first step to resolve this performance degradation?",
+      "scenario": "An enterprise B2B procurement platform uses a Min-Max search tree with Alpha-Beta pruning to model multi-turn negotiation strategies against adversary automated suppliers. Under high-frequency bidding, the decision engine must yield the optimal counter-offer within a strict SLA of 150 milliseconds. However, during periods of high market volatility, the branching factor increases drastically, and the algorithm fails to prune significant portions of the search tree because of static, left-to-right evaluation order of nodes, leading to SLA timeout violations.",
+      "question": "How should the system's search architecture be modified to maximize the efficiency of Alpha-Beta pruning and guarantee compliance with the 150ms SLA?",
       "options": [
-        "A) Increase the survivor ratio using `-XX:SurvivorRatio=4` to force humongous objects into the survivor spaces.",
-        "B) Switch to the Parallel GC algorithm using `-XX:+UseParallelGC` because Parallel GC automatically fragments large objects across Eden spaces.",
-        "C) Increase the G1 region size using `-XX:G1HeapRegionSize=16m` or `-XX:G1HeapRegionSize=32m` so that larger objects do not exceed the 50% region size threshold.",
-        "D) Decrease the Initiating Heap Occupancy Percent (`-XX:IHOP`) to 10% to force the marking cycle to run continuously."
+        "A) Convert the search tree to a Directed Acyclic Graph (DAG) and enforce a strict uniform-cost ordering where nodes with the lowest static heuristic evaluation values are pruned first, regardless of alpha/beta bounds.",
+        "B) Switch the negotiation engine to a Monte Carlo Tree Search (MCTS) with UCT, keeping the depth constraint infinite, as MCTS guarantees optimal minimax pruning without requiring node evaluation functions.",
+        "C) Eliminate Alpha-Beta pruning altogether and run parallelized Min-Max across multiple high-performance GPU cores to force exhaustive evaluation of all leaf nodes up to depth 12.",
+        "D) Implement Iterative Deepening Min-Max paired with a Transposition Table and History Heuristics for dynamic move ordering, utilizing a hard-timeout interrupt to return the best-evaluated move of the last completed depth."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Increase the G1 region size using `-XX:G1HeapRegionSize=16m` or `-XX:G1HeapRegionSize=32m` so that larger objects do not exceed the 50% region size threshold.",
-      "explanation": "In G1GC, any object that is larger than 50% of a G1 region size is classified as a Humongous Object. These objects are allocated directly in the Old generation as a contiguous sequence of regions. Frequent humongous allocations lead to rapid heap fragmentation and initiate premature GC cycles. Increasing the `G1HeapRegionSize` (up to 32MB) raises the threshold for what is considered a humongous object, allowing them to be allocated in the Eden space and collected during normal Young GC cycles."
+      "correct_answer_letter": "D",
+      "correct_answer_text": "D) Implement Iterative Deepening Min-Max paired with a Transposition Table and History Heuristics for dynamic move ordering, utilizing a hard-timeout interrupt to return the best-evaluated move of the last completed depth.",
+      "explanation": "Alpha-Beta pruning's efficiency is highly dependent on move ordering; under optimal ordering, the search complexity drops from $O(b^d)$ to $O(b^{d/2})$, allowing much deeper exploration within the same time budget. Transposition Tables and History Heuristics dynamically order moves so that the best moves are evaluated first, maximizing pruning. Iterative Deepening ensures that if the 150ms SLA is hit, the engine can immediately return the best move computed from the last completed search depth rather than crashing or returning an uncomputed state."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a high-volume microservice experiences extreme CPU spikes and latency degradation. Thread dumps show the JVM spends 50% of its execution time in GC safety points (`UseGCOverheadLimitExceeded` is imminent). You discover that a developer implemented an in-memory metadata cache using `WeakHashMap` to hold temporary API responses to 'prevent memory leaks'. The cache keys are dynamically generated request URI Strings.",
-      "question": "Why does using `WeakHashMap` with dynamically generated request URI Strings cause severe GC overhead and high latency under load?",
+      "scenario": "A ride-hailing company operates a real-time dispatch system matching drivers to riders in a mega-city. The routing algorithm must handle highly dynamic, skewed road edge-weights caused by flash floods, construction, and traffic spikes. The platform currently uses Greedy Best-First Search (GBFS) to calculate paths instantly. However, post-incident analysis reveals that during peak traffic, GBFS creates massive detour loops, routing vehicles into dead-ends or highly congested peripheral highways, causing driver frustration and lost revenue.",
+      "question": "What is the primary cause of this algorithmic failure, and how can the architecture be redesigned to mitigate it while maintaining real-time performance?",
       "options": [
-        "A) Weak references are only cleared during Full GC cycles, causing the JVM to run Full GCs repeatedly to attempt to free up the keys.",
-        "B) String literals or dynamically generated strings that are internalized (`String.intern()`) bypass the `WeakReference` wrapper completely, causing a silent heap leak.",
-        "C) Under memory pressure, GC constantly clears the weak keys, causing immediate cache misses. This forces the application to re-fetch and reconstruct objects, creating a feedback loop of massive object churn and high GC frequency.",
-        "D) `WeakHashMap` internally serializes all key-value operations to the system's finalizer thread, creating a massive concurrency bottleneck."
+        "A) GBFS is highly susceptible to local minima because it ignores the accumulated path cost $g(n)$ and only minimizes the estimated cost to the goal $h(n)$; the system should transition to Contraction Hierarchies or A* with Landmark-based heuristics (ALT).",
+        "B) GBFS fails because its heuristic function is inherently admissible but not consistent, causing it to re-evaluate closed nodes; the system should enforce consistency by squaring the heuristic value.",
+        "C) The detour loops are caused by the lack of dynamic thread allocation in the routing JVM; the system should migrate the routing service to a non-blocking reactive framework keeping the GBFS algorithm intact.",
+        "D) GBFS experiences numerical instability under skewed data because it computes paths backward from the destination; the system should shift to a forward-only Depth-First Search with branch-and-bound limits."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Under memory pressure, GC constantly clears the weak keys, causing immediate cache misses. This forces the application to re-fetch and reconstruct objects, creating a feedback loop of massive object churn and high GC frequency.",
-      "explanation": "Weak references are collected eagerly during garbage collection when their referents are no longer strongly reachable. Under load and mild memory pressure, the GC actively reclaims the keys in the `WeakHashMap`. This causes the cache hit rate to drop to zero. The subsequent cache misses force the microservice to continuously re-allocate and parse JSON/API payloads, flooding the Young generation with short-lived objects. This high churn rate triggers even more frequent GC cycles, causing the JVM to thrash in a continuous allocation/collection spiral."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) GBFS is highly susceptible to local minima because it ignores the accumulated path cost $g(n)$ and only minimizes the estimated cost to the goal $h(n)$; the system should transition to Contraction Hierarchies or A* with Landmark-based heuristics (ALT).",
+      "explanation": "Greedy Best-First Search is not optimal because it evaluates nodes solely based on $f(n) = h(n)$, ignoring the actual cost to reach that node ($g(n)$). In complex city road networks with dynamic bottlenecks, GBFS easily gets stuck in local minima (e.g., heading straight towards the destination but running into a river barrier or closed highway, causing loops/detours). Transitioning to Contraction Hierarchies (which precomputes shortcuts) or A* with Landmark-based heuristics (ALT) provides optimal or near-optimal paths extremely quickly, solving the latency and routing-accuracy trade-off."
     }
   ]
 }
