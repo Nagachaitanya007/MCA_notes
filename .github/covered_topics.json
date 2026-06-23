@@ -86,7 +86,8 @@
     "GC Pacing and Memory Limits: Tuning the Tri-Color Collector",
     "Thread-Local Allocation Buffers (TLABs): Eliminating Allocation Bottlenecks",
     "GC Safepoints and Thread Suspension: Tuning the Hidden Latency Killers",
-    "Card Tables & Remembered Sets (RSets): Tuning Cross-Generational References"
+    "Card Tables & Remembered Sets (RSets): Tuning Cross-Generational References",
+    "Tuning GC Reachability: Soft, Weak, and Phantom References"
   ],
   "Design a URL Shortener (Key Generation Service, Sharding)": [
     "URL Shortener: Key Generation Service (KGS) & Sharding",
