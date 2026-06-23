@@ -1,48 +1,48 @@
 {
-  "topic": "Exception Handling Strategies in Distributed Systems",
-  "mode": "Java",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a Spring Boot application's transactional integrity is compromised. The following service is used to book seats and log failures to an audit table:\n\njava\n@Service\npublic class BookingService {\n    @Transactional\n    public void bookSeat(String seatId) {\n        try {\n            reserveInventory(seatId);\n        } catch (InventoryException e) {\n            logFailureToAuditDb(seatId, e.getMessage());\n            throw e;\n        }\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void logFailureToAuditDb(String seatId, String reason) {\n        // Inserts into AUDIT_LOG table\n    }\n}\n\n\nWhen `reserveInventory` throws an `InventoryException`, the transaction rolls back, but surprisingly, no entry is found in the `AUDIT_LOG` table, even though `logFailureToAuditDb` is annotated with `Propagation.REQUIRES_NEW`.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A high-density automated fulfillment center deployes Autonomous Mobile Robots (AMRs) to navigate a multi-story warehouse. The navigation map is represented as a massive 3D grid consisting of millions of states. While running a standard A* search on the embedded microcontrollers of the AMRs, the robots frequently encounter Out-of-Memory (OOM) faults due to the exponential growth of the Open and Closed lists. The engineering team requires a search strategy that respects a hard memory limit of 256MB, guarantees completeness, and ensures that when memory is full, the least promising nodes are pruned while their diagnostic evaluation scores are preserved in their ancestral nodes.",
+      "question": "Which of the following search paradigms should the engineering team implement to satisfy these constraints?",
       "options": [
-        "A) The `InventoryException` is a checked exception, preventing Spring from registering the transactional boundary transition.",
-        "B) The internal self-invocation of `logFailureToAuditDb` bypasses the Spring AOP proxy, executing it within the same transactional context of the caller. Consequently, when the parent transaction rolls back, the audit log insert is also rolled back.",
-        "C) Spring's transaction manager does not support `Propagation.REQUIRES_NEW` when running inside a clustered container.",
-        "D) The ThreadLocal variables storing the connection details are cleared as soon as `InventoryException` is thrown inside the catch block."
+        "A) Memory-bounded A* (MA*) or Simplified Memory-bounded A* (SMA*), which utilizes all available memory to store the state space, dynamically dropping the worst leaf nodes while archiving their costs in parent nodes.",
+        "B) Iterative Deepening A* (IDA*), because it reduces the memory footprint to O(d) by performing successive depth-first searches bounded by the f-limit, entirely eliminating the need for node pruning.",
+        "C) Weighted A* with an inflation factor (w > 1.5) applied to the heuristic, guaranteeing a strict hard ceiling on physical memory consumption.",
+        "D) Recursive Best-First Search (RBFS), because it uses linear space and guarantees that nodes are never regenerated, thereby eliminating the search-space memory bottleneck."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The internal self-invocation of `logFailureToAuditDb` bypasses the Spring AOP proxy, executing it within the same transactional context of the caller. Consequently, when the parent transaction rolls back, the audit log insert is also rolled back.",
-      "explanation": "Spring's declarative transaction management (`@Transactional`) is powered by Spring AOP proxies. When a method within a bean calls another method on the same bean (self-invocation), the call is made on the local `this` reference rather than going through the proxy. Because the proxy is bypassed, the `@Transactional(propagation = Propagation.REQUIRES_NEW)` annotation on `logFailureToAuditDb` is ignored, and it executes within the transaction boundary of `bookSeat`. When `InventoryException` is rethrown and the parent transaction rolls back, the audit entry is rolled back with it."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Memory-bounded A* (MA*) or Simplified Memory-bounded A* (SMA*), which utilizes all available memory to store the state space, dynamically dropping the worst leaf nodes while archiving their costs in parent nodes.",
+      "explanation": "SMA* (Simplified Memory-bounded A*) is designed specifically for scenarios with strict memory constraints. It utilizes all available memory (e.g., the 256MB budget) to speed up search. When memory is full, SMA* prunes the leaf node with the worst f-value but backs up this value to its parent node. This ensures the algorithm remains complete and optimal if the solution path fits within the memory limit, unlike IDA* or RBFS which have low memory footprints but suffer from severe node regeneration overhead on complex graphs with unique step costs."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a distributed saga orchestration service uses Java's parallel streams and `CompletableFuture.supplyAsync()` without specifying a custom executor to execute compensation steps across multiple microservices. Under a simulated network partition, many compensation calls throw a `TransientGatewayException` and hang on a 30-second read timeout. Suddenly, the entire application becomes completely unresponsive, failing to handle unrelated incoming HTTP requests or execute internal timer-based cleanups.",
-      "question": "What is the underlying JVM-level cause of this system-wide stall?",
+      "scenario": "A real-time automated options hedging engine models market counterparties using a Min-Max search tree with Alpha-Beta pruning. Under high-volatility market events, the engine must make a hedging decision within 10 milliseconds to avoid severe financial slippage. However, during these periods, the branching factor of potential market moves expands exponentially, and the search fails to prune redundant subtrees, resulting in processing timeouts. The current move generator evaluates potential hedging contracts based solely on chronological listing times.",
+      "question": "Which optimization will most significantly improve the pruning efficiency of the Alpha-Beta algorithm to consistently meet the 10ms execution limit?",
       "options": [
-        "A) A ThreadGroup deadlock occurs because `TransientGatewayException` triggers a full Stop-The-World (STW) garbage collection phase that never terminates.",
-        "B) The default `ForkJoinPool.commonPool()` is shared JVM-wide. Blocking operations during compensation tasks exhaust the common pool threads, starving parallel streams, reactive engines, and other framework tasks that rely on this shared pool.",
-        "C) The JVM JIT compiler deoptimizes the exception throwing path, blocking all threads at a safepoint during dynamic re-compilation.",
-        "D) The operating system runs out of native threads because each `CompletableFuture` allocation creates a raw OS thread that is never garbage-collected when it terminates exceptionally."
+        "A) Restructuring the search tree into a Breadth-First Search (BFS) paradigm to allow parallel evaluation of sibling nodes across multiple GPU cores.",
+        "B) Implementing a dynamic move-ordering heuristic (e.g., sorting contracts by Black-Scholes implied volatility impact) to evaluate the most critical defensive moves first.",
+        "C) Transitioning the engine to a Monte Carlo Tree Search (MCTS) with random rollouts to bypass the minimax mathematical constraints entirely.",
+        "D) Artificially narrowing the search window by manually increasing the alpha parameter and decreasing the beta parameter prior to search initialization."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The default `ForkJoinPool.commonPool()` is shared JVM-wide. Blocking operations during compensation tasks exhaust the common pool threads, starving parallel streams, reactive engines, and other framework tasks that rely on this shared pool.",
-      "explanation": "When `CompletableFuture.supplyAsync()` or parallel streams are used without an explicit `Executor`, they run on the JVM-wide default `ForkJoinPool.commonPool()`. If long-running, blocking operations (such as waiting for network requests with high timeouts) are executed in this pool, the pool's threads quickly become exhausted. Because many core Java libraries, Spring Reactive structures, and parallel streams share this same common pool, starving it causes a JVM-wide performance cascade, halting unrelated processing paths."
+      "correct_answer_text": "B) Implementing a dynamic move-ordering heuristic (e.g., sorting contracts by Black-Scholes implied volatility impact) to evaluate the most critical defensive moves first.",
+      "explanation": "The efficiency of Alpha-Beta pruning is highly dependent on move ordering. In the worst-case scenario (where moves are ordered worst-first), Alpha-Beta behaves like standard minimax, searching O(b^d) nodes. In the best-case scenario (where the best moves are evaluated first), the time complexity drops to O(b^(d/2)), effectively doubling the searchable depth in the same timeframe. Sorting contracts by volatility impact acts as an effective domain-specific move-ordering heuristic that maximizes early cutoffs."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a microservice uses Resilience4j's `@Retry` and `@CircuitBreaker` annotations on the same service method to handle downstream failures. During a network partition, you notice that even when the downstream service is completely down, the service continues to execute retries, exhausting caller threads and ignoring the circuit breaker's fast-fail mechanism.",
-      "question": "Why does the service continue to attempt retries instead of fast-failing via the open circuit breaker?",
+      "scenario": "An aerial inspection company uses A* pathfinding for drone swarms navigating 3D urban landscapes. To optimize battery consumption, the heuristic function h(n) estimates remaining flight time. The developers design h(n) using the Euclidean distance divided by the drone's maximum battery-efficient cruise speed. However, in simulations featuring high-velocity tailwinds, the drones occasionally select suboptimal, longer routes instead of the actual quickest paths.",
+      "question": "What is the primary theoretical reason for this failure to find the optimal path?",
       "options": [
-        "A) The `@CircuitBreaker` annotation is ignored by Spring because it is not declared on an interface method.",
-        "B) By default, Spring's aspect precedence configures `RetryAspect` with a higher precedence (lower order value) than `CircuitBreakerAspect`. As a result, the `Retry` aspect wraps the `CircuitBreaker`. When the circuit breaker trips and throws `CallNotPermittedException`, the outer `Retry` aspect catches it and continues to retry, defeating the fast-fail mechanism.",
-        "C) Resilience4j's `CircuitBreaker` does not register `ConnectException` as a failure unless it is explicitly configured via `recordExceptions`.",
-        "D) The JVM thread scheduler prioritizes the `@Transactional` lock acquisition over the circuit breaker's status check, leading to a race condition."
+        "A) The heuristic is inadmissible because in the presence of strong tailwinds, the actual remaining flight time h*(n) is less than the estimated time h(n), violating the h(n) <= h*(n) constraint.",
+        "B) The heuristic is inconsistent because the actual transition cost c(n, a, n') between adjacent cells in a tailwind is higher than the heuristic difference h(n) - h(n').",
+        "C) The heuristic violates the non-negativity constraint of A* because high-velocity tailwinds create negative edge weights in the physical transition graph.",
+        "D) The heuristic is too weak (h(n) approx 0), causing the search to degrade into a standard Dijkstra's algorithm which is incapable of finding optimal paths in directed wind fields."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) By default, Spring's aspect precedence configures `RetryAspect` with a higher precedence (lower order value) than `CircuitBreakerAspect`. As a result, the `Retry` aspect wraps the `CircuitBreaker`. When the circuit breaker trips and throws `CallNotPermittedException`, the outer `Retry` aspect catches it and continues to retry, defeating the fast-fail mechanism.",
-      "explanation": "In Spring Boot configurations, the order of AOP aspects determines how they wrap around each other. By default, Resilience4j's `RetryAspect` has a higher priority (lower order value) than `CircuitBreakerAspect`. Consequently, the proxy chain wraps the `@CircuitBreaker` inside the `@Retry` proxy. When the circuit breaker opens and throws `CallNotPermittedException`, the outer `@Retry` intercepts this exception and retries the entire execution chain (including the circuit breaker check), resulting in redundant retries that exhaust system resources instead of failing fast."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The heuristic is inadmissible because in the presence of strong tailwinds, the actual remaining flight time h*(n) is less than the estimated time h(n), violating the h(n) <= h*(n) constraint.",
+      "explanation": "For A* to guarantee an optimal path, the heuristic function h(n) must be admissible, meaning it must never overestimate the actual cost to reach the goal (h(n) <= h*(n)). When a strong tailwind exists, the drone can travel much faster than its standard maximum cruise speed, making the actual remaining flight time h*(n) lower than the heuristic estimate h(n). Since h(n) > h*(n), the heuristic becomes inadmissible, causing A* to overestimate the cost of optimal paths and choose suboptimal alternatives."
     }
   ]
 }
