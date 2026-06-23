@@ -121,7 +121,8 @@
     "Data Consistency in Replication: Synchronous vs. Asynchronous Models",
     "Choosing a Sharding Key: How to Avoid Hotspots & Achieve Even Data Distribution",
     "Multi-Leader Replication: Mastering Write Conflict Resolution",
-    "Leaderless Replication: Mastering Quorum Consensus & Active Anti-Entropy"
+    "Leaderless Replication: Mastering Quorum Consensus & Active Anti-Entropy",
+    "Cross-Shard Distributed Transactions: Two-Phase Commit (2PC) vs. The Saga Pattern"
   ],
   "Design a Notification System (Kafka + SQS + Webhooks)": [
     "Designing a Scalable Notification System (Kafka + SQS + Webhooks)",
