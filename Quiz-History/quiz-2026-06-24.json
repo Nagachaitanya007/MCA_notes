@@ -1,48 +1,48 @@
 {
-  "topic": "Exception Handling Strategies in Distributed Systems",
-  "mode": "Java",
+  "topic": "Machine Learning: Classification vs Regression Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `@Transactional` method in a Spring application is occasionally not rolling back when an exception occurs, despite being annotated with `rollbackFor = Exception.class`. The relevant code snippet is: `@Transactional(rollbackFor = Exception.class) public void transferFunds(``Account from``, ``Account to``, ``BigDecimal amount``) { ... }`. The method involves multiple database operations.",
-      "question": "What could be the primary reason for this behavior?",
+      "scenario": "A real-world industrial problem statement: Predicting the likelihood of a customer churning from a telecom company based on their usage and billing data.",
+      "question": "What type of machine learning algorithm would be most suitable for this scenario?",
       "options": [
-        "A) Lack of `proxyTargetClass` in `@EnableTransactionManagement`",
-        "B) Incorrect usage of `@Transactional` on an interface method",
-        "C) Insufficient transaction propagation",
-        "D) Misconfigured transaction manager"
+        "A) Linear Regression",
+        "B) Logistic Regression",
+        "C) Decision Trees",
+        "D) Clustering"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Lack of `proxyTargetClass` in `@EnableTransactionManagement`",
-      "explanation": "The lack of `proxyTargetClass` in `@EnableTransactionManagement` can lead to the use of interface-based proxies instead of class-based proxies (CGLIB), which may affect the interception and handling of exceptions within `@Transactional` methods, particularly if the method is not public or if there are aspects involved that rely on class-level proxies."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Logistic Regression",
+      "explanation": "Logistic Regression is a classification algorithm that is suitable for predicting binary outcomes, such as customer churn. It provides the probability of a customer churning, which can be used to take proactive measures."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a Java application using Spring and Hibernate occasionally throws a `PersistenceException` with a nested `StaleStateException`. The relevant stack trace indicates the issue occurs during a flush operation. A snippet from the affected code shows a method using `@Autowired private `EntityManager` entityManager;` to perform database operations.",
-      "question": "What would most likely cause this exception?",
+      "scenario": "A manufacturing company wants to predict the amount of energy required to produce a specific product based on its weight, material, and production time. The data is highly imbalanced with most products requiring low amounts of energy.",
+      "question": "What approach would you take to handle the imbalanced data and improve the model's performance?",
       "options": [
-        "A) Concurrent modification of the same entity by multiple threads",
-        "B) Incorrect FlushMode",
-        "C) Detached entities being updated",
-        "D) Incorrect transaction isolation level"
+        "A) Oversampling the minority class",
+        "B) Undersampling the majority class",
+        "C) Using a regression algorithm with weighted loss function",
+        "D) Collecting more data to balance the classes"
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) Detached entities being updated",
-      "explanation": "A `StaleStateException` typically occurs when Hibernate attempts to update or delete an entity that is no longer in the persistence context (i.e., it has been detached), and another transaction has since updated or deleted the same entity, resulting in a version conflict. This scenario often arises when entities are not properly managed within transactions, especially when using detached entities."
+      "correct_answer_text": "C) Using a regression algorithm with weighted loss function",
+      "explanation": "Since the data is highly imbalanced, using a weighted loss function can help the model focus on the minority class. Additionally, regression algorithms can handle continuous outputs, making them suitable for predicting the amount of energy required."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Java method occasionally hangs indefinitely during execution, consuming increasing amounts of CPU. Upon inspection, the method uses `synchronized` blocks to manage access to shared resources, and there is a possibility of deadlock due to the use of `this` as a lock and another object lock in different orders across methods. A snippet from the affected code shows: `synchronized (this) { synchronized (``otherLock``) { ... } }` in one method, and the reverse order in another.",
-      "question": "What is the primary cause of the issue described?",
+      "scenario": "A real-time system needs to predict the stock prices of a company based on historical data, technical indicators, and market trends. The system has to make predictions every minute, and the data is high-dimensional with over 100 features.",
+      "question": "What approach would you take to reduce the dimensionality of the data and improve the model's performance in real-time?",
       "options": [
-        "A) Starvation due to a `Thread.sleep`",
-        "B) Deadlock due to inconsistent locking order",
-        "C) Livelock due to a spin lock",
-        "D) Resource leak from unclosed resources"
+        "A) Using PCA to reduce the dimensionality",
+        "B) Using t-SNE to reduce the dimensionality",
+        "C) Using a recursive feature elimination algorithm",
+        "D) Using a gradient boosting algorithm with automatic feature selection"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Deadlock due to inconsistent locking order",
-      "explanation": "Deadlock occurs when two or more threads are blocked indefinitely, each waiting for the other to release a resource. The described scenario is a classic example of deadlock potential due to inconsistent locking order. When `MethodA` locks `this` and then `otherLock`, and `MethodB` locks `otherLock` and then `this`, the stage is set for a deadlock if `MethodA` and `MethodB` are called concurrently from different threads, as each thread will hold one lock and wait for the other, which is held by the other thread."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Using PCA to reduce the dimensionality",
+      "explanation": "PCA is a suitable approach for reducing dimensionality in high-dimensional data. It can help retain the most important features and improve the model's performance in real-time by reducing the computational complexity."
     }
   ]
 }
