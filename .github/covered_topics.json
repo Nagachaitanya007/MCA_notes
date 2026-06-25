@@ -88,7 +88,8 @@
     "Thread-Local Allocation Buffers (TLABs): Eliminating Allocation Bottlenecks",
     "GC Safepoints and Thread Suspension: Tuning the Hidden Latency Killers",
     "Card Tables & Remembered Sets (RSets): Tuning Cross-Generational References",
-    "Tuning GC Reachability: Soft, Weak, and Phantom References"
+    "Tuning GC Reachability: Soft, Weak, and Phantom References",
+    "Memory Management & Garbage Collection Tuning"
   ],
   "Design a URL Shortener (Key Generation Service, Sharding)": [
     "URL Shortener: Key Generation Service (KGS) & Sharding",
