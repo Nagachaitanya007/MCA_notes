@@ -1,48 +1,48 @@
 {
-  "topic": "Exception Handling Strategies in Distributed Systems",
-  "mode": "Java",
+  "topic": "Machine Learning: Classification vs Regression Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `@Transactional` annotated method in a Spring-based distributed system is not rolling back when an exception occurs. The method updates multiple databases and the exception happens after the first database update.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A real-world industrial problem involves predicting the likelihood of a customer buying a car based on their age, income, and credit score. The dataset is highly skewed, with only 10% of customers purchasing a car. Which machine learning algorithm is most suitable for handling this imbalance and providing accurate predictions?",
+      "question": "Which algorithm should be chosen for this task?",
       "options": [
-        "A) Lack of `rollbackFor` attribute on the `@Transactional` annotation",
-        "B) Incorrect usage of `@Transactional` propagation type",
-        "C) Insufficient transaction manager configuration",
-        "D) Failure to handle checked exceptions"
+        "A) Logistic Regression with oversampling of minority class",
+        "B) Decision Trees with cost-sensitive learning",
+        "C) Random Forest with undersampling of majority class",
+        "D) Support Vector Machines with class weights"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Lack of `rollbackFor` attribute on the `@Transactional` annotation",
-      "explanation": "The `@Transactional` annotation in Spring requires specifying which exceptions trigger a rollback. Without the `rollbackFor` attribute, only unchecked exceptions (like `RuntimeException`) trigger a rollback by default. If the method throws a checked exception, the transaction won't be rolled back unless `rollbackFor` is specified."
+      "correct_answer_letter": "D",
+      "correct_answer_text": "D) Support Vector Machines with class weights",
+      "explanation": "Support Vector Machines with class weights can handle class imbalance by assigning different weights to different classes, allowing for more accurate predictions on the minority class."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a `List<String>` is being accessed concurrently by multiple threads, leading to a `ConcurrentModificationException`. The access is through a Spring `@Service` class method annotated with `@Async` for asynchronous execution.",
-      "question": "What change should be made to avoid the `ConcurrentModificationException`?",
+      "scenario": "In a high-dimensional space, a company wants to predict house prices based on features like the number of bedrooms, square footage, location, and amenities. However, the dataset contains many redundant and correlated features. Which dimensionality reduction technique is most suitable for this scenario?",
+      "question": "Which technique should be used to reduce dimensionality?",
       "options": [
-        "A) Use a `CopyOnWriteArrayList<String>` instead of `List<String>`",
-        "B) Synchronize access to the `List<String>` using `synchronized` blocks",
-        "C) Implement a custom thread-safe `List` class",
-        "D) Use `java.util.Collections.synchronizedList()`"
+        "A) Principal Component Analysis (PCA) for feature extraction",
+        "B) t-Distributed Stochastic Neighbor Embedding (t-SNE) for visualization",
+        "C) Linear Discriminant Analysis (LDA) for feature selection",
+        "D) Recursive Feature Elimination (RFE) for feature ranking"
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Use a `CopyOnWriteArrayList<String>` instead of `List<String>`",
-      "explanation": "The `CopyOnWriteArrayList` class is a thread-safe variant of `ArrayList`. When multiple threads iterate over it concurrently and one thread modifies the list by adding, removing, or replacing an element, `CopyOnWriteArrayList` creates a fresh copy of the underlying array. This allows for thread-safe iteration without the need for synchronization and avoids `ConcurrentModificationException`."
+      "correct_answer_text": "A) Principal Component Analysis (PCA) for feature extraction",
+      "explanation": "Principal Component Analysis (PCA) is a suitable technique for reducing dimensionality in high-dimensional spaces by extracting the most important features that capture the majority of the variance in the data."
     },
     {
       "id": 3,
-      "scenario": "Consider the following Java snippet: `try { // some I/O operation } catch (``Exception e``) { `System.out.println(e.getMessage())`; } catch (``Throwable t``) { `System.out.println(t.getMessage())`; }`. You are debugging a production issue where this snippet seems to mask important exception details.",
-      "question": "What is the primary issue with this exception handling strategy?",
+      "scenario": "A real-time system requires classification of network packets as either legitimate or malicious in less than 10 milliseconds. The system has limited computational resources and must handle a high volume of packets. Which machine learning algorithm is most suitable for this real-time constraint and limited resources?",
+      "question": "Which algorithm should be chosen for real-time classification?",
       "options": [
-        "A) Catching `Throwable` will prevent JVM from shutting down on `OutOfMemoryError`",
-        "B) It catches and handles `Exception` but then unnecessarily catches `Throwable`",
-        "C) The order of catch blocks is incorrect",
-        "D) It prints exception messages but does not log them"
+        "A) Deep Neural Networks with early exit",
+        "B) Gradient Boosting Machines with tree pruning",
+        "C) K-Nearest Neighbors with approximate search",
+        "D) Decision Trees with caching and parallelization"
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The order of catch blocks is incorrect",
-      "explanation": "In Java, the order of catch blocks matters. The catch block for the more general exception (`Throwable`) should be placed after the catch block for the less general exception (`Exception`). Since `Exception` is a subclass of `Throwable`, placing the `Throwable` catch block first will result in a compiler error because the `Exception` catch block will be unreachable. This strategy, if corrected, still lacks proper exception handling and logging but the immediate issue is the catch block order."
+      "correct_answer_letter": "D",
+      "correct_answer_text": "D) Decision Trees with caching and parallelization",
+      "explanation": "Decision Trees with caching and parallelization can provide fast and efficient classification in real-time systems with limited resources by reducing the number of computations and utilizing parallel processing."
     }
   ]
 }

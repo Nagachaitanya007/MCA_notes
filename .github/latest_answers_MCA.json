@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "A real-world industrial problem statement: Predicting the likelihood of a customer churning from a telecom company based on their usage and billing data.",
-      "question": "What type of machine learning algorithm would be most suitable for this scenario?",
+      "scenario": "A real-world industrial problem involves predicting the likelihood of a customer buying a car based on their age, income, and credit score. The dataset is highly skewed, with only 10% of customers purchasing a car. Which machine learning algorithm is most suitable for handling this imbalance and providing accurate predictions?",
+      "question": "Which algorithm should be chosen for this task?",
       "options": [
-        "A) Linear Regression",
-        "B) Logistic Regression",
-        "C) Decision Trees",
-        "D) Clustering"
+        "A) Logistic Regression with oversampling of minority class",
+        "B) Decision Trees with cost-sensitive learning",
+        "C) Random Forest with undersampling of majority class",
+        "D) Support Vector Machines with class weights"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Logistic Regression",
-      "explanation": "Logistic Regression is a classification algorithm that is suitable for predicting binary outcomes, such as customer churn. It provides the probability of a customer churning, which can be used to take proactive measures."
+      "correct_answer_letter": "D",
+      "correct_answer_text": "D) Support Vector Machines with class weights",
+      "explanation": "Support Vector Machines with class weights can handle class imbalance by assigning different weights to different classes, allowing for more accurate predictions on the minority class."
     },
     {
       "id": 2,
-      "scenario": "A manufacturing company wants to predict the amount of energy required to produce a specific product based on its weight, material, and production time. The data is highly imbalanced with most products requiring low amounts of energy.",
-      "question": "What approach would you take to handle the imbalanced data and improve the model's performance?",
+      "scenario": "In a high-dimensional space, a company wants to predict house prices based on features like the number of bedrooms, square footage, location, and amenities. However, the dataset contains many redundant and correlated features. Which dimensionality reduction technique is most suitable for this scenario?",
+      "question": "Which technique should be used to reduce dimensionality?",
       "options": [
-        "A) Oversampling the minority class",
-        "B) Undersampling the majority class",
-        "C) Using a regression algorithm with weighted loss function",
-        "D) Collecting more data to balance the classes"
+        "A) Principal Component Analysis (PCA) for feature extraction",
+        "B) t-Distributed Stochastic Neighbor Embedding (t-SNE) for visualization",
+        "C) Linear Discriminant Analysis (LDA) for feature selection",
+        "D) Recursive Feature Elimination (RFE) for feature ranking"
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Using a regression algorithm with weighted loss function",
-      "explanation": "Since the data is highly imbalanced, using a weighted loss function can help the model focus on the minority class. Additionally, regression algorithms can handle continuous outputs, making them suitable for predicting the amount of energy required."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Principal Component Analysis (PCA) for feature extraction",
+      "explanation": "Principal Component Analysis (PCA) is a suitable technique for reducing dimensionality in high-dimensional spaces by extracting the most important features that capture the majority of the variance in the data."
     },
     {
       "id": 3,
-      "scenario": "A real-time system needs to predict the stock prices of a company based on historical data, technical indicators, and market trends. The system has to make predictions every minute, and the data is high-dimensional with over 100 features.",
-      "question": "What approach would you take to reduce the dimensionality of the data and improve the model's performance in real-time?",
+      "scenario": "A real-time system requires classification of network packets as either legitimate or malicious in less than 10 milliseconds. The system has limited computational resources and must handle a high volume of packets. Which machine learning algorithm is most suitable for this real-time constraint and limited resources?",
+      "question": "Which algorithm should be chosen for real-time classification?",
       "options": [
-        "A) Using PCA to reduce the dimensionality",
-        "B) Using t-SNE to reduce the dimensionality",
-        "C) Using a recursive feature elimination algorithm",
-        "D) Using a gradient boosting algorithm with automatic feature selection"
+        "A) Deep Neural Networks with early exit",
+        "B) Gradient Boosting Machines with tree pruning",
+        "C) K-Nearest Neighbors with approximate search",
+        "D) Decision Trees with caching and parallelization"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Using PCA to reduce the dimensionality",
-      "explanation": "PCA is a suitable approach for reducing dimensionality in high-dimensional data. It can help retain the most important features and improve the model's performance in real-time by reducing the computational complexity."
+      "correct_answer_letter": "D",
+      "correct_answer_text": "D) Decision Trees with caching and parallelization",
+      "explanation": "Decision Trees with caching and parallelization can provide fast and efficient classification in real-time systems with limited resources by reducing the number of computations and utilizing parallel processing."
     }
   ]
 }
