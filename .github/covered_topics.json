@@ -116,7 +116,8 @@
     "Optimizing High-Performance Data Transfer: Multipart Uploads and Edge Delivery",
     "S3 Storage Node Internals: Append-Only Engines and CDN Cache Coherency",
     "S3 Storage Class Transitions & CDN Invalidation: Balancing Cost, Latency, and Consistency",
-    "Scale-Out Prefix Partitioning and Hotspot Management"
+    "Scale-Out Prefix Partitioning and Hotspot Management",
+    "Designing a Scalable File Storage System"
   ],
   "Database Sharding & Replication Strategies": [
     "Horizontal Sharding: Scaling Out Your Data",
