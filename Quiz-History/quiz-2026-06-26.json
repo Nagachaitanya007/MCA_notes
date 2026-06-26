@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
-  "mode": "Java",
+  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where an application using `HashMap<String, String>` to cache user data is experiencing intermittent `ConcurrentModificationException`. The cache is updated by multiple threads and is accessed using an iterator to remove elements when the cache size exceeds a certain threshold.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "An enterprise e-commerce platform in India is building a machine learning pipeline using BERT to classify customer support tickets. The tickets are written in 'Hinglish' (a highly morphological mix of Hindi and English) along with frequent slang and brand-specific typos. During initial load testing, the engineering team observes that the Byte-Pair Encoding (BPE) tokenizer splits these non-standard words into a massive sequence of subword tokens. This inflates the sequence lengths of short messages to over 512 tokens, triggering severe out-of-memory (OOM) errors during self-attention computation which scales quadratically with sequence length.",
+      "question": "Which of the following optimization strategies is most effective to resolve the OOM errors while preserving the semantic representation of the morphologically rich Hinglish vocabulary without drastically losing classification performance?",
       "options": [
-        "A) The `HashMap` is not synchronized, leading to concurrent modification issues.",
-        "B) The iterator used to remove elements is not properly synchronized.",
-        "C) The cache size threshold is too low, causing frequent removals.",
-        "D) The `HashMap` is being resized too frequently, causing the iterator to fail."
+        "A) Replace the BPE tokenizer with a character-level tokenization model to completely eliminate Out-Of-Vocabulary (OOV) tokens, and force-pad all sequences to the 99th percentile length.",
+        "B) Transition to a Byte-level BPE (BBPE) tokenizer with a dynamic vocabulary threshold, combined with sequence-length bucketed batching and a local-attention/sparse-attention mechanism (like BigBird or Longformer).",
+        "C) Keep the standard BPE tokenizer but apply a hard truncation strategy at 128 tokens, discarding any tail subwords and replacing them with static zero-paddings in the attention matrix.",
+        "D) Swap the BERT model with a WordPiece-based multilingual model trained exclusively on formal European languages, mapping all un-matched Hinglish subwords to the [UNK] token."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The `HashMap` is not synchronized, leading to concurrent modification issues.",
-      "explanation": "The `ConcurrentModificationException` is thrown when the `HashMap` is modified structurally (i.e., elements are added or removed) while an iterator is iterating over it. Since `HashMap` is not synchronized, multiple threads can access and modify it simultaneously, leading to this issue. To resolve this, a thread-safe `Map` implementation like `ConcurrentHashMap` should be used, or the access to the `HashMap` should be synchronized."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Transition to a Byte-level BPE (BBPE) tokenizer with a dynamic vocabulary threshold, combined with sequence-length bucketed batching and a local-attention/sparse-attention mechanism (like BigBird or Longformer).",
+      "explanation": "Byte-level BPE (BBPE) avoids the Out-Of-Vocabulary (OOV) problem by falling back to byte representations for unseen words/typos without generating excessive subwords. Combining BBPE with sequence-length bucketed batching ensures that sequences of similar lengths are grouped together, minimizing computational overhead from padding. Using a sparse/local attention mechanism mitigates the quadratic O(N^2) memory scaling of vanilla self-attention by allowing tokens to attend only to local neighborhoods or global landmark tokens, reducing complexity to O(N) and eliminating the OOM failures caused by bloated Hinglish subword expansions."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a Spring application using `@Transactional` annotation to manage transactions is experiencing issues with rolling back transactions when an exception occurs. The code snippet is: `@Transactional public void processData() { List<String> data = new ArrayList<>(); data.add(\"test\"); throw new RuntimeException(\"Test exception\"); }`. However, the transaction is not rolling back as expected.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A financial technology startup is deploying an encoder-decoder Transformer model for real-time translation of high-frequency market news feeds. The current vanilla Transformer model exhibits unacceptable latency profiles during inference on low-resource edge servers. Profiling shows that the bottleneck lies in the autoregressive decoding phase, where step-by-step token generation forces repetitive GPU/CPU memory access to fetch Key (K) and Value (V) matrices (KV-Caching overhead), which scales linearly with sequence length.",
+      "question": "To optimize the decoder latency during real-time autoregressive inference under strict hardware memory constraints without causing severe degradation in translation quality, which architectural modification should the team implement?",
       "options": [
-        "A) The `@Transactional` annotation is not properly configured.",
-        "B) The `RuntimeException` is not checked and thus not triggering a rollback.",
-        "C) The data is added to a local `ArrayList`, which is not part of the transaction.",
-        "D) The transaction manager is not properly configured to handle rollbacks."
+        "A) Swap the Multi-Head Attention (MHA) in the decoder with Multi-Query Attention (MQA), which shares a single Key and Value head across all Query heads.",
+        "B) Replace the decoder self-attention with Linear Attention using kernel approximations, entirely bypassing the softmax operation to achieve O(1) complexity at inference.",
+        "C) Integrate FlashAttention into the edge CPU inference pipeline to reduce GPU-specific High-Bandwidth Memory (HBM) read/write cycles.",
+        "D) Use Hard Attention driven by a reinforcement learning agent to select a single source token at each decoding step, bypassing soft probability distribution computations."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The data is added to a local `ArrayList`, which is not part of the transaction.",
-      "explanation": "In the given code snippet, the data is added to a local `ArrayList`, which is not a part of the transaction. The `@Transactional` annotation only manages transactions for database operations, not for local object modifications. Since the `ArrayList` is a local object, adding elements to it does not participate in the transaction, and thus rolling back the transaction does not affect it."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Swap the Multi-Head Attention (MHA) in the decoder with Multi-Query Attention (MQA), which shares a single Key and Value head across all Query heads.",
+      "explanation": "Multi-Query Attention (MQA) drastically reduces the size of the KV-cache by utilizing a single Key and Value head shared across all Query heads. During autoregressive decoding, the memory bandwidth required to load Keys and Values from memory is the primary bottleneck. Reducing the KV cache footprint by sharing heads allows the decoder to fit larger batch sizes in SRAM/Cache and speeds up memory access significantly. While Linear Attention achieves lower theoretical complexity, it significantly degrades generation and translation quality due to the loss of soft localized focus, making MQA the industry standard trade-off (along with Grouped-Query Attention)."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where an application using a custom `LinkedList` implementation to store user requests is experiencing a `NullPointerException` when trying to access the `next` node of a `Node` object. The custom implementation is: `public class Node { public String data; public Node next; public Node(String data) { this.data = data; } }`. The `LinkedList` class has an `add` method that adds a new node to the end of the list: `public void add(String data) { Node newNode = new Node(data); if (head == null) { head = newNode; } else { Node current = head; while (current.next != null) { current = current.next; } current.next = newNode; } }`. However, the `NullPointerException` occurs when the list is empty and the `add` method is called.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "An AI researcher is scaling a deep Transformer model to 48 layers for genomic sequence analysis. During training, they notice that as the model depth increases beyond 24 layers, the attention maps in the deeper layers become highly uniform (entropy approaches maximum), where attention weights converge towards 1/N for all tokens. This 'attention over-smoothing' causes representations of distant nucleotides to collapse, leading to a massive spike in validation loss.",
+      "question": "What is the primary architectural cause of this attention-entropy collapse in ultra-deep Transformers, and how can it be mitigated?",
       "options": [
-        "A) The `head` node is not properly initialized.",
-        "B) The `next` node is not properly updated in the `add` method.",
-        "C) The `Node` class does not properly handle null data.",
-        "D) The `LinkedList` class does not properly handle an empty list."
+        "A) It is caused by the scaling factor of the dot product; it can be mitigated by scaling the query-key dot product by 1/(d_k^2) instead of 1/sqrt(d_k).",
+        "B) It is caused by structural gradient scaling issues in Post-Layer Normalization (Post-LN) configurations; it can be mitigated by adopting Pre-Layer Normalization (Pre-LN) coupled with DeepNorm initialization.",
+        "C) It is caused by positional embedding decay in deep layers; it can be resolved by stripping positional embeddings entirely and relying purely on causal masking.",
+        "D) It is caused by the Softmax function saturating due to low-dimensional projections; it can be mitigated by doubling the projection dimension (d_model) in the feed-forward layers."
       ],
-      "correct_answer_letter": "D",
-      "correct_answer_text": "D) The `LinkedList` class does not properly handle an empty list.",
-      "explanation": "The `NullPointerException` occurs when the list is empty and the `add` method is called because the `head` node is null, and the code tries to access the `next` node of the `head` node. This issue can be resolved by properly handling the case when the list is empty in the `add` method. The `add` method should check if the list is empty before trying to access the `next` node of the `head` node."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) It is caused by structural gradient scaling issues in Post-Layer Normalization (Post-LN) configurations; it can be mitigated by adopting Pre-Layer Normalization (Pre-LN) coupled with DeepNorm initialization.",
+      "explanation": "In ultra-deep vanilla Post-LN Transformers, the scale of gradients in the residual blocks can cause unstable updates, or conversely, the identity path gets dominated by the normalization layer, leading to representational collapse where deeper layers behave like identity mappings or output uniform attention. Implementing Pre-Layer Normalization (Pre-LN) ensures that the input to each layer is normalized, creating a clean identity path through the network. Combining this with specialized initializations like DeepNorm or ReZero ensures stable gradient scales, preventing the attention maps from over-smoothing or decaying into uniform distributions."
     }
   ]
 }
