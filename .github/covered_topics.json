@@ -33,7 +33,8 @@
     "The Transactional Outbox Pattern: Solving the Dual-Write Failure",
     "Handling Partial Failures in Scatter-Gather Architectures",
     "The Self-Healing Reconciliation Loop: Handling Distributed State Discrepancies",
-    "The Fencing Token Pattern: Handling Distributed Lock and Lease Expiration Exceptions"
+    "The Fencing Token Pattern: Handling Distributed Lock and Lease Expiration Exceptions",
+    "Exception Handling Strategies in Distributed Systems: Fail-Safe Defaults and Error Budgets"
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections",
