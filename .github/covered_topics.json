@@ -18,7 +18,8 @@
     "CompletableFuture Pipeline Mechanics: Thread Hand-offs, Memory Barriers, and Async Stage Propagation",
     "Java Concurrency & Multithreading with Virtual Threads and CompletableFuture",
     "Scaling Safely with Virtual Threads: Overcoming the Pinning and ThreadLocal Memory Traps",
-    "Java Concurrency & Multithreading: Understanding Virtual Threads and CompletableFuture"
+    "Java Concurrency & Multithreading: Understanding Virtual Threads and CompletableFuture",
+    "Resource Protection in Modern Concurrency: Transitioning from Thread Pools to Semantic Rate Limiting"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
