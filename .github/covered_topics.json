@@ -100,7 +100,8 @@
     "Scaling URL Shorteners: Distributed Range Allocation and Database Sharding",
     "Designing a Scalable URL Shortener with Key Generation Service and Sharding",
     "High-Scale URL Shortener: Resilient Key Generation and Horizontal Sharding",
-    "Designing a URL Shortener with Key Generation Service and Sharding"
+    "Designing a URL Shortener with Key Generation Service and Sharding",
+    "Zero-Collision URL Shortening: Pre-Generated Tokens and Partitioned Write Paths"
   ],
   "The CAP Theorem: Choosing between AP and CP in Distributed Systems": [
     "The CAP Theorem: Choosing Between AP and CP in Distributed Systems",
