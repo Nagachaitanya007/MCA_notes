@@ -1,48 +1,48 @@
 {
-  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
+  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "An enterprise e-commerce platform in India is building a machine learning pipeline using BERT to classify customer support tickets. The tickets are written in 'Hinglish' (a highly morphological mix of Hindi and English) along with frequent slang and brand-specific typos. During initial load testing, the engineering team observes that the Byte-Pair Encoding (BPE) tokenizer splits these non-standard words into a massive sequence of subword tokens. This inflates the sequence lengths of short messages to over 512 tokens, triggering severe out-of-memory (OOM) errors during self-attention computation which scales quadratically with sequence length.",
-      "question": "Which of the following optimization strategies is most effective to resolve the OOM errors while preserving the semantic representation of the morphologically rich Hinglish vocabulary without drastically losing classification performance?",
+      "scenario": "A real-world industrial problem is encountered in a healthcare domain where a large amount of patient data with various symptoms, diseases, and treatments needs to be represented and queried efficiently. The data is high-dimensional and sparse, with many missing values.",
+      "question": "What knowledge representation approach would be most suitable for this scenario to enable efficient querying and reasoning over the patient data?",
       "options": [
-        "A) Replace the BPE tokenizer with a character-level tokenization model to completely eliminate Out-Of-Vocabulary (OOV) tokens, and force-pad all sequences to the 99th percentile length.",
-        "B) Transition to a Byte-level BPE (BBPE) tokenizer with a dynamic vocabulary threshold, combined with sequence-length bucketed batching and a local-attention/sparse-attention mechanism (like BigBird or Longformer).",
-        "C) Keep the standard BPE tokenizer but apply a hard truncation strategy at 128 tokens, discarding any tail subwords and replacing them with static zero-paddings in the attention matrix.",
-        "D) Swap the BERT model with a WordPiece-based multilingual model trained exclusively on formal European languages, mapping all un-matched Hinglish subwords to the [UNK] token."
+        "A) Ontologies with Description Logics",
+        "B) Semantic Nets with Neural Networks",
+        "C) Propositional Logic with Rule-Based Systems",
+        "D) First-Order Logic with Model Theory"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Transition to a Byte-level BPE (BBPE) tokenizer with a dynamic vocabulary threshold, combined with sequence-length bucketed batching and a local-attention/sparse-attention mechanism (like BigBird or Longformer).",
-      "explanation": "Byte-level BPE (BBPE) avoids the Out-Of-Vocabulary (OOV) problem by falling back to byte representations for unseen words/typos without generating excessive subwords. Combining BBPE with sequence-length bucketed batching ensures that sequences of similar lengths are grouped together, minimizing computational overhead from padding. Using a sparse/local attention mechanism mitigates the quadratic O(N^2) memory scaling of vanilla self-attention by allowing tokens to attend only to local neighborhoods or global landmark tokens, reducing complexity to O(N) and eliminating the OOM failures caused by bloated Hinglish subword expansions."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Ontologies with Description Logics",
+      "explanation": "Ontologies with Description Logics are particularly well-suited for representing and querying complex, high-dimensional, and sparse data in domains like healthcare. They provide a formal, structured approach to knowledge representation that can handle missing values and enable efficient reasoning and querying over the data."
     },
     {
       "id": 2,
-      "scenario": "A financial technology startup is deploying an encoder-decoder Transformer model for real-time translation of high-frequency market news feeds. The current vanilla Transformer model exhibits unacceptable latency profiles during inference on low-resource edge servers. Profiling shows that the bottleneck lies in the autoregressive decoding phase, where step-by-step token generation forces repetitive GPU/CPU memory access to fetch Key (K) and Value (V) matrices (KV-Caching overhead), which scales linearly with sequence length.",
-      "question": "To optimize the decoder latency during real-time autoregressive inference under strict hardware memory constraints without causing severe degradation in translation quality, which architectural modification should the team implement?",
+      "scenario": "In an e-commerce application, product categorization and recommendation rely heavily on the accurate representation of product features and relationships. However, the product data is skewed, with some categories having a significantly larger number of products than others.",
+      "question": "How can the issue of skewed data in product categorization be addressed using knowledge representation techniques?",
       "options": [
-        "A) Swap the Multi-Head Attention (MHA) in the decoder with Multi-Query Attention (MQA), which shares a single Key and Value head across all Query heads.",
-        "B) Replace the decoder self-attention with Linear Attention using kernel approximations, entirely bypassing the softmax operation to achieve O(1) complexity at inference.",
-        "C) Integrate FlashAttention into the edge CPU inference pipeline to reduce GPU-specific High-Bandwidth Memory (HBM) read/write cycles.",
-        "D) Use Hard Attention driven by a reinforcement learning agent to select a single source token at each decoding step, bypassing soft probability distribution computations."
+        "A) Using Semantic Nets to reduce dimensionality",
+        "B) Applying Ontology-based clustering to balance categories",
+        "C) Utilizing Logic-based rules to handle outliers",
+        "D) Employing Description Logics to create category hierarchies"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Swap the Multi-Head Attention (MHA) in the decoder with Multi-Query Attention (MQA), which shares a single Key and Value head across all Query heads.",
-      "explanation": "Multi-Query Attention (MQA) drastically reduces the size of the KV-cache by utilizing a single Key and Value head shared across all Query heads. During autoregressive decoding, the memory bandwidth required to load Keys and Values from memory is the primary bottleneck. Reducing the KV cache footprint by sharing heads allows the decoder to fit larger batch sizes in SRAM/Cache and speeds up memory access significantly. While Linear Attention achieves lower theoretical complexity, it significantly degrades generation and translation quality due to the loss of soft localized focus, making MQA the industry standard trade-off (along with Grouped-Query Attention)."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Applying Ontology-based clustering to balance categories",
+      "explanation": "Ontology-based clustering can help balance skewed product categories by creating clusters that reflect the semantic relationships between products, thereby reducing the impact of skewed data on categorization and recommendation accuracy."
     },
     {
       "id": 3,
-      "scenario": "An AI researcher is scaling a deep Transformer model to 48 layers for genomic sequence analysis. During training, they notice that as the model depth increases beyond 24 layers, the attention maps in the deeper layers become highly uniform (entropy approaches maximum), where attention weights converge towards 1/N for all tokens. This 'attention over-smoothing' causes representations of distant nucleotides to collapse, leading to a massive spike in validation loss.",
-      "question": "What is the primary architectural cause of this attention-entropy collapse in ultra-deep Transformers, and how can it be mitigated?",
+      "scenario": "A real-time traffic management system requires the integration of various data sources, including sensor data, traffic signals, and road network information, to provide timely and accurate traffic updates. The system must handle high-dimensional data and perform reasoning under real-time constraints.",
+      "question": "What knowledge representation approach is best suited for integrating and reasoning over the diverse data sources in the real-time traffic management system?",
       "options": [
-        "A) It is caused by the scaling factor of the dot product; it can be mitigated by scaling the query-key dot product by 1/(d_k^2) instead of 1/sqrt(d_k).",
-        "B) It is caused by structural gradient scaling issues in Post-Layer Normalization (Post-LN) configurations; it can be mitigated by adopting Pre-Layer Normalization (Pre-LN) coupled with DeepNorm initialization.",
-        "C) It is caused by positional embedding decay in deep layers; it can be resolved by stripping positional embeddings entirely and relying purely on causal masking.",
-        "D) It is caused by the Softmax function saturating due to low-dimensional projections; it can be mitigated by doubling the projection dimension (d_model) in the feed-forward layers."
+        "A) Using Propositional Logic for simplicity and speed",
+        "B) Employing First-Order Logic for expressiveness and accuracy",
+        "C) Applying Semantic Nets for flexibility and scalability",
+        "D) Utilizing Ontologies with Description Logics for integration and reasoning"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) It is caused by structural gradient scaling issues in Post-Layer Normalization (Post-LN) configurations; it can be mitigated by adopting Pre-Layer Normalization (Pre-LN) coupled with DeepNorm initialization.",
-      "explanation": "In ultra-deep vanilla Post-LN Transformers, the scale of gradients in the residual blocks can cause unstable updates, or conversely, the identity path gets dominated by the normalization layer, leading to representational collapse where deeper layers behave like identity mappings or output uniform attention. Implementing Pre-Layer Normalization (Pre-LN) ensures that the input to each layer is normalized, creating a clean identity path through the network. Combining this with specialized initializations like DeepNorm or ReZero ensures stable gradient scales, preventing the attention maps from over-smoothing or decaying into uniform distributions."
+      "correct_answer_letter": "D",
+      "correct_answer_text": "D) Utilizing Ontologies with Description Logics for integration and reasoning",
+      "explanation": "Ontologies with Description Logics offer a powerful framework for integrating and reasoning over diverse data sources in real-time applications. They provide the expressiveness needed to represent complex relationships and the efficiency required for real-time reasoning and updates."
     }
   ]
 }

@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
-  "mode": "Java",
+  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `HashMap<String, String>` is being used in a multi-threaded environment to cache user data. However, the cache is not being updated correctly and you notice that the `HashMap` is not being properly synchronized. You come across the following code snippet: `Map<String, String> cache = new HashMap<>();` and `cache.put(user.getId(), userData);`. The team recently switched from `Hashtable` to `HashMap` for performance reasons.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A real-world industrial problem is encountered in a healthcare domain where a large amount of patient data with various symptoms, diseases, and treatments needs to be represented and queried efficiently. The data is high-dimensional and sparse, with many missing values.",
+      "question": "What knowledge representation approach would be most suitable for this scenario to enable efficient querying and reasoning over the patient data?",
       "options": [
-        "A) Lack of synchronization in the `HashMap`",
-        "B) Insufficient memory allocation for the cache",
-        "C) Incorrect usage of `ConcurrentHashMap`",
-        "D) Inadequate implementation of `equals()` and `hashCode()` methods"
+        "A) Ontologies with Description Logics",
+        "B) Semantic Nets with Neural Networks",
+        "C) Propositional Logic with Rule-Based Systems",
+        "D) First-Order Logic with Model Theory"
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Lack of synchronization in the `HashMap`",
-      "explanation": "The `HashMap` is not thread-safe, meaning that it does not provide any internal synchronization mechanism. When multiple threads try to update the `HashMap` concurrently, it can lead to unexpected behavior and data corruption. To resolve this issue, the team should consider using a thread-safe implementation such as `ConcurrentHashMap` or manually synchronizing access to the `HashMap` using locks or other synchronization mechanisms."
+      "correct_answer_text": "A) Ontologies with Description Logics",
+      "explanation": "Ontologies with Description Logics are particularly well-suited for representing and querying complex, high-dimensional, and sparse data in domains like healthcare. They provide a formal, structured approach to knowledge representation that can handle missing values and enable efficient reasoning and querying over the data."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a custom implementation of `List<String>` is causing a `NullPointerException` when trying to access an element at a specific index. The custom implementation uses an array to store the elements and provides a `get()` method to access them. The code snippet looks like this: `public String get(int index) { return elements[index]; }`. The team is using this custom implementation for performance-critical code paths.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "In an e-commerce application, product categorization and recommendation rely heavily on the accurate representation of product features and relationships. However, the product data is skewed, with some categories having a significantly larger number of products than others.",
+      "question": "How can the issue of skewed data in product categorization be addressed using knowledge representation techniques?",
       "options": [
-        "A) The `elements` array is not initialized before use",
-        "B) The `index` parameter is out of bounds",
-        "C) The `get()` method is not synchronized",
-        "D) The `List` interface is not properly implemented"
+        "A) Using Semantic Nets to reduce dimensionality",
+        "B) Applying Ontology-based clustering to balance categories",
+        "C) Utilizing Logic-based rules to handle outliers",
+        "D) Employing Description Logics to create category hierarchies"
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `index` parameter is out of bounds",
-      "explanation": "The custom `List` implementation does not perform any bounds checking on the `index` parameter. If the `index` is greater than or equal to the size of the `elements` array, it will throw an `ArrayIndexOutOfBoundsException`. However, if the `index` is negative, it will throw a `NullPointerException` when trying to access the `elements` array. To resolve this issue, the team should add bounds checking to the `get()` method to ensure that the `index` is within the valid range."
+      "correct_answer_text": "B) Applying Ontology-based clustering to balance categories",
+      "explanation": "Ontology-based clustering can help balance skewed product categories by creating clusters that reflect the semantic relationships between products, thereby reducing the impact of skewed data on categorization and recommendation accuracy."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a `TreeSet<String>` is being used to store unique user IDs, but the `TreeSet` is not being properly updated when new user IDs are added. The code snippet looks like this: `TreeSet<String> userIds = new TreeSet<>();` and `userIds.add(user.getId());`. The team is using a custom `Comparator` to order the user IDs. However, the `Comparator` is not properly implemented, leading to inconsistent ordering and duplicate user IDs in the `TreeSet`.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A real-time traffic management system requires the integration of various data sources, including sensor data, traffic signals, and road network information, to provide timely and accurate traffic updates. The system must handle high-dimensional data and perform reasoning under real-time constraints.",
+      "question": "What knowledge representation approach is best suited for integrating and reasoning over the diverse data sources in the real-time traffic management system?",
       "options": [
-        "A) The custom `Comparator` is not consistent with `equals()`",
-        "B) The `TreeSet` is not properly synchronized",
-        "C) The `add()` method is not thread-safe",
-        "D) The `user.getId()` method returns `null` values"
+        "A) Using Propositional Logic for simplicity and speed",
+        "B) Employing First-Order Logic for expressiveness and accuracy",
+        "C) Applying Semantic Nets for flexibility and scalability",
+        "D) Utilizing Ontologies with Description Logics for integration and reasoning"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The custom `Comparator` is not consistent with `equals()`",
-      "explanation": "The custom `Comparator` is not properly implemented, leading to inconsistent ordering of the user IDs. The `Comparator` must be consistent with the `equals()` method, meaning that if `a.compareTo(b) == 0`, then `a.equals(b)` must also be `true`. If the `Comparator` is not consistent with `equals()`, it can lead to unexpected behavior and duplicate values in the `TreeSet`. To resolve this issue, the team should review and correct the custom `Comparator` implementation to ensure it is consistent with `equals()`."
+      "correct_answer_letter": "D",
+      "correct_answer_text": "D) Utilizing Ontologies with Description Logics for integration and reasoning",
+      "explanation": "Ontologies with Description Logics offer a powerful framework for integrating and reasoning over diverse data sources in real-time applications. They provide the expressiveness needed to represent complex relationships and the efficiency required for real-time reasoning and updates."
     }
   ]
 }
