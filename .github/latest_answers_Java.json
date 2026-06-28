@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
+  "topic": "Advanced Collections Framework & Custom Implementations",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a Java Spring application running on a `JDK 11` JVM is experiencing frequent `Full GC` cycles, resulting in significant pause times. Upon investigation, you notice the following `Spring` configuration: `@Configuration @EnableTransactionManagement public class AppConfig { @Bean public `DataSource` dataSource() { return `DataSourceBuilder.create().type(`HikariDataSource`.class).build(); } }`. The database connection pool size is set to 100.",
-      "question": "What could be the primary cause of the frequent Full GC cycles in this scenario?",
+      "scenario": "You are debugging a production issue where a `HashMap<String, String>` is being used in a multi-threaded environment to cache user data. However, the cache is not being updated correctly and you notice that the `HashMap` is not being properly synchronized. You come across the following code snippet: `Map<String, String> cache = new HashMap<>();` and `cache.put(user.getId(), userData);`. The team recently switched from `Hashtable` to `HashMap` for performance reasons.",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) Insufficient heap size leading to frequent promotions from Young to Old generation",
-        "B) Lack of connection validation in the database connection pool",
-        "C) Excessive use of `Spring` proxies leading to a large amount of metadata in the heap",
-        "D) Inefficient garbage collection algorithm configuration"
+        "A) Lack of synchronization in the `HashMap`",
+        "B) Insufficient memory allocation for the cache",
+        "C) Incorrect usage of `ConcurrentHashMap`",
+        "D) Inadequate implementation of `equals()` and `hashCode()` methods"
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Insufficient heap size leading to frequent promotions from Young to Old generation",
-      "explanation": "In this scenario, the frequent Full GC cycles could be caused by an insufficient heap size. When the heap is too small, objects are promoted from the Young generation to the Old generation more quickly, leading to more frequent Full GC cycles. The large database connection pool size of 100 could also contribute to this issue, as each connection requires a significant amount of memory. Adjusting the heap size, connection pool size, or GC algorithm configuration could help alleviate this issue."
+      "correct_answer_text": "A) Lack of synchronization in the `HashMap`",
+      "explanation": "The `HashMap` is not thread-safe, meaning that it does not provide any internal synchronization mechanism. When multiple threads try to update the `HashMap` concurrently, it can lead to unexpected behavior and data corruption. To resolve this issue, the team should consider using a thread-safe implementation such as `ConcurrentHashMap` or manually synchronizing access to the `HashMap` using locks or other synchronization mechanisms."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a Java Spring application running on a `JDK 8` JVM is experiencing a `java.lang.OutOfMemoryError: PermGen space` error. Upon investigation, you notice the following code snippet: `@SpringBootApplication public class MyApp { @Bean public `ThreadPoolTaskExecutor` taskExecutor() { `ThreadPoolTaskExecutor` executor = new `ThreadPoolTaskExecutor`(); executor.setCorePoolSize(10); executor.setMaxPoolSize(20); return executor; } }`. The application is using `Spring` proxies extensively.",
-      "question": "What could be the primary cause of the PermGen space error in this scenario?",
+      "scenario": "You are debugging a production issue where a custom implementation of `List<String>` is causing a `NullPointerException` when trying to access an element at a specific index. The custom implementation uses an array to store the elements and provides a `get()` method to access them. The code snippet looks like this: `public String get(int index) { return elements[index]; }`. The team is using this custom implementation for performance-critical code paths.",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) Excessive use of `Spring` proxies leading to a large amount of metadata in the PermGen space",
-        "B) Insufficient core pool size in the `ThreadPoolTaskExecutor`",
-        "C) Inefficient GC algorithm configuration",
-        "D) Lack of connection validation in the database connection pool"
+        "A) The `elements` array is not initialized before use",
+        "B) The `index` parameter is out of bounds",
+        "C) The `get()` method is not synchronized",
+        "D) The `List` interface is not properly implemented"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Excessive use of `Spring` proxies leading to a large amount of metadata in the PermGen space",
-      "explanation": "In this scenario, the PermGen space error could be caused by the excessive use of `Spring` proxies. `Spring` proxies require a significant amount of metadata to be stored in the PermGen space, which can lead to an `OutOfMemoryError` if the space is exhausted. Increasing the PermGen space size or reducing the use of `Spring` proxies could help alleviate this issue."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The `index` parameter is out of bounds",
+      "explanation": "The custom `List` implementation does not perform any bounds checking on the `index` parameter. If the `index` is greater than or equal to the size of the `elements` array, it will throw an `ArrayIndexOutOfBoundsException`. However, if the `index` is negative, it will throw a `NullPointerException` when trying to access the `elements` array. To resolve this issue, the team should add bounds checking to the `get()` method to ensure that the `index` is within the valid range."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Java Spring application running on a `JDK 11` JVM is experiencing slow performance due to excessive garbage collection activity. Upon investigation, you notice the following code snippet: `@Service public class MyService { @Autowired private `MyRepository` myRepository; public void doSomething() { for (int i = 0; i < 10000; i++) { `MyEntity` entity = new `MyEntity`(); myRepository.save(entity); } } }`. The `MyRepository` is a `Spring Data JPA` repository.",
-      "question": "What could be the primary cause of the excessive garbage collection activity in this scenario?",
+      "scenario": "You are debugging a production issue where a `TreeSet<String>` is being used to store unique user IDs, but the `TreeSet` is not being properly updated when new user IDs are added. The code snippet looks like this: `TreeSet<String> userIds = new TreeSet<>();` and `userIds.add(user.getId());`. The team is using a custom `Comparator` to order the user IDs. However, the `Comparator` is not properly implemented, leading to inconsistent ordering and duplicate user IDs in the `TreeSet`.",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) Excessive object creation in the `doSomething()` method",
-        "B) Lack of connection validation in the database connection pool",
-        "C) Inefficient GC algorithm configuration",
-        "D) Insufficient heap size"
+        "A) The custom `Comparator` is not consistent with `equals()`",
+        "B) The `TreeSet` is not properly synchronized",
+        "C) The `add()` method is not thread-safe",
+        "D) The `user.getId()` method returns `null` values"
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Excessive object creation in the `doSomething()` method",
-      "explanation": "In this scenario, the excessive garbage collection activity could be caused by the excessive object creation in the `doSomething()` method. The method creates 10,000 `MyEntity` objects, which can lead to a significant amount of garbage collection activity. Using a more efficient data structure or reducing the number of objects created could help alleviate this issue."
+      "correct_answer_text": "A) The custom `Comparator` is not consistent with `equals()`",
+      "explanation": "The custom `Comparator` is not properly implemented, leading to inconsistent ordering of the user IDs. The `Comparator` must be consistent with the `equals()` method, meaning that if `a.compareTo(b) == 0`, then `a.equals(b)` must also be `true`. If the `Comparator` is not consistent with `equals()`, it can lead to unexpected behavior and duplicate values in the `TreeSet`. To resolve this issue, the team should review and correct the custom `Comparator` implementation to ensure it is consistent with `equals()`."
     }
   ]
 }
