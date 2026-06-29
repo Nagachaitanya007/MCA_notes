@@ -1,48 +1,48 @@
 {
-  "topic": "Exception Handling Strategies in Distributed Systems",
-  "mode": "Java",
+  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `@Service` class that uses Spring's `@Transactional` annotation to handle database transactions is throwing an exception when it encounters a deadlock. The `@Service` class is using a `ThreadPoolExecutor` to execute tasks concurrently, and each task is updating a `List<String>` that is shared among threads. However, the shared list is not thread-safe.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A manufacturing company is developing an expert system to classify products based on their properties and features. The system should be able to infer relationships between different products and provide recommendations. However, the product database is skewed, with some categories having a large number of products and others having only a few. The company wants to use ontologies to represent the product knowledge and ensure efficient querying and reasoning.",
+      "question": "What type of ontology would be most suitable for representing the product knowledge in this scenario?",
       "options": [
-        "A) The `@Transactional` annotation is not properly configured to handle deadlocks.",
-        "B) The `ThreadPoolExecutor` is not properly configured to handle concurrent updates to the shared list.",
-        "C) The shared `List<String>` is not thread-safe.",
-        "D) The `@Service` class is not properly synchronized to handle concurrent access."
+        "A) Lightweight ontology",
+        "B) Heavyweight ontology",
+        "C) Hybrid ontology",
+        "D) Instance-based ontology"
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The shared `List<String>` is not thread-safe.",
-      "explanation": "The primary cause of this issue is that the shared `List<String>` is not thread-safe. When multiple threads try to update the list concurrently, it can lead to `ConcurrentModificationException`. To fix this, a thread-safe implementation of the `List` interface, such as `CopyOnWriteArrayList`, should be used."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Heavyweight ontology",
+      "explanation": "A heavyweight ontology is most suitable for this scenario because it provides a rich and formal representation of the product knowledge, allowing for efficient querying and reasoning. Heavyweight ontologies are designed to capture complex relationships and constraints, making them ideal for applications where inferencing and decision-making are critical. In contrast, lightweight ontologies are simpler and more focused on providing a common vocabulary, while hybrid and instance-based ontologies may not provide the same level of expressiveness and reasoning capabilities."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a Java application that uses Spring Boot to manage database connections is throwing an exception when it encounters a connection timeout. The application is using a `DataSource` to manage connections, and the `DataSource` is configured to use a `ConnectionPool`. However, the `ConnectionPool` is not properly configured to handle connection timeouts. Here is the relevant code snippet: `DataSource dataSource = DataSourceBuilder.create().driverClassName('com.mysql.cj.jdbc.Driver').url('jdbc:mysql://localhost:3306/mydb').username('myuser').password('mypassword').build();`",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A logistics company is building a semantic net to represent its transportation network, including nodes, edges, and relationships between them. The network is vast, with thousands of nodes and edges, and the company wants to ensure that the semantic net is scalable and can handle real-time queries. However, the network data is high-dimensional, with many attributes and features associated with each node and edge.",
+      "question": "What technique would be most effective for reducing the dimensionality of the network data and improving the performance of the semantic net?",
       "options": [
-        "A) The `ConnectionPool` is not properly configured to handle connection timeouts.",
-        "B) The `DataSource` is not properly configured to handle connection timeouts.",
-        "C) The `driverClassName` is incorrect.",
-        "D) The `url` is incorrect."
+        "A) Principal Component Analysis (PCA)",
+        "B) Singular Value Decomposition (SVD)",
+        "C) Latent Semantic Analysis (LSA)",
+        "D) Random Projection"
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) The `ConnectionPool` is not properly configured to handle connection timeouts.",
-      "explanation": "The primary cause of this issue is that the `ConnectionPool` is not properly configured to handle connection timeouts. The `DataSource` is configured to use a `ConnectionPool`, but the `ConnectionPool` is not configured to handle connection timeouts. To fix this, the `ConnectionPool` should be configured to handle connection timeouts by setting the `connectionTimeout` property."
+      "correct_answer_text": "A) Principal Component Analysis (PCA)",
+      "explanation": "Principal Component Analysis (PCA) is a widely used technique for reducing dimensionality in high-dimensional data. By applying PCA to the network data, the logistics company can identify the most important features and attributes that capture the majority of the variance in the data, and then project the data onto a lower-dimensional space. This can significantly improve the performance of the semantic net by reducing the number of features and attributes that need to be processed, while still maintaining the most important relationships and patterns in the data."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Java application that uses Spring's `@Async` annotation to execute tasks asynchronously is throwing an exception when it encounters a `NullPointerException`. The application is using a `ThreadPoolTaskExecutor` to execute tasks, and each task is updating a `Map<String, Object>` that is shared among threads. However, the shared map is not properly initialized. Here is the relevant code snippet: `@Async public void myMethod() { Map<String, Object> myMap = null; myMap.put('key', 'value'); }`",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A healthcare organization is developing an expert system to diagnose diseases based on patient symptoms and medical history. The system uses a combination of ontologies and semantic nets to represent the medical knowledge and provide diagnostic recommendations. However, the system is facing issues with handling skewed data, where some diseases have a large number of symptoms and others have only a few.",
+      "question": "What strategy would be most effective for handling the skewed data and improving the diagnostic accuracy of the expert system?",
       "options": [
-        "A) The `@Async` annotation is not properly configured to handle asynchronous tasks.",
-        "B) The `ThreadPoolTaskExecutor` is not properly configured to handle concurrent updates to the shared map.",
-        "C) The shared `Map<String, Object>` is not properly initialized.",
-        "D) The `myMethod()` is not properly synchronized to handle concurrent access."
+        "A) Oversampling the minority class",
+        "B) Undersampling the majority class",
+        "C) Using class weights and cost-sensitive learning",
+        "D) Applying transfer learning from a related domain"
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) The shared `Map<String, Object>` is not properly initialized.",
-      "explanation": "The primary cause of this issue is that the shared `Map<String, Object>` is not properly initialized. The `myMap` variable is initialized to `null`, and then an attempt is made to put a value into the map, which results in a `NullPointerException`. To fix this, the `myMap` variable should be properly initialized before attempting to put values into it."
+      "correct_answer_text": "C) Using class weights and cost-sensitive learning",
+      "explanation": "Using class weights and cost-sensitive learning is a effective strategy for handling skewed data. By assigning higher weights to the minority class and lower weights to the majority class, the expert system can learn to recognize the patterns and relationships in the minority class more effectively. Cost-sensitive learning can also help to reduce the impact of the skewed data by assigning different costs to false positives and false negatives, and optimizing the diagnostic recommendations to minimize the overall cost."
     }
   ]
 }

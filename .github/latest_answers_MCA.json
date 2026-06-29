@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "A real-world industrial problem is encountered in a healthcare domain where a large amount of patient data with various symptoms, diseases, and treatments needs to be represented and queried efficiently. The data is high-dimensional and sparse, with many missing values.",
-      "question": "What knowledge representation approach would be most suitable for this scenario to enable efficient querying and reasoning over the patient data?",
+      "scenario": "A manufacturing company is developing an expert system to classify products based on their properties and features. The system should be able to infer relationships between different products and provide recommendations. However, the product database is skewed, with some categories having a large number of products and others having only a few. The company wants to use ontologies to represent the product knowledge and ensure efficient querying and reasoning.",
+      "question": "What type of ontology would be most suitable for representing the product knowledge in this scenario?",
       "options": [
-        "A) Ontologies with Description Logics",
-        "B) Semantic Nets with Neural Networks",
-        "C) Propositional Logic with Rule-Based Systems",
-        "D) First-Order Logic with Model Theory"
+        "A) Lightweight ontology",
+        "B) Heavyweight ontology",
+        "C) Hybrid ontology",
+        "D) Instance-based ontology"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Ontologies with Description Logics",
-      "explanation": "Ontologies with Description Logics are particularly well-suited for representing and querying complex, high-dimensional, and sparse data in domains like healthcare. They provide a formal, structured approach to knowledge representation that can handle missing values and enable efficient reasoning and querying over the data."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Heavyweight ontology",
+      "explanation": "A heavyweight ontology is most suitable for this scenario because it provides a rich and formal representation of the product knowledge, allowing for efficient querying and reasoning. Heavyweight ontologies are designed to capture complex relationships and constraints, making them ideal for applications where inferencing and decision-making are critical. In contrast, lightweight ontologies are simpler and more focused on providing a common vocabulary, while hybrid and instance-based ontologies may not provide the same level of expressiveness and reasoning capabilities."
     },
     {
       "id": 2,
-      "scenario": "In an e-commerce application, product categorization and recommendation rely heavily on the accurate representation of product features and relationships. However, the product data is skewed, with some categories having a significantly larger number of products than others.",
-      "question": "How can the issue of skewed data in product categorization be addressed using knowledge representation techniques?",
+      "scenario": "A logistics company is building a semantic net to represent its transportation network, including nodes, edges, and relationships between them. The network is vast, with thousands of nodes and edges, and the company wants to ensure that the semantic net is scalable and can handle real-time queries. However, the network data is high-dimensional, with many attributes and features associated with each node and edge.",
+      "question": "What technique would be most effective for reducing the dimensionality of the network data and improving the performance of the semantic net?",
       "options": [
-        "A) Using Semantic Nets to reduce dimensionality",
-        "B) Applying Ontology-based clustering to balance categories",
-        "C) Utilizing Logic-based rules to handle outliers",
-        "D) Employing Description Logics to create category hierarchies"
+        "A) Principal Component Analysis (PCA)",
+        "B) Singular Value Decomposition (SVD)",
+        "C) Latent Semantic Analysis (LSA)",
+        "D) Random Projection"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Applying Ontology-based clustering to balance categories",
-      "explanation": "Ontology-based clustering can help balance skewed product categories by creating clusters that reflect the semantic relationships between products, thereby reducing the impact of skewed data on categorization and recommendation accuracy."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Principal Component Analysis (PCA)",
+      "explanation": "Principal Component Analysis (PCA) is a widely used technique for reducing dimensionality in high-dimensional data. By applying PCA to the network data, the logistics company can identify the most important features and attributes that capture the majority of the variance in the data, and then project the data onto a lower-dimensional space. This can significantly improve the performance of the semantic net by reducing the number of features and attributes that need to be processed, while still maintaining the most important relationships and patterns in the data."
     },
     {
       "id": 3,
-      "scenario": "A real-time traffic management system requires the integration of various data sources, including sensor data, traffic signals, and road network information, to provide timely and accurate traffic updates. The system must handle high-dimensional data and perform reasoning under real-time constraints.",
-      "question": "What knowledge representation approach is best suited for integrating and reasoning over the diverse data sources in the real-time traffic management system?",
+      "scenario": "A healthcare organization is developing an expert system to diagnose diseases based on patient symptoms and medical history. The system uses a combination of ontologies and semantic nets to represent the medical knowledge and provide diagnostic recommendations. However, the system is facing issues with handling skewed data, where some diseases have a large number of symptoms and others have only a few.",
+      "question": "What strategy would be most effective for handling the skewed data and improving the diagnostic accuracy of the expert system?",
       "options": [
-        "A) Using Propositional Logic for simplicity and speed",
-        "B) Employing First-Order Logic for expressiveness and accuracy",
-        "C) Applying Semantic Nets for flexibility and scalability",
-        "D) Utilizing Ontologies with Description Logics for integration and reasoning"
+        "A) Oversampling the minority class",
+        "B) Undersampling the majority class",
+        "C) Using class weights and cost-sensitive learning",
+        "D) Applying transfer learning from a related domain"
       ],
-      "correct_answer_letter": "D",
-      "correct_answer_text": "D) Utilizing Ontologies with Description Logics for integration and reasoning",
-      "explanation": "Ontologies with Description Logics offer a powerful framework for integrating and reasoning over diverse data sources in real-time applications. They provide the expressiveness needed to represent complex relationships and the efficiency required for real-time reasoning and updates."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Using class weights and cost-sensitive learning",
+      "explanation": "Using class weights and cost-sensitive learning is a effective strategy for handling skewed data. By assigning higher weights to the minority class and lower weights to the majority class, the expert system can learn to recognize the patterns and relationships in the minority class more effectively. Cost-sensitive learning can also help to reduce the impact of the skewed data by assigning different costs to false positives and false negatives, and optimizing the diagnostic recommendations to minimize the overall cost."
     }
   ]
 }
