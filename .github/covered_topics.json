@@ -140,7 +140,8 @@
     "Decoupled Webhook Dispatching: Bridging Kafka High-Throughput with SQS Rate Limiting",
     "Idempotency and Deduplication in High-Throughput Notification Systems",
     "Designing a Notification System with Kafka, SQS, and Webhooks",
-    "Multi-Tenant Fair-Share Scheduling in a Kafka-to-SQS Notification System"
+    "Multi-Tenant Fair-Share Scheduling in a Kafka-to-SQS Notification System",
+    "Designing a Notification System with Kafka, SQS, and Webhooks"
   ],
   "Design a Rate Limiter (Token Bucket vs Leaky Bucket)": [
     "Rate Limiting: The Token Bucket vs. The Leaky Bucket",
