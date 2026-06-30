@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
-  "mode": "Java",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot service running on Tomcat experiences progressive performance degradation, culminating in a `java.lang.OutOfMemoryError: GC overhead limit exceeded`. The application processes batches of data using a thread pool. A senior developer suspects a leak associated with transaction boundaries. Below is the suspect code snippet:\n\njava\n@Service\npublic class OrderProcessingService {\n    private final ThreadLocal<List<OrderContext>> contextHolder = ThreadLocal.withInitial(ArrayList::new);\n\n    @Transactional\n    public void processBatch(List<Order> orders) {\n        for (Order order : orders) {\n            contextHolder.get().add(new OrderContext(order));\n            enrichAndValidate(order);\n        }\n        saveBatch();\n    }\n\n    @Transactional\n    public void saveBatch() {\n        List<OrderContext> contexts = contextHolder.get();\n        // Write to database...\n        contexts.clear();\n    }\n}\n",
-      "question": "What is the primary cause of this memory leak?",
+      "scenario": "Real-world Industrial Problem Statement: A predictive maintenance system for offshore wind turbines collects rotational speed and vibration frequency data. The telemetry pipeline exhibits extreme right-skewness (skewness coefficient > 3.5) in its vibration amplitude features. Crucially, the dataset contains valid structural zero values (representing periods when turbines are completely locked for maintenance). The ML engineering team needs to stabilize the variance and normalize this feature set to train a downstream Linear Ridge Regression model.",
+      "question": "Which mathematical transformation strategy is most appropriate and valid for normalizing this dataset?",
       "options": [
-        "A) The self-invocation of `saveBatch()` bypasses the Spring AOP proxy, meaning the transaction is never committed and GC cannot reclaim the active Hibernate session.",
-        "B) The `ThreadLocal` state is never cleared using `.remove()`. If `enrichAndValidate()` throws an exception, `contexts.clear()` is bypassed, and even on successful execution, the empty `ArrayList` reference remains bound to the reusable Tomcat thread, leaking memory over time.",
-        "C) The Spring proxy stores a snapshot copy of the `ThreadLocal` context on every transaction boundary, causing an exponential increase in heap usage under high concurrency.",
-        "D) The `ArrayList` inside the `ThreadLocal` is promoted to the Old Generation during the transaction boundary execution because of active reference locking by the JVM garbage collector."
+        "A) Apply a standard Logarithmic transformation (y = log(x)) directly to normalize the feature distribution.",
+        "B) Apply a Box-Cox transformation directly to the raw feature vector to find the optimal power parameter.",
+        "C) Apply the Yeo-Johnson transformation, as it mathematically accommodates zero and negative values while stabilizing variance.",
+        "D) Apply Min-Max scaling to compress the range to [0, 1], which mathematically eliminates the skewness profile."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `ThreadLocal` state is never cleared using `.remove()`. If `enrichAndValidate()` throws an exception, `contexts.clear()` is bypassed, and even on successful execution, the empty `ArrayList` reference remains bound to the reusable Tomcat thread, leaking memory over time.",
-      "explanation": "Because Tomcat/Application Server threads are pooled and reused, any data bound to a `ThreadLocal` remains alive for the duration of the thread's lifecycle unless explicitly removed. In this scenario, if an exception is thrown inside `enrichAndValidate()`, the `saveBatch()` method is never called, bypassing `contexts.clear()`. Crucially, even on success, calling `.clear()` merely empties the list but leaves the `ArrayList` object itself referenced by the `ThreadLocal` map inside the thread. To fix this, `contextHolder.remove()` must be called inside a `finally` block."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Apply the Yeo-Johnson transformation, as it mathematically accommodates zero and negative values while stabilizing variance.",
+      "explanation": "Linear Ridge Regression assumes homoscedasticity and normality of errors. When data is heavily skewed and contains zero values, traditional transformations have severe mathematical limitations. A standard Logarithmic transform (log(x)) is undefined at zero. The Box-Cox transformation is strictly defined only for positive values (x > 0) because its formula contains x raised to the power of lambda, requiring positive bases to avoid complex numbers. The Yeo-Johnson transformation modifies the Box-Cox formula to handle zero and negative values, making it the mathematically robust choice here. Min-Max scaling merely bounds the feature values to a range but does not modify the underlying probability distribution or reduce skewness."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a low-latency trading application using G1GC experiences unpredictable latency spikes. Upon inspecting the GC logs, you observe that G1 is performing frequent 'To-space exhausted' (Evacuation Failure) events, which subsequently trigger long, stop-the-world Full GC cycles. The heap size is fixed at 32GB, and the allocation rate of short-lived objects is extremely high.",
-      "question": "Which of the following GC tuning strategies is the most appropriate first step to resolve these evacuation failures without increasing the overall physical heap size?",
+      "scenario": "Real-world Industrial Problem Statement: A high-frequency algorithmic trading system processes a 150-dimensional feature vector from worldwide exchanges. During peak market volatility, network package drops cause intermittent missing values (approximately 8% missingness, occurring completely at random) in several volatility indicators. The system's automated execution pipeline has a strict Service Level Agreement (SLA) requiring inference predictions to complete in under 5 milliseconds.",
+      "question": "Which missing-value imputation strategy represents the optimal trade-off between predictive accuracy and real-time execution constraints?",
       "options": [
-        "A) Increase `-XX:G1ReservePercent` to reserve a larger buffer for evacuated objects, and decrease `-XX:InitiatingHeapOccupancyPercent` to trigger the concurrent marking cycle earlier.",
-        "B) Set `-XX:NewRatio=1` to force a 50/50 split between Young and Old generations, ensuring there is always enough space in the survivor spaces.",
-        "C) Increase `-XX:MaxGCPauseMillis` to allow the garbage collector more time to complete full sweep cycles during execution.",
-        "D) Decrease `-XX:G1ReservePercent` to allow more space for normal young generation allocations and reduce the frequency of young generation collections."
+        "A) Implement an online K-Nearest Neighbors (KNN) Imputation scheme with K=5, optimized via KD-Trees at runtime.",
+        "B) Deploy an iterative MICE (Multiple Imputation by Chained Equations) pipeline inline within the real-time inference loop.",
+        "C) Use complete-case analysis (listwise deletion) to drop incoming rows containing missing values prior to inference.",
+        "D) Apply a pre-calculated historical median imputer coupled with an auxiliary binary 'missingness indicator' feature."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Increase `-XX:G1ReservePercent` to reserve a larger buffer for evacuated objects, and decrease `-XX:InitiatingHeapOccupancyPercent` to trigger the concurrent marking cycle earlier.",
-      "explanation": "Evacuation failure (To-space exhausted) occurs when the G1 collector cannot find enough free regions to copy surviving objects during a minor or mixed garbage collection. Increasing `-XX:G1ReservePercent` (default 10%) increases the safety margin of free space reserved for evacuations. Decreasing `-XX:InitiatingHeapOccupancyPercent` (IHOP) starts the concurrent marking cycle earlier based on Old Generation occupancy, reclaiming space before the heap becomes too full to perform standard evacuation."
+      "correct_answer_letter": "D",
+      "correct_answer_text": "D) Apply a pre-calculated historical median imputer coupled with an auxiliary binary 'missingness indicator' feature.",
+      "explanation": "In high-frequency trading with a strict <5ms SLA, computational complexity at inference time is the primary bottleneck. KNN imputation requires calculating distances to all points in the training set (or a subset via KD-trees), which scales poorly in high dimensions (O(D * N)) and exceeds the latency budget. MICE is highly iterative and extremely slow, making it entirely unsuitable for real-time systems. Listwise deletion (dropping rows) is unacceptable in trading because valuable market opportunities are lost due to missing pixels of data. Pre-calculated median imputation is an O(1) operation that easily fits within the SLA, while the auxiliary binary indicator preserves the structural information about the missingness for tree-based models, maintaining predictive accuracy."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Netty-based Spring WebFlux API Gateway is crashing with a `java.lang.OutOfMemoryError: Direct buffer memory` error. Monitoring tools show that the JVM Heap memory usage is completely stable at 35%, but the physical Resident Set Size (RSS) of the container continuously climbs until it reaches the container memory limit and is terminated by the OS OOM killer.",
-      "question": "What is the most likely cause of this direct memory leak, and how should it be diagnosed?",
+      "scenario": "Real-world Industrial Problem Statement: An e-commerce platform's fraud detection engine monitors financial transaction vectors across 80 dimensions. The dataset features high multi-modality (due to different user segments) and extreme multicollinearity among several transaction value variables. The data engineering team needs to select an outlier detection algorithm to isolate fraudulent transactions while minimizing false-positive rates.",
+      "question": "Which outlier detection approach is most robust against the curse of dimensionality and collinearity in this multi-modal scenario?",
       "options": [
-        "A) The JVM heap is too small, which prevents the Garbage Collector from triggering WeakReference cleaner execution for off-heap allocations.",
-        "B) Direct memory allocation is failing due to high thread contention within the Netty event loop, which can be mitigated by disabling pooling.",
-        "C) A custom Netty inbound channel handler is consuming incoming data but failing to call `ReferenceCountUtil.release()` on the received `ByteBuf` objects.",
-        "D) The Spring WebFlux reactive streams are buffering too many elements on the JVM Heap, which forces native memory swapping."
+        "A) Mahalanobis Distance calculation, since it inherently accounts for covariance across all 80 dimensions.",
+        "B) Isolation Forest, because its random partitioning mechanism is non-parametric, robust to multi-modality, and scales well in high dimensions.",
+        "C) Local Outlier Factor (LOF) relying on standard Euclidean distance metrics to capture local density variations.",
+        "D) One-Class SVM with a linear kernel, since the linear decision boundary guarantees robustness against collinear features."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) A custom Netty inbound channel handler is consuming incoming data but failing to call `ReferenceCountUtil.release()` on the received `ByteBuf` objects.",
-      "explanation": "Netty uses a pooled allocator for direct (`off-heap`) buffers to optimize performance, tracking memory allocation using reference counting. If a custom pipeline handler intercepts a `ByteBuf` message and does not release it or pass it downstream to be released, the off-heap native memory is never reclaimed. Because this memory is outside the JVM heap, standard GC cycles may not trigger frequently enough to run Cleaner objects, causing physical RSS to grow continuously until an OOM occurs. The leak can be diagnosed by running with `-Dio.netty.leakDetection.level=ADVANCED`."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Isolation Forest, because its random partitioning mechanism is non-parametric, robust to multi-modality, and scales well in high dimensions.",
+      "explanation": "Mahalanobis distance assumes that the underlying data follows a unimodal multivariate normal distribution; with multi-modal data, this assumption breaks down completely. Furthermore, extreme multicollinearity causes the covariance matrix to be singular or near-singular, making its inversion numerically unstable. Local Outlier Factor (LOF) with Euclidean distance suffers from the 'curse of dimensionality,' where distance metrics become indistinguishable as the number of dimensions increases. Isolation Forest isolates anomalies by randomly selecting a feature and split value. Because anomalies require fewer partitions to isolate than normal points, it handles high-dimensional, multi-modal structures effectively without making parametric assumptions or requiring matrix inversions."
     }
   ]
 }
