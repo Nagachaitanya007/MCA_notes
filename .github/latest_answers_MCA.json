@@ -1,48 +1,48 @@
 {
-  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "Real-world Industrial Problem Statement: A predictive maintenance system for offshore wind turbines collects rotational speed and vibration frequency data. The telemetry pipeline exhibits extreme right-skewness (skewness coefficient > 3.5) in its vibration amplitude features. Crucially, the dataset contains valid structural zero values (representing periods when turbines are completely locked for maintenance). The ML engineering team needs to stabilize the variance and normalize this feature set to train a downstream Linear Ridge Regression model.",
-      "question": "Which mathematical transformation strategy is most appropriate and valid for normalizing this dataset?",
+      "scenario": "A real-world industrial problem statement: A company that provides loan services to customers uses an AI model to predict the likelihood of loan repayment. However, an audit reveals that the model is biased towards approving loans for customers from higher-income neighborhoods. This results in a disproportionate number of loan rejections for customers from lower-income neighborhoods.",
+      "question": "What is the primary cause of the bias in the AI model's loan approval predictions?",
       "options": [
-        "A) Apply a standard Logarithmic transformation (y = log(x)) directly to normalize the feature distribution.",
-        "B) Apply a Box-Cox transformation directly to the raw feature vector to find the optimal power parameter.",
-        "C) Apply the Yeo-Johnson transformation, as it mathematically accommodates zero and negative values while stabilizing variance.",
-        "D) Apply Min-Max scaling to compress the range to [0, 1], which mathematically eliminates the skewness profile."
+        "A) Insufficient training data from lower-income neighborhoods",
+        "B) Incorrect algorithm selection for the task",
+        "C) Inadequate feature engineering for income-related variables",
+        "D) Lack of regularization techniques in the model"
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Apply the Yeo-Johnson transformation, as it mathematically accommodates zero and negative values while stabilizing variance.",
-      "explanation": "Linear Ridge Regression assumes homoscedasticity and normality of errors. When data is heavily skewed and contains zero values, traditional transformations have severe mathematical limitations. A standard Logarithmic transform (log(x)) is undefined at zero. The Box-Cox transformation is strictly defined only for positive values (x > 0) because its formula contains x raised to the power of lambda, requiring positive bases to avoid complex numbers. The Yeo-Johnson transformation modifies the Box-Cox formula to handle zero and negative values, making it the mathematically robust choice here. Min-Max scaling merely bounds the feature values to a range but does not modify the underlying probability distribution or reduce skewness."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Insufficient training data from lower-income neighborhoods",
+      "explanation": "The primary cause of the bias in the AI model's loan approval predictions is the insufficient training data from lower-income neighborhoods, which leads to a lack of representation of these areas in the model's training set. This results in the model being less accurate for customers from these neighborhoods, ultimately causing the bias in loan approvals. Collecting more diverse data and using techniques like data augmentation or transfer learning can help mitigate this issue."
     },
     {
       "id": 2,
-      "scenario": "Real-world Industrial Problem Statement: A high-frequency algorithmic trading system processes a 150-dimensional feature vector from worldwide exchanges. During peak market volatility, network package drops cause intermittent missing values (approximately 8% missingness, occurring completely at random) in several volatility indicators. The system's automated execution pipeline has a strict Service Level Agreement (SLA) requiring inference predictions to complete in under 5 milliseconds.",
-      "question": "Which missing-value imputation strategy represents the optimal trade-off between predictive accuracy and real-time execution constraints?",
+      "scenario": "A healthcare company uses an Explainable AI (XAI) model to predict patient diagnoses based on their medical history and current symptoms. The model is required to provide explanations for its predictions to ensure transparency and trust in the diagnosis process.",
+      "question": "Which XAI technique would be most suitable for providing explanations in this scenario?",
       "options": [
-        "A) Implement an online K-Nearest Neighbors (KNN) Imputation scheme with K=5, optimized via KD-Trees at runtime.",
-        "B) Deploy an iterative MICE (Multiple Imputation by Chained Equations) pipeline inline within the real-time inference loop.",
-        "C) Use complete-case analysis (listwise deletion) to drop incoming rows containing missing values prior to inference.",
-        "D) Apply a pre-calculated historical median imputer coupled with an auxiliary binary 'missingness indicator' feature."
+        "A) SHAP (SHapley Additive exPlanations)",
+        "B) LIME (Local Interpretable Model-agnostic Explanations)",
+        "C) TreeExplainer for tree-based models",
+        "D) DeepLIFT for neural networks"
       ],
-      "correct_answer_letter": "D",
-      "correct_answer_text": "D) Apply a pre-calculated historical median imputer coupled with an auxiliary binary 'missingness indicator' feature.",
-      "explanation": "In high-frequency trading with a strict <5ms SLA, computational complexity at inference time is the primary bottleneck. KNN imputation requires calculating distances to all points in the training set (or a subset via KD-trees), which scales poorly in high dimensions (O(D * N)) and exceeds the latency budget. MICE is highly iterative and extremely slow, making it entirely unsuitable for real-time systems. Listwise deletion (dropping rows) is unacceptable in trading because valuable market opportunities are lost due to missing pixels of data. Pre-calculated median imputation is an O(1) operation that easily fits within the SLA, while the auxiliary binary indicator preserves the structural information about the missingness for tree-based models, maintaining predictive accuracy."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) SHAP (SHapley Additive exPlanations)",
+      "explanation": "SHAP is an XAI technique that assigns a value to each feature for a specific prediction, indicating its contribution to the outcome. It is model-agnostic, meaning it can be used with any type of machine learning model, making it suitable for explaining patient diagnoses in this healthcare scenario. SHAP provides a consistent and intuitive explanation for the predictions, enhancing transparency and trust in the diagnosis process."
     },
     {
       "id": 3,
-      "scenario": "Real-world Industrial Problem Statement: An e-commerce platform's fraud detection engine monitors financial transaction vectors across 80 dimensions. The dataset features high multi-modality (due to different user segments) and extreme multicollinearity among several transaction value variables. The data engineering team needs to select an outlier detection algorithm to isolate fraudulent transactions while minimizing false-positive rates.",
-      "question": "Which outlier detection approach is most robust against the curse of dimensionality and collinearity in this multi-modal scenario?",
+      "scenario": "An e-commerce company uses a recommendation system to suggest products to customers based on their browsing and purchase history. The system uses a collaborative filtering algorithm that is prone to the cold start problem, where new products or customers are not well-represented in the model's training data.",
+      "question": "What technique can be used to handle the cold start problem in this collaborative filtering-based recommendation system?",
       "options": [
-        "A) Mahalanobis Distance calculation, since it inherently accounts for covariance across all 80 dimensions.",
-        "B) Isolation Forest, because its random partitioning mechanism is non-parametric, robust to multi-modality, and scales well in high dimensions.",
-        "C) Local Outlier Factor (LOF) relying on standard Euclidean distance metrics to capture local density variations.",
-        "D) One-Class SVM with a linear kernel, since the linear decision boundary guarantees robustness against collinear features."
+        "A) Content-based filtering as a complementary approach",
+        "B) Knowledge graph-based recommendations",
+        "C) Hybrid approach combining collaborative filtering with matrix factorization",
+        "D) Transfer learning from a related domain"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Isolation Forest, because its random partitioning mechanism is non-parametric, robust to multi-modality, and scales well in high dimensions.",
-      "explanation": "Mahalanobis distance assumes that the underlying data follows a unimodal multivariate normal distribution; with multi-modal data, this assumption breaks down completely. Furthermore, extreme multicollinearity causes the covariance matrix to be singular or near-singular, making its inversion numerically unstable. Local Outlier Factor (LOF) with Euclidean distance suffers from the 'curse of dimensionality,' where distance metrics become indistinguishable as the number of dimensions increases. Isolation Forest isolates anomalies by randomly selecting a feature and split value. Because anomalies require fewer partitions to isolate than normal points, it handles high-dimensional, multi-modal structures effectively without making parametric assumptions or requiring matrix inversions."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Content-based filtering as a complementary approach",
+      "explanation": "Content-based filtering can be used as a complementary approach to handle the cold start problem in collaborative filtering. This involves recommending products to a user based on the attributes of the products they have liked or interacted with in the past. By incorporating content-based features, the system can provide recommendations for new products or to new customers, mitigating the cold start problem. This hybrid approach combines the strengths of both collaborative filtering and content-based filtering, improving the overall performance of the recommendation system."
     }
   ]
 }

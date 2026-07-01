@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
-  "mode": "Java",
+  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a Spring Boot microservice experiences a heap-based `OutOfMemoryError` during a nightly batch processing run. The following service class processes updates for thousands of records:\n\njava\n@Service\npublic class AccountService {\n    @PersistenceContext\n    private EntityManager em;\n\n    @Transactional\n    public void updateAccounts(List<Long> accountIds) {\n        for (Long id : accountIds) {\n            Account acc = em.find(Account.class, id);\n            acc.setStatus(\"ACTIVE\");\n            // business logic\n        }\n    }\n}\n",
-      "question": "What is the primary cause of this memory leak/exhaustion issue?",
+      "scenario": "A real-world industrial problem statement: A company that provides loan services to customers uses an AI model to predict the likelihood of loan repayment. However, an audit reveals that the model is biased towards approving loans for customers from higher-income neighborhoods. This results in a disproportionate number of loan rejections for customers from lower-income neighborhoods.",
+      "question": "What is the primary cause of the bias in the AI model's loan approval predictions?",
       "options": [
-        "A) The Spring transaction proxy fails to intercept the call, causing a database connection leak.",
-        "B) The Hibernate/JPA First-Level Cache (Persistence Context) retains a strong reference to every loaded `Account` entity for the entire duration of the transaction, preventing them from being Garbage Collected.",
-        "C) The JVM fails to collect the entities because the transaction is executing on a virtual thread which does not support generational GC.",
-        "D) The `EntityManager` creates a new Spring AOP proxy instance for every single `find` operation, exhausting the Metaspace."
+        "A) Insufficient training data from lower-income neighborhoods",
+        "B) Incorrect algorithm selection for the task",
+        "C) Inadequate feature engineering for income-related variables",
+        "D) Lack of regularization techniques in the model"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The Hibernate/JPA First-Level Cache (Persistence Context) retains a strong reference to every loaded `Account` entity for the entire duration of the transaction, preventing them from being Garbage Collected.",
-      "explanation": "Within a `@Transactional` block, the JPA `EntityManager` maintains a First-Level Cache (Persistence Context) that tracks all loaded, dirty, or created entities until the transaction completes. When processing very large collections of records within a single transaction, these managed entities remain strongly reachable, preventing the JVM Garbage Collector from reclaiming them. This eventually results in a Heap `OutOfMemoryError`. To resolve this, the batch must be chunked, or the persistence context must be cleared periodically using `em.flush()` and `em.clear()` or via a stateless session."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Insufficient training data from lower-income neighborhoods",
+      "explanation": "The primary cause of the bias in the AI model's loan approval predictions is the insufficient training data from lower-income neighborhoods, which leads to a lack of representation of these areas in the model's training set. This results in the model being less accurate for customers from these neighborhoods, ultimately causing the bias in loan approvals. Collecting more diverse data and using techniques like data augmentation or transfer learning can help mitigate this issue."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a high-throughput Java microservice utilizing G1GC is experiencing frequent, long Stop-The-World (STW) pauses. The GC logs reveal a pattern of frequent `G1 Humongous Allocation` phases followed by high `To-space exhausted` and Evacuation Failure occurrences, which trigger subsequent Full GCs.",
-      "question": "What is the most effective JVM tuning strategy to address this specific issue?",
+      "scenario": "A healthcare company uses an Explainable AI (XAI) model to predict patient diagnoses based on their medical history and current symptoms. The model is required to provide explanations for its predictions to ensure transparency and trust in the diagnosis process.",
+      "question": "Which XAI technique would be most suitable for providing explanations in this scenario?",
       "options": [
-        "A) Decrease the survivor ratio using `-XX:SurvivorRatio=4` to allow more young generation survivors.",
-        "B) Increase `-XX:G1HeapRegionSize` to ensure that larger objects are allocated into normal G1 regions instead of being classified as humongous objects.",
-        "C) Lower `-XX:MaxGCPauseMillis` to force the collector to perform shorter, more aggressive cycles.",
-        "D) Disable generational collection entirely with `-XX:-UseG1GC` and fall back to the Serial Garbage Collector."
+        "A) SHAP (SHapley Additive exPlanations)",
+        "B) LIME (Local Interpretable Model-agnostic Explanations)",
+        "C) TreeExplainer for tree-based models",
+        "D) DeepLIFT for neural networks"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Increase `-XX:G1HeapRegionSize` to ensure that larger objects are allocated into normal G1 regions instead of being classified as humongous objects.",
-      "explanation": "In G1GC, any object that is larger than 50% of a G1 region is considered a 'Humongous Object'. These objects are allocated directly into the Old Generation in contiguous regions, bypassing the Eden space. Frequent humongous allocations cause heap fragmentation, premature GC cycles, and 'To-space exhausted' errors due to lack of contiguous free space. Increasing the region size using `-XX:G1HeapRegionSize` (e.g., to 16m or 32m) categorizes these allocations as normal objects, allowing them to be allocated and collected efficiently in the Young Generation."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) SHAP (SHapley Additive exPlanations)",
+      "explanation": "SHAP is an XAI technique that assigns a value to each feature for a specific prediction, indicating its contribution to the outcome. It is model-agnostic, meaning it can be used with any type of machine learning model, making it suitable for explaining patient diagnoses in this healthcare scenario. SHAP provides a consistent and intuitive explanation for the predictions, enhancing transparency and trust in the diagnosis process."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a high-concurrency Spring Boot application undergoes a slow, continuous memory leak in the Heap. A heap dump shows a massive volume of `ThreadLocalMap$Entry` objects holding strong references to `UserSession` objects. The application uses a configured `ThreadPoolTaskExecutor` to handle asynchronous processing tasks.",
-      "question": "Why does this cause a memory leak despite `ThreadLocal` utilizing `WeakReference` for its keys?",
+      "scenario": "An e-commerce company uses a recommendation system to suggest products to customers based on their browsing and purchase history. The system uses a collaborative filtering algorithm that is prone to the cold start problem, where new products or customers are not well-represented in the model's training data.",
+      "question": "What technique can be used to handle the cold start problem in this collaborative filtering-based recommendation system?",
       "options": [
-        "A) The keys of `ThreadLocalMap` are strongly referenced by the executing `Thread`, preventing garbage collection of the `ThreadLocal` itself.",
-        "B) The threads inside a `ThreadPoolTaskExecutor` are pooled and long-lived. While the key in `ThreadLocalMap` is a `WeakReference`, the associated value (the `UserSession` instance) is strongly referenced and will remain in memory indefinitely unless `ThreadLocal.remove()` is explicitly invoked.",
-        "C) The Spring `ThreadPoolTaskExecutor` retains a hard reference to all return values of completed `Runnable` tasks to allow tracking.",
-        "D) The JVM garbage collector completely bypasses scanning `ThreadLocal` fields during minor and major GC phases to optimize concurrency overhead."
+        "A) Content-based filtering as a complementary approach",
+        "B) Knowledge graph-based recommendations",
+        "C) Hybrid approach combining collaborative filtering with matrix factorization",
+        "D) Transfer learning from a related domain"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The threads inside a `ThreadPoolTaskExecutor` are pooled and long-lived. While the key in `ThreadLocalMap` is a `WeakReference`, the associated value (the `UserSession` instance) is strongly referenced and will remain in memory indefinitely unless `ThreadLocal.remove()` is explicitly invoked.",
-      "explanation": "The keys of `ThreadLocalMap` are indeed `WeakReferences` to the `ThreadLocal` object itself. However, the value associated with the key is a strong reference. Because thread pools reuse worker threads, those threads never terminate. Thus, even if the `ThreadLocal` key becomes unreachable and is GC'd, the value mapped to it remains strongly reachable from the thread's `ThreadLocalMap` until the thread dies or the entry is overwritten. To prevent this leak, `ThreadLocal.remove()` must be invoked, typically in a `finally` block or via a custom task interceptor."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Content-based filtering as a complementary approach",
+      "explanation": "Content-based filtering can be used as a complementary approach to handle the cold start problem in collaborative filtering. This involves recommending products to a user based on the attributes of the products they have liked or interacted with in the past. By incorporating content-based features, the system can provide recommendations for new products or to new customers, mitigating the cold start problem. This hybrid approach combines the strengths of both collaborative filtering and content-based filtering, improving the overall performance of the recommendation system."
     }
   ]
 }
