@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
+  "topic": "Memory Management & Garbage Collection Tuning",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a Spring Boot application running on JDK 17 with G1GC experiences a gradual Metaspace growth leading to an `OutOfMemoryError: Metaspace` after dynamic plugins are dynamically loaded and unloaded. The dynamic plugin loader uses a custom ClassLoader. Here is the code snippet responsible for executing tasks within the plugin context:\n\njava\n@Service\npublic class PluginExecutor {\n    private final Map<String, ClassLoader> pluginRegistry = new ConcurrentHashMap<>();\n    private static final ThreadLocal<Object> currentPluginConfig = new ThreadLocal<>();\n\n    public void executePluginTask(String pluginId, String className) throws Exception {\n        ClassLoader loader = pluginRegistry.computeIfAbsent(pluginId, id -> new CustomPluginClassLoader(id));\n        Class<?> clazz = Class.forName(className, true, loader);\n        Object instance = clazz.getDeclaredConstructor().newInstance();\n        \n        currentPluginConfig.set(instance);\n        clazz.getMethod(\"execute\").invoke(instance);\n    }\n    \n    public void unloadPlugin(String pluginId) {\n        pluginRegistry.remove(pluginId);\n    }\n}\n",
-      "question": "What is the primary cause of this Metaspace leak?",
+      "scenario": "You are debugging a production issue where a Spring Boot microservice experiences a heap-based `OutOfMemoryError` during a nightly batch processing run. The following service class processes updates for thousands of records:\n\njava\n@Service\npublic class AccountService {\n    @PersistenceContext\n    private EntityManager em;\n\n    @Transactional\n    public void updateAccounts(List<Long> accountIds) {\n        for (Long id : accountIds) {\n            Account acc = em.find(Account.class, id);\n            acc.setStatus(\"ACTIVE\");\n            // business logic\n        }\n    }\n}\n",
+      "question": "What is the primary cause of this memory leak/exhaustion issue?",
       "options": [
-        "A) G1GC does not clean up Metaspace metadata unless a full GC cycle is triggered manually via System.gc().",
-        "B) The ThreadLocal variable maintains a strong reference to the plugin instance, which references its Class, which in turn keeps the CustomPluginClassLoader reachable, preventing GC.",
-        "C) The ConcurrentHashMap maintains lock buckets that physically prevent ClassLoader instances from being unmapped until the JVM restarts.",
-        "D) Spring's proxy generation mechanism creates dynamic proxy classes in the bootstrap classloader that reference the CustomPluginClassLoader."
+        "A) The Spring transaction proxy fails to intercept the call, causing a database connection leak.",
+        "B) The Hibernate/JPA First-Level Cache (Persistence Context) retains a strong reference to every loaded `Account` entity for the entire duration of the transaction, preventing them from being Garbage Collected.",
+        "C) The JVM fails to collect the entities because the transaction is executing on a virtual thread which does not support generational GC.",
+        "D) The `EntityManager` creates a new Spring AOP proxy instance for every single `find` operation, exhausting the Metaspace."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The ThreadLocal variable maintains a strong reference to the plugin instance, which references its Class, which in turn keeps the CustomPluginClassLoader reachable, preventing GC.",
-      "explanation": "A ClassLoader can only be garbage collected (and its loaded class metadata unloaded from Metaspace) if the ClassLoader instance itself, all Class objects loaded by it, and all instances of those Class objects are unreachable. Because the ThreadLocal variable `currentPluginConfig` is never cleared using `.remove()`, the executing web server threads retain strong references to the plugin instances in their `ThreadLocalMap`. As long as those threads remain alive in the pool, the plugin instances, their classes, and the `CustomPluginClassLoader` cannot be garbage collected, resulting in a persistent Metaspace leak."
+      "correct_answer_text": "B) The Hibernate/JPA First-Level Cache (Persistence Context) retains a strong reference to every loaded `Account` entity for the entire duration of the transaction, preventing them from being Garbage Collected.",
+      "explanation": "Within a `@Transactional` block, the JPA `EntityManager` maintains a First-Level Cache (Persistence Context) that tracks all loaded, dirty, or created entities until the transaction completes. When processing very large collections of records within a single transaction, these managed entities remain strongly reachable, preventing the JVM Garbage Collector from reclaiming them. This eventually results in a Heap `OutOfMemoryError`. To resolve this, the batch must be chunked, or the persistence context must be cleared periodically using `em.flush()` and `em.clear()` or via a stateless session."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a low-latency financial trading platform on JDK 17. The application has a 64GB heap. Under heavy load, you notice G1GC latency spikes up to 100ms. You decide to switch to ZGC (`-XX:+UseZGC`) to reduce pause times. However, after the switch, while the stop-the-world pauses drop to sub-millisecond levels, the overall system throughput degrades drastically and the JVM eventually throws an `OutOfMemoryError` during peak hours under heavy allocation rates, despite the network and CPU limits not being fully saturated.",
-      "question": "What is the primary cause of this behavior under ZGC?",
+      "scenario": "You are debugging a production issue where a high-throughput Java microservice utilizing G1GC is experiencing frequent, long Stop-The-World (STW) pauses. The GC logs reveal a pattern of frequent `G1 Humongous Allocation` phases followed by high `To-space exhausted` and Evacuation Failure occurrences, which trigger subsequent Full GCs.",
+      "question": "What is the most effective JVM tuning strategy to address this specific issue?",
       "options": [
-        "A) ZGC relies on a stop-the-world relocation phase that scales quadratically with the number of live objects, causing allocation thread starvation.",
-        "B) The application is experiencing an 'Allocation Rate Hazard' where the rate of thread allocations exceeds the speed at which ZGC can concurrently reclaim memory, resulting in allocation stalls and eventual OOM.",
-        "C) ZGC does not support Thread-Local Allocation Buffers (TLABs), forcing all object allocations to synchronize on a global heap lock.",
-        "D) ZGC requires a dual-heap memory model where the surviving objects must be copied to an entirely separate heap space, halving the usable heap capacity."
+        "A) Decrease the survivor ratio using `-XX:SurvivorRatio=4` to allow more young generation survivors.",
+        "B) Increase `-XX:G1HeapRegionSize` to ensure that larger objects are allocated into normal G1 regions instead of being classified as humongous objects.",
+        "C) Lower `-XX:MaxGCPauseMillis` to force the collector to perform shorter, more aggressive cycles.",
+        "D) Disable generational collection entirely with `-XX:-UseG1GC` and fall back to the Serial Garbage Collector."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The application is experiencing an 'Allocation Rate Hazard' where the rate of thread allocations exceeds the speed at which ZGC can concurrently reclaim memory, resulting in allocation stalls and eventual OOM.",
-      "explanation": "Unlike generational or stop-the-world GCs like G1 (which pause the application threads to catch up on cleanup), ZGC runs almost entirely concurrently. If the application's allocation rate is extremely high, application threads can exhaust the remaining heap before the concurrent ZGC background threads complete their marking and relocation cycles. This 'allocation rate hazard' leads to allocation stalls (pauses) and eventually an OutOfMemoryError if the collector cannot keep pace."
+      "correct_answer_text": "B) Increase `-XX:G1HeapRegionSize` to ensure that larger objects are allocated into normal G1 regions instead of being classified as humongous objects.",
+      "explanation": "In G1GC, any object that is larger than 50% of a G1 region is considered a 'Humongous Object'. These objects are allocated directly into the Old Generation in contiguous regions, bypassing the Eden space. Frequent humongous allocations cause heap fragmentation, premature GC cycles, and 'To-space exhausted' errors due to lack of contiguous free space. Increasing the region size using `-XX:G1HeapRegionSize` (e.g., to 16m or 32m) categorizes these allocations as normal objects, allowing them to be allocated and collected efficiently in the Young Generation."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production race condition in an inventory management service. The service is a Spring bean containing a stateful instance variable. The class is annotated with Spring's `@Transactional` annotation. During concurrent high-volume requests, inventory counts become inconsistent, and the database shows dirty reads even though the transaction isolation level is set to `Isolation.REPEATABLE_READ`:\n\njava\n@Service\npublic class InventoryService {\n    private final InventoryRepository repository;\n    private int tempStockAdjustment = 0;\n\n    @Autowired\n    public InventoryService(InventoryRepository repository) {\n        this.repository = repository;\n    }\n\n    @Transactional\n    public synchronized void updateStock(Long itemId, int quantity) {\n        this.tempStockAdjustment += quantity;\n        Inventory inventory = repository.findById(itemId).orElseThrow();\n        inventory.setQuantity(inventory.getQuantity() + tempStockAdjustment);\n        repository.save(inventory);\n        this.tempStockAdjustment = 0;\n    }\n}\n",
-      "question": "Why does the `synchronized` keyword fail to prevent the race condition in this scenario?",
+      "scenario": "You are debugging a production issue where a high-concurrency Spring Boot application undergoes a slow, continuous memory leak in the Heap. A heap dump shows a massive volume of `ThreadLocalMap$Entry` objects holding strong references to `UserSession` objects. The application uses a configured `ThreadPoolTaskExecutor` to handle asynchronous processing tasks.",
+      "question": "Why does this cause a memory leak despite `ThreadLocal` utilizing `WeakReference` for its keys?",
       "options": [
-        "A) The dynamic Spring AOP proxy subclass does not inherit the synchronized modifier of the target method, making the proxy's outer wrapper unsynchronized.",
-        "B) The JVM's lock-coarsening optimization merges the synchronized block with the database driver's internal socket operations, causing lock starvation.",
-        "C) Spring's transactional proxy enters and starts a transaction before invoking the synchronized method, but the proxy commits the transaction AFTER the synchronized method completes and releases its lock. This allows another thread to enter and read uncommitted state.",
-        "D) The REPEATABLE_READ isolation level bypasses JVM monitor synchronization because database locking takes precedence over JVM monitors."
+        "A) The keys of `ThreadLocalMap` are strongly referenced by the executing `Thread`, preventing garbage collection of the `ThreadLocal` itself.",
+        "B) The threads inside a `ThreadPoolTaskExecutor` are pooled and long-lived. While the key in `ThreadLocalMap` is a `WeakReference`, the associated value (the `UserSession` instance) is strongly referenced and will remain in memory indefinitely unless `ThreadLocal.remove()` is explicitly invoked.",
+        "C) The Spring `ThreadPoolTaskExecutor` retains a hard reference to all return values of completed `Runnable` tasks to allow tracking.",
+        "D) The JVM garbage collector completely bypasses scanning `ThreadLocal` fields during minor and major GC phases to optimize concurrency overhead."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Spring's transactional proxy enters and starts a transaction before invoking the synchronized method, but the proxy commits the transaction AFTER the synchronized method completes and releases its lock. This allows another thread to enter and read uncommitted state.",
-      "explanation": "This is a classic Spring AOP / concurrency issue. The execution flow generated by Spring's `@Transactional` proxy is: `Proxy: Start Transaction -> Target: updateStock (synchronized starts) -> Target: updateStock (synchronized ends/lock released) -> Proxy: Commit Transaction`. Because the synchronized lock is released before the transaction is committed, another thread can acquire the lock, enter the synchronized block, and read the database state before the first thread's transaction has committed, resulting in dirty reads and inconsistent states."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The threads inside a `ThreadPoolTaskExecutor` are pooled and long-lived. While the key in `ThreadLocalMap` is a `WeakReference`, the associated value (the `UserSession` instance) is strongly referenced and will remain in memory indefinitely unless `ThreadLocal.remove()` is explicitly invoked.",
+      "explanation": "The keys of `ThreadLocalMap` are indeed `WeakReferences` to the `ThreadLocal` object itself. However, the value associated with the key is a strong reference. Because thread pools reuse worker threads, those threads never terminate. Thus, even if the `ThreadLocal` key becomes unreachable and is GC'd, the value mapped to it remains strongly reachable from the thread's `ThreadLocalMap` until the thread dies or the entry is overwritten. To prevent this leak, `ThreadLocal.remove()` must be invoked, typically in a `finally` block or via a custom task interceptor."
     }
   ]
 }
