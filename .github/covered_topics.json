@@ -36,7 +36,8 @@
     "Handling Partial Failures in Scatter-Gather Architectures",
     "The Self-Healing Reconciliation Loop: Handling Distributed State Discrepancies",
     "The Fencing Token Pattern: Handling Distributed Lock and Lease Expiration Exceptions",
-    "Exception Handling Strategies in Distributed Systems: Fail-Safe Defaults and Error Budgets"
+    "Exception Handling Strategies in Distributed Systems: Fail-Safe Defaults and Error Budgets",
+    "Gray Failure Detection: Handling Silent Node Degradation"
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections",
