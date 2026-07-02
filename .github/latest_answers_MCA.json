@@ -1,48 +1,48 @@
 {
-  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
+  "topic": "Clustering Scenarios: K-Means vs DBSCAN vs Hierarchical",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A real-world industrial problem statement: A company that provides loan services to customers uses an AI model to predict the likelihood of loan repayment. However, an audit reveals that the model is biased towards approving loans for customers from higher-income neighborhoods. This results in a disproportionate number of loan rejections for customers from lower-income neighborhoods.",
-      "question": "What is the primary cause of the bias in the AI model's loan approval predictions?",
+      "scenario": "A ride-sharing enterprise wants to optimize driver dispatching in a major metropolitan area by identifying irregular, arbitrary-shaped high-density pickup zones (hotspots) from raw GPS coordinates. The geospatial dataset is massive and contains substantial noise from GPS signal drift in high-rise areas, alongside sparse data points in suburban sectors. The engineering team needs a robust clustering strategy that runs dynamically to find these variable-shaped zones without manually designating the expected number of clusters.",
+      "question": "Which clustering configuration is most appropriate for this scenario, and what is its primary technical justification?",
       "options": [
-        "A) Insufficient training data from lower-income neighborhoods",
-        "B) Incorrect algorithm selection for the task",
-        "C) Inadequate feature engineering for income-related variables",
-        "D) Lack of regularization techniques in the model"
+        "A) K-Means with Euclidean distance, because its O(I * k * n * d) computational complexity ensures real-time updates and fast centroid convergence.",
+        "B) DBSCAN with Haversine distance, because it can identify clusters of arbitrary shapes and naturally isolates high-rise GPS noise as outliers instead of forcing them into clusters.",
+        "C) Agglomerative Hierarchical Clustering with complete linkage, because it guarantees a rigid taxonomy of nested pickup zones from micro-neighborhoods to macro-districts.",
+        "D) K-Means with Cosine similarity, because minimizing the within-cluster sum of squares (WCSS) adjusts the centroids to mitigate the impact of sparse suburban points."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Insufficient training data from lower-income neighborhoods",
-      "explanation": "The primary cause of the bias in the AI model's loan approval predictions is the insufficient training data from lower-income neighborhoods, which leads to a lack of representation of these areas in the model's training set. This results in the model being less accurate for customers from these neighborhoods, ultimately causing the bias in loan approvals. Collecting more diverse data and using techniques like data augmentation or transfer learning can help mitigate this issue."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) DBSCAN with Haversine distance, because it can identify clusters of arbitrary shapes and naturally isolates high-rise GPS noise as outliers instead of forcing them into clusters.",
+      "explanation": "DBSCAN (Density-Based Spatial Clustering of Applications with Noise) is ideal for spatial coordinates. It groups points based on local density (using eps and min_samples parameters), enabling it to discover arbitrary shapes (such as linear roads or curved city blocks). Crucially, DBSCAN does not force every point into a cluster; it flags low-density points (GPS drift/noise) as outliers (-1). K-Means would force these noise points into clusters, shifting centroids incorrectly. Haversine distance is essential here over Euclidean distance to correctly model the spherical surface of the Earth."
     },
     {
       "id": 2,
-      "scenario": "A healthcare company uses an Explainable AI (XAI) model to predict patient diagnoses based on their medical history and current symptoms. The model is required to provide explanations for its predictions to ensure transparency and trust in the diagnosis process.",
-      "question": "Which XAI technique would be most suitable for providing explanations in this scenario?",
+      "scenario": "A major e-commerce retail platform needs to build an automated, navigable product taxonomy tree for 100,000 product profiles. Each profile is represented by a high-dimensional, sparse TF-IDF vector of its descriptions and attributes. The design team requires a strict nested hierarchical structure (sub-categories within major categories) to construct the website navigation menus. However, classic Agglomerative Hierarchical clustering struggles with the dataset's size due to its O(N^3) time complexity.",
+      "question": "Which clustering strategy best satisfies both the structural requirements and the computational constraints of this platform?",
       "options": [
-        "A) SHAP (SHapley Additive exPlanations)",
-        "B) LIME (Local Interpretable Model-agnostic Explanations)",
-        "C) TreeExplainer for tree-based models",
-        "D) DeepLIFT for neural networks"
+        "A) Single-linkage Agglomerative Hierarchical clustering, because it avoids the chaining effect in sparse vector spaces and reduces complexity to linear-time.",
+        "B) Standard K-Means executed repeatedly with K values ranging from 2 to 100, choosing the best partition at each step using Silhouette Analysis.",
+        "C) Bisecting K-Means, because it constructs a hierarchical tree structure top-down with O(N log K) time complexity, bypassing the high computational footprint of agglomerative clustering.",
+        "D) DBSCAN with a low epsilon and Cosine distance, as it naturally produces hierarchical cluster trees when handling sparse, high-dimensional TF-IDF matrices."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) SHAP (SHapley Additive exPlanations)",
-      "explanation": "SHAP is an XAI technique that assigns a value to each feature for a specific prediction, indicating its contribution to the outcome. It is model-agnostic, meaning it can be used with any type of machine learning model, making it suitable for explaining patient diagnoses in this healthcare scenario. SHAP provides a consistent and intuitive explanation for the predictions, enhancing transparency and trust in the diagnosis process."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Bisecting K-Means, because it constructs a hierarchical tree structure top-down with O(N log K) time complexity, bypassing the high computational footprint of agglomerative clustering.",
+      "explanation": "Bisecting K-Means is a divisive (top-down) hierarchical clustering algorithm. It starts with all points in one cluster and repeatedly splits clusters using K-Means (with K=2) until the desired hierarchy or number of clusters is reached. It runs much faster than agglomerative hierarchical clustering (which is O(N^3) or O(N^2 log N)), making it viable for 100,000 records, while still producing the strict nested tree structure required for navigation menus."
     },
     {
       "id": 3,
-      "scenario": "An e-commerce company uses a recommendation system to suggest products to customers based on their browsing and purchase history. The system uses a collaborative filtering algorithm that is prone to the cold start problem, where new products or customers are not well-represented in the model's training data.",
-      "question": "What technique can be used to handle the cold start problem in this collaborative filtering-based recommendation system?",
+      "scenario": "A credit card network is designing an unsupervised pipeline to detect transactional anomalies. The behavioral data features are highly dimensional (200+ dimensions), and normal transaction patterns show highly skewed regional densities: high-volume metropolitan regions have dense clusters, while smaller rural towns display sparse but legitimate transaction patterns. Standard DBSCAN with a single global epsilon parameter is failing, either merging distinct metropolitan clusters together or labeling correct rural clusters as pure noise.",
+      "question": "What is the primary cause of DBSCAN's failure in this scenario, and how can the team resolve it?",
       "options": [
-        "A) Content-based filtering as a complementary approach",
-        "B) Knowledge graph-based recommendations",
-        "C) Hybrid approach combining collaborative filtering with matrix factorization",
-        "D) Transfer learning from a related domain"
+        "A) High dimensionality causes distance metrics to saturate; the team must switch to K-Means using Manhattan distance to restore clustering density variations.",
+        "B) DBSCAN's reliance on a single global epsilon (eps) prevents it from finding clusters of varying local densities; the team should switch to OPTICS or HDBSCAN.",
+        "C) The data features are non-continuous; the team should apply Agglomerative Hierarchical clustering with Ward linkage to normalize density disparities.",
+        "D) DBSCAN is highly sensitive to the order of execution in high-dimensional datasets; sorting the transaction times chronologically before clustering will fix the issue."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Content-based filtering as a complementary approach",
-      "explanation": "Content-based filtering can be used as a complementary approach to handle the cold start problem in collaborative filtering. This involves recommending products to a user based on the attributes of the products they have liked or interacted with in the past. By incorporating content-based features, the system can provide recommendations for new products or to new customers, mitigating the cold start problem. This hybrid approach combines the strengths of both collaborative filtering and content-based filtering, improving the overall performance of the recommendation system."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) DBSCAN's reliance on a single global epsilon (eps) prevents it from finding clusters of varying local densities; the team should switch to OPTICS or HDBSCAN.",
+      "explanation": "Standard DBSCAN struggles when clusters have significantly varying densities. A small epsilon (eps) will identify dense metropolitan clusters but classify sparse rural clusters as noise. Conversely, a large epsilon will preserve rural clusters but merge distinct metropolitan clusters into a single massive cluster. OPTICS (Ordering Points To Identify the Clustering Structure) and HDBSCAN (Hierarchical DBSCAN) resolve this limitation by building a reachability hierarchy, allowing the extraction of clusters of varying densities without utilizing a single global threshold."
     }
   ]
 }
