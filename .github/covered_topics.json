@@ -95,7 +95,8 @@
     "GC Safepoints and Thread Suspension: Tuning the Hidden Latency Killers",
     "Card Tables & Remembered Sets (RSets): Tuning Cross-Generational References",
     "Tuning GC Reachability: Soft, Weak, and Phantom References",
-    "Memory Management & Garbage Collection Tuning"
+    "Memory Management & Garbage Collection Tuning",
+    "GC Barriers: Tuning Read and Write Barriers in Concurrent Garbage Collectors"
   ],
   "Design a URL Shortener (Key Generation Service, Sharding)": [
     "URL Shortener: Key Generation Service (KGS) & Sharding",
