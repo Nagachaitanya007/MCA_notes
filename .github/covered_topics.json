@@ -124,7 +124,8 @@
     "S3 Storage Node Internals: Append-Only Engines and CDN Cache Coherency",
     "S3 Storage Class Transitions & CDN Invalidation: Balancing Cost, Latency, and Consistency",
     "Scale-Out Prefix Partitioning and Hotspot Management",
-    "Designing a Scalable File Storage System"
+    "Designing a Scalable File Storage System",
+    "CDN Cache Stampede Prevention and Origin Shielding for Massive-Scale Object Delivery"
   ],
   "Database Sharding & Replication Strategies": [
     "Horizontal Sharding: Scaling Out Your Data",
