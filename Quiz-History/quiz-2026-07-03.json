@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
-  "mode": "Java",
+  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where the JVM is running out of memory due to a large number of `java.lang.ref.SoftReference` objects not being garbage collected. The following `CacheManager` class is being used to manage these soft references: `public class CacheManager { private List<SoftReference<Object>> cache = new ArrayList<>(); public void addObjectToCache(Object obj) { cache.add(new SoftReference<>(obj)); } }`",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A multinational bank is deploying an XGBoost-based machine learning model to detect credit card fraud in real-time. The system has a strict latency budget of less than 10 milliseconds per transaction. Under the 'Right to Explanation' regulatory framework, the compliance team mandates that every flagged transaction must be accompanied by a localized feature attribution explanation. The engineering team is debating how to implement this without violating the real-time latency budget.",
+      "question": "Which of the following XAI approaches and architectural strategies should the team implement to satisfy both regulatory compliance and strict real-time latency constraints?",
       "options": [
-        "A) The `CacheManager` class is not properly removing soft references from the cache when they are no longer needed.",
-        "B) The JVM is not configured to run the garbage collector frequently enough.",
-        "C) The `SoftReference` objects are not being cleared by the garbage collector because the `CacheManager` class has a strong reference to them.",
-        "D) The `CacheManager` class is not using `java.lang.ref.PhantomReference` instead of `java.lang.ref.SoftReference`."
+        "A) Implement KernelSHAP using a downsampled background dataset of 10 instances to compute local explanations on the fly.",
+        "B) Implement TreeExplainer, exploiting the tree-based structure of XGBoost to compute exact SHAP values in polynomial time, combined with an active explanation-caching mechanism.",
+        "C) Implement LIME with a reduced perturbation sample size (N=50) and a linear surrogate model to guarantee execution under 8ms.",
+        "D) Train a shallow, interpretable Decision Tree surrogate model that mimics the global behavior of the XGBoost model, using it to serve all real-time explanations."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The `SoftReference` objects are not being cleared by the garbage collector because the `CacheManager` class has a strong reference to them.",
-      "explanation": "Even though `SoftReference` objects are used, the `CacheManager` class has a strong reference to them through the `cache` list. This prevents the garbage collector from clearing the soft references, even when the JVM is low on memory. To fix this issue, the `CacheManager` class should use a `ReferenceQueue` to remove soft references from the cache when they are no longer needed."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Implement TreeExplainer, exploiting the tree-based structure of XGBoost to compute exact SHAP values in polynomial time, combined with an active explanation-caching mechanism.",
+      "explanation": "TreeExplainer is highly optimized for tree ensembles like XGBoost, calculating exact SHAP values in O(TLD^2) time (where T is number of trees, L is max leaves, and D is max depth), compared to the exponential time complexity of model-agnostic KernelSHAP. This mathematical optimization allows it to generate exact local explanations within millisecond budgets. Reducing perturbation samples in LIME (Option C) or background datasets in KernelSHAP (Option A) introduces severe instability and approximation errors, making explanations unreliable for regulatory purposes. A global surrogate (Option D) fails to provide high-fidelity local explanations for individual boundary decisions."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where the Spring `@Transactional` annotation is causing a memory leak due to a large number of `javax.persistence.EntityManager` objects not being closed. The following code snippet is being used: `@Service public class MyService { @Autowired private EntityManager entityManager; @Transactional public void doSomething() { // use entityManager } }`",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A healthcare provider is utilizing a predictive model to allocate specialized care management resources to patients with complex chronic illnesses. The historical training data uses 'annual healthcare spend' as a proxy for 'health needs'. Because marginalized demographic groups have historically faced systemic barriers to accessing healthcare, their recorded healthcare spend is lower than privileged groups with the same level of actual clinical severity. As a result, the model consistently under-allocates care resources to marginalized patients.",
+      "question": "To mitigate this algorithmic bias while maintaining optimal clinical utility, which corrective strategy should the data science team adopt?",
       "options": [
-        "A) The `EntityManager` object is not being closed properly after each transaction.",
-        "B) The `@Transactional` annotation is causing the `EntityManager` object to be cached across multiple transactions.",
-        "C) The `EntityManager` object is being injected as a singleton, causing it to be shared across multiple threads.",
-        "D) The `doSomething()` method is being called recursively, causing a stack overflow."
+        "A) Apply a pre-processing re-weighing technique to equalize average healthcare spend across all demographic groups, keeping the current target variable.",
+        "B) Apply fairness through blindness by stripping all protected attributes (race, gender, socio-economic status) from the dataset prior to model training.",
+        "C) Redefine the target variable from 'healthcare spend' to a clinical severity index, and incorporate an in-processing adversarial debiasing constraint optimized for Equalized Odds.",
+        "D) Apply a post-processing Reject Option Classification to shift prediction thresholds for marginalized groups until demographic parity is achieved."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The `EntityManager` object is not being closed properly after each transaction.",
-      "explanation": "The `@Transactional` annotation will automatically close the `EntityManager` object after each transaction, but only if it is properly configured to do so. If the `EntityManager` object is not being closed, it can cause a memory leak due to the accumulation of unclosed `EntityManager` objects. To fix this issue, the `EntityManager` object should be properly closed after each transaction, or the `@Transactional` annotation should be configured to automatically close the `EntityManager` object."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Redefine the target variable from 'healthcare spend' to a clinical severity index, and incorporate an in-processing adversarial debiasing constraint optimized for Equalized Odds.",
+      "explanation": "The core issue is proxy bias: 'healthcare spend' does not accurately represent 'health needs' for marginalized groups due to historic inequities. First-order mitigation requires fixing the target variable by shifting to an objective clinical severity index. Pair this with an in-processing adversarial debiasing framework using Equalized Odds to ensure that the true positive rate (getting care when needed) and false positive rate are equalized across protected attributes. Fairness through blindness (Option B) fails because proxy variables (e.g., zip codes) encode protected attributes. Demographic parity (Option D) or simple re-weighing (Option A) without correcting the target variable will optimize for a biased metric, compromising clinical utility."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a multithreaded application is experiencing a high rate of `java.lang.OutOfMemoryError: GC overhead limit exceeded` errors. The following code snippet is being used: `public class MyRunnable implements Runnable { private List<byte[]> data = new ArrayList<>(); public void run() { while (true) { byte[] bytes = new byte[1024 * 1024]; data.add(bytes); } } }`",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A medical imaging start-up has trained a deep 3D Convolutional Neural Network (CNN) to detect early-stage brain tumors from high-resolution MRI scans. Radiologists require precise visual explanations to understand which anatomical regions drove the model's classification. However, when the team applies standard gradient-based attribution methods (such as Vanilla Saliency Maps), the resulting visualizations are highly noisy, visually incoherent, and suffer from the 'gradient saturation' problem, where important features show zero gradient due to flat activation regions.",
+      "question": "Which explainability method should the team choose to overcome gradient saturation while maintaining mathematical faithfulness (axiomatic integrity) to the model's decision boundary?",
       "options": [
-        "A) The `MyRunnable` class is not properly synchronizing access to the `data` list.",
-        "B) The `MyRunnable` class is not properly removing elements from the `data` list.",
-        "C) The `MyRunnable` class is constantly allocating new memory without freeing any, causing the garbage collector to run continuously.",
-        "D) The `MyRunnable` class is using too much stack space, causing a stack overflow."
+        "A) Grad-CAM, because it calculates the gradients of the score with respect to the feature map activations of the last convolutional layer, bypassing pixel-level saturation.",
+        "B) Integrated Gradients, which integrates gradients along a straight path from a blank baseline to the input image, satisfying the axioms of Completeness and Sensitivity.",
+        "C) DeepLIFT, using a domain-specific baseline and computing difference-of-influence propagation rules to avoid negative attribution artifacts.",
+        "D) LIME, by segmenting the MRI scans into 3D superpixels and training a local Lasso regression model to approximate the deep CNN's local decision space."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The `MyRunnable` class is constantly allocating new memory without freeing any, causing the garbage collector to run continuously.",
-      "explanation": "The `MyRunnable` class is constantly allocating new memory by creating new `byte[]` objects and adding them to the `data` list, without ever removing any elements from the list. This causes the garbage collector to run continuously, trying to free up memory, but it is unable to keep up with the rate of allocation. To fix this issue, the `MyRunnable` class should be modified to properly manage its memory usage, such as by reusing existing `byte[]` objects or removing elements from the `data` list when they are no longer needed."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Integrated Gradients, which integrates gradients along a straight path from a blank baseline to the input image, satisfying the axioms of Completeness and Sensitivity.",
+      "explanation": "Integrated Gradients (IG) directly addresses the gradient saturation problem by evaluating the path integral of gradients from a reference baseline (e.g., a black image) to the input image. Mathematically, it satisfies the Completeness Axiom (the attributions sum to the difference between the model's output for the input and the baseline) and the Sensitivity Axiom (if a feature changes the output, its attribution must be non-zero). While Grad-CAM (Option A) generates smooth maps, it explains only coarse, high-level features at the final convolutional layer rather than precise pixel-level attributions. LIME (Option D) is highly sensitive to the chosen superpixel segmentation and computationally prohibitive for high-resolution 3D volumes."
     }
   ]
 }
