@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
+  "topic": "Memory Management & Garbage Collection Tuning",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue in a high-throughput Spring Boot application. A component dynamically loads custom business logic rules from external directories using a custom `ClassLoader`. Users report intermittent `ClassCastException` errors when executing these rules, even though the loaded class explicitly implements the `com.app.Rule` interface. The implementation looks like this:\n\njava\npublic class RuleExecutor {\n    public void runRule(String path, String className) throws Exception {\n        URL[] urls = { new File(path).toURI().toURL() };\n        try (URLClassLoader loader = new URLClassLoader(urls)) {\n            Class<?> clazz = loader.loadClass(className);\n            Rule rule = (Rule) clazz.getDeclaredConstructor().newInstance();\n            rule.execute();\n        }\n    }\n}\n",
-      "question": "What is the primary cause of this `ClassCastException`?",
+      "scenario": "You are debugging a production issue where the JVM is running out of memory due to a large number of `java.lang.ref.SoftReference` objects not being garbage collected. The following `CacheManager` class is being used to manage these soft references: `public class CacheManager { private List<SoftReference<Object>> cache = new ArrayList<>(); public void addObjectToCache(Object obj) { cache.add(new SoftReference<>(obj)); } }`",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) The `Rule` interface is loaded by both the system/application `ClassLoader` and the custom `URLClassLoader` (if present in the external jar), making them distinct types in the JVM runtime.",
-        "B) The JVM prevents casting classes loaded by a dynamic `URLClassLoader` to interfaces loaded by the parent class loader due to strict JVM module boundary checks.",
-        "C) The `try-with-resources` block closes the `URLClassLoader` prematurely before the `rule.execute()` method completes, causing class metadata corruption.",
-        "D) The `URLClassLoader` does not follow the parent-delegation model by default, forcing it to always load classes from the system classpath first."
+        "A) The `CacheManager` class is not properly removing soft references from the cache when they are no longer needed.",
+        "B) The JVM is not configured to run the garbage collector frequently enough.",
+        "C) The `SoftReference` objects are not being cleared by the garbage collector because the `CacheManager` class has a strong reference to them.",
+        "D) The `CacheManager` class is not using `java.lang.ref.PhantomReference` instead of `java.lang.ref.SoftReference`."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The `Rule` interface is loaded by both the system/application `ClassLoader` and the custom `URLClassLoader` (if present in the external jar), making them distinct types in the JVM runtime.",
-      "explanation": "In the JVM, a class is uniquely identified by its fully qualified name and the specific `ClassLoader` instance that loaded it. If the external jar contains both the implementation and the `com.app.Rule` interface class file, and the `URLClassLoader` loads both, the returned class will implement a version of `Rule` loaded by the `URLClassLoader`. The execution context of `RuleExecutor`, however, expects a `Rule` loaded by the application `ClassLoader`. Since they are loaded by different class loaders, they are treated as completely different types, triggering a `ClassCastException` at runtime."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) The `SoftReference` objects are not being cleared by the garbage collector because the `CacheManager` class has a strong reference to them.",
+      "explanation": "Even though `SoftReference` objects are used, the `CacheManager` class has a strong reference to them through the `cache` list. This prevents the garbage collector from clearing the soft references, even when the JVM is low on memory. To fix this issue, the `CacheManager` class should use a `ReferenceQueue` to remove soft references from the cache when they are no longer needed."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production latency spike issue on a low-latency trading service. The JVM is configured with `-XX:+UseZGC -Xmx64g` to avoid Stop-The-World (STW) pauses. Under heavy trading bursts, you notice periodic latency spikes exceeding 100ms, and profiling reveals application threads are pausing on object allocations.",
-      "question": "Which of the following ZGC behaviors or misconfigurations is the most likely root cause of these latency spikes?",
+      "scenario": "You are debugging a production issue where the Spring `@Transactional` annotation is causing a memory leak due to a large number of `javax.persistence.EntityManager` objects not being closed. The following code snippet is being used: `@Service public class MyService { @Autowired private EntityManager entityManager; @Transactional public void doSomething() { // use entityManager } }`",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) ZGC is experiencing 'Allocation Stalls' because the application's allocation rate exceeds the garbage collector's concurrent reclamation rate, forcing threads to block until memory is freed.",
-        "B) ZGC's concurrent phase is encountering reference processing overhead, triggering a fallback to a full STW Mark-Sweep-Compact cycle.",
-        "C) The JVM is performing safe-point biased lock revocations on the trade order objects inside the ZGC page tables.",
-        "D) ZGC's thread-local handshakes are blocking due to long-running JNI critical regions that bypass safepoints."
+        "A) The `EntityManager` object is not being closed properly after each transaction.",
+        "B) The `@Transactional` annotation is causing the `EntityManager` object to be cached across multiple transactions.",
+        "C) The `EntityManager` object is being injected as a singleton, causing it to be shared across multiple threads.",
+        "D) The `doSomething()` method is being called recursively, causing a stack overflow."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) ZGC is experiencing 'Allocation Stalls' because the application's allocation rate exceeds the garbage collector's concurrent reclamation rate, forcing threads to block until memory is freed.",
-      "explanation": "ZGC is a concurrent, low-latency garbage collector where garbage collection cycles run concurrently with application threads. However, if the application's rate of memory allocation is higher than the rate at which ZGC can reclaim memory, the heap will fill up. In this scenario, ZGC has no choice but to stall application threads during allocation requests until the concurrent collection cycle completes and frees up space. This is known as an 'Allocation Stall' and manifests as significant latency spikes in application threads."
+      "correct_answer_text": "A) The `EntityManager` object is not being closed properly after each transaction.",
+      "explanation": "The `@Transactional` annotation will automatically close the `EntityManager` object after each transaction, but only if it is properly configured to do so. If the `EntityManager` object is not being closed, it can cause a memory leak due to the accumulation of unclosed `EntityManager` objects. To fix this issue, the `EntityManager` object should be properly closed after each transaction, or the `@Transactional` annotation should be configured to automatically close the `EntityManager` object."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production high-throughput caching layer deployed on a multi-socket Xeon server. The profiling tools indicate severe performance degradation under high concurrent writes to a shared state tracking array. The array is implemented using a series of adjacent volatile fields in a state holder object. There are no software-level locks, thread dumps reveal all worker threads are in a `RUNNABLE` state, and CPU usage is under 40%.",
-      "question": "What underlying hardware-to-JVM memory model interaction is causing this latency bottleneck?",
+      "scenario": "You are debugging a production issue where a multithreaded application is experiencing a high rate of `java.lang.OutOfMemoryError: GC overhead limit exceeded` errors. The following code snippet is being used: `public class MyRunnable implements Runnable { private List<byte[]> data = new ArrayList<>(); public void run() { while (true) { byte[] bytes = new byte[1024 * 1024]; data.add(bytes); } } }`",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) False Sharing (cache line bouncing), where concurrent writes to adjacent elements in memory invalidate the entire CPU cache line (typically 64 bytes) across different cores and sockets, forcing massive cache-coherency overhead.",
-        "B) Safe-point bias revocation overhead, where the JVM repeatedly revokes biased locks on the concurrent array structure.",
-        "C) JIT compiler optimization failure where loop unrolling is disabled due to the presence of volatile writes, stalling the instruction pipeline.",
-        "D) Memory fragmentation in the JVM Old Generation caused by the frequent generation of temporary primitive wrapper objects during updates."
+        "A) The `MyRunnable` class is not properly synchronizing access to the `data` list.",
+        "B) The `MyRunnable` class is not properly removing elements from the `data` list.",
+        "C) The `MyRunnable` class is constantly allocating new memory without freeing any, causing the garbage collector to run continuously.",
+        "D) The `MyRunnable` class is using too much stack space, causing a stack overflow."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) False Sharing (cache line bouncing), where concurrent writes to adjacent elements in memory invalidate the entire CPU cache line (typically 64 bytes) across different cores and sockets, forcing massive cache-coherency overhead.",
-      "explanation": "False Sharing occurs when threads on different CPU cores modify independent variables that reside within the same hardware cache line (typically 64 bytes). Even though the variables are logically distinct, the cache-coherency hardware protocol (such as MESI) operates at cache-line granularity. When one core writes to its variable, it invalidates the entire cache line across all other cores. This forces other cores to constantly reload the data from L3 cache or main memory, creating a bottleneck of cache invalidation traffic and memory stalls. This explains high latency despite low CPU utilization and no lock contention. This can be resolved using the `@Contended` JVM annotation or memory padding."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) The `MyRunnable` class is constantly allocating new memory without freeing any, causing the garbage collector to run continuously.",
+      "explanation": "The `MyRunnable` class is constantly allocating new memory by creating new `byte[]` objects and adding them to the `data` list, without ever removing any elements from the list. This causes the garbage collector to run continuously, trying to free up memory, but it is unable to keep up with the rate of allocation. To fix this issue, the `MyRunnable` class should be modified to properly manage its memory usage, such as by reusing existing `byte[]` objects or removing elements from the `data` list when they are no longer needed."
     }
   ]
 }
