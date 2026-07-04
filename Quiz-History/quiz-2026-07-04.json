@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
+  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a Spring Boot application running on the `G1` Garbage Collector experiences a gradual heap memory increase, eventually throwing `java.lang.OutOfMemoryError: Java heap space`. Analyzing the heap dump shows thousands of `byte[]` instances retained by `java.lang.Thread` objects. The following class is identified as the suspect:\n\njava\n@Service\npublic class PaymentProcessingService {\n    private static final ThreadLocal<byte[]> transactionBuffer = new ThreadLocal<>();\n\n    @Async(\"paymentExecutor\")\n    @Transactional\n    public void processPayment(PaymentRequest request) {\n        byte[] buffer = loadSecurityKeys(request);\n        transactionBuffer.set(buffer);\n        executeVerification(request);\n    }\n\n    private byte[] loadSecurityKeys(PaymentRequest r) {\n        return new byte[1024 * 1024]; // 1MB\n    }\n    private void executeVerification(PaymentRequest r) {}\n}\n",
-      "question": "What is the primary cause of this memory leak in the JVM?",
+      "scenario": "You are debugging a production issue where a Spring Boot application migrated to Java 21 Virtual Threads experiences severe performance degradation and thread starvation under high I/O load. Your thread dumps show that while the system has spawned thousands of virtual threads, the underlying carrier threads (`ForkJoinPool-1-worker-*`) are completely blocked. You locate the following code snippet in a critical path:\n\njava\npublic class FinancialService {\n    private final Object lock = new Object();\n    @Autowired private ExternalPaymentClient paymentClient;\n\n    public void processTransaction(String transactionId) {\n        synchronized(lock) {\n            // High-latency external HTTP call\n            paymentClient.postTransaction(transactionId);\n        }\n    }\n}\n",
+      "question": "What is the primary cause of this thread starvation issue under virtual threads?",
       "options": [
-        "A) The Spring `@Transactional` proxy wraps the method execution, creating transactional thread contexts that prevent the garbage collector from reclaiming local variables.",
-        "B) Since the thread pool (`paymentExecutor`) reuses worker threads, the `ThreadLocalMap` entries inside the threads persist across executions. Because `transactionBuffer.remove()` is never called, the `byte[]` payloads are strongly referenced and never garbage collected.",
-        "C) The `G1` collector treats `byte[]` allocations larger than 512KB as Humongous Objects, which are allocated directly in the Old Generation and cannot be collected by Young GC cycles, causing a premature OOME.",
-        "D) The `@Async` annotation causes class loading delegation issues with the system classloader, forcing the JVM to retain the `PaymentProcessingService` class metadata and all its thread variables indefinitely."
+        "A) The JVM fails to yield the virtual thread because executing a synchronized block pins the virtual thread to its carrier thread, blocking the carrier thread from executing other virtual threads during the blocking I/O operation.",
+        "B) The default carrier ForkJoinPool is limited to a single worker thread when synchronized blocks are detected by the class loader.",
+        "C) Virtual threads cannot perform network I/O operations inside synchronized blocks, throwing an uncatchable IllegalStateException that halts the carrier pool.",
+        "D) The Spring dependency injection mechanism forces the synchronized block to execute on the main platform thread instead of the virtual thread task scheduler."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Since the thread pool (`paymentExecutor`) reuses worker threads, the `ThreadLocalMap` entries inside the threads persist across executions. Because `transactionBuffer.remove()` is never called, the `byte[]` payloads are strongly referenced and never garbage collected.",
-      "explanation": "In Java, a `ThreadLocal` variable is stored inside the executing `Thread` object's internal `ThreadLocalMap` instance. The key is a `WeakReference` to the `ThreadLocal` object itself, but the value (the `byte[]` array) is a strong reference. When working with thread pools (like the one backing `@Async(\"paymentExecutor\")`), worker threads are never destroyed. If `ThreadLocal.remove()` is not explicitly called in a `finally` block, the strong reference to the value remains in the thread's map indefinitely, preventing GC of the large array even after the task completes. This leads to a progressive memory leak as more threads in the pool execute this code path."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The JVM fails to yield the virtual thread because executing a synchronized block pins the virtual thread to its carrier thread, blocking the carrier thread from executing other virtual threads during the blocking I/O operation.",
+      "explanation": "In Java 21, when a virtual thread runs inside a `synchronized` block or method (or calls a native method), it 'pins' its carrier platform thread. During a pinning state, if the virtual thread performs a blocking I/O operation, the carrier thread is blocked as well, instead of being released to run other virtual threads. This defeats the cooperative scheduling of virtual threads and leads to carrier thread starvation. To resolve this, developers should replace `synchronized` blocks with `ReentrantLock`, which allows virtual threads to unmount gracefully during blocking operations."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a high-throughput, low-latency financial application has migrated to Generative `ZGC` in JDK 21. While average pause times dropped to sub-milliseconds, you observe that under peak transaction volume, the application experiences transient latency spikes up to several hundred milliseconds, and CPU usage spikes to 100%. The application is configured with `-XX:+UseZGC -Xmx16g`.",
-      "question": "What JVM internal behavior under high allocation pressure explains this performance degradation?",
+      "scenario": "You are debugging a production issue where a Spring `@Transactional` service method invokes an asynchronous task using `CompletableFuture`. Users report that database updates executed inside the async block are either not committed to the database or throw a `LazyInitializationException` when accessing lazy-loaded JPA relationships.\n\njava\n@Service\npublic class OrderService {\n    @Autowired private OrderRepository repo;\n\n    @Transactional\n    public void processOrder(Long orderId) {\n        Order order = repo.findById(orderId).orElseThrow();\n        CompletableFuture.runAsync(() -> {\n            order.setStatus(Status.COMPLETED);\n            repo.save(order); \n        });\n    }\n}\n",
+      "question": "Why does the transaction context fail to propagate to the asynchronous task inside the CompletableFuture?",
       "options": [
-        "A) Generative `ZGC` falls back to an emergency stop-the-world Full GC phase when the Old Generation is completely exhausted, halting all application threads.",
-        "B) Under heavy allocation pressure, application threads attempting to allocate memory are stalled (blocked) because the concurrent ZGC background garbage collection threads cannot reclaim memory fast enough to satisfy the allocation rate.",
-        "C) The `ZGC` colored pointers mechanism requires expensive hardware transactional memory lock-unlock sequences, causing CPU thrashing when resolving references.",
-        "D) The JIT compiler is forced to deoptimize all hot paths to insert additional GC load barriers, overloading the code cache and stalling execution."
+        "A) CompletableFuture transactions automatically roll back unless the nested lambda is annotated with @Commit.",
+        "B) Spring's declarative transaction management uses ThreadLocal to store the transaction context (such as the JDBC Connection and Hibernate Session), which does not propagate across thread boundaries to the asynchronous execution thread.",
+        "C) The Spring Proxy interceptor rejects any return type of CompletableFuture when transaction boundaries are active.",
+        "D) The database connection pool locks the transaction to the current thread ID, throwing an exception if any other thread attempts to commit on that connection."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Under heavy allocation pressure, application threads attempting to allocate memory are stalled (blocked) because the concurrent ZGC background garbage collection threads cannot reclaim memory fast enough to satisfy the allocation rate.",
-      "explanation": "ZGC is a concurrent garbage collector, meaning GC work is done while application threads are running. However, if the application's allocation rate exceeds the garbage collection rate (how quickly GC can reclaim space), the free memory will be exhausted. To prevent out-of-memory errors, ZGC stalls the allocating application threads. This 'allocation stall' stops the allocating threads until GC has reclaimed enough memory to fulfill the request, introducing significant latency spikes and high CPU utilization due to heavy concurrent GC cycle activity."
+      "correct_answer_text": "B) Spring's declarative transaction management uses ThreadLocal to store the transaction context (such as the JDBC Connection and Hibernate Session), which does not propagate across thread boundaries to the asynchronous execution thread.",
+      "explanation": "Spring's transaction propagation relies on a `ThreadLocal` mechanism (via `TransactionSynchronizationManager`) to bind the active database transaction/session to the current executing thread. When `CompletableFuture.runAsync()` is called, the execution shifts to a thread from the common `ForkJoinPool` (or a custom executor). Since `ThreadLocal` variables are not inherited by default across these asynchronously spawned threads, the new thread has no active transaction context, resulting in decoupled database operations, autocommit behavior, or `LazyInitializationException` due to the lack of an active Hibernate Session."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a modular Spring Boot application fails at runtime with a `java.lang.ClassCastException` when casting an object of class `com.app.CustomContext` to `com.app.CustomContext`. The application uses a custom dynamic loader class `PluginClassLoader` to load plugin JARs dynamically, alongside the Spring Boot `LaunchedURLClassLoader`.",
-      "question": "Which JVM Class Loader subsystem mechanism is causing this error?",
+      "scenario": "You are analyzing a performance bottleneck in an asynchronous pipeline processing user profiles. The application uses a custom configured ThreadPoolTaskExecutor with limited threads to prevent downstream database saturation. However, metrics indicate that during peak hours, CPU usage spikes heavily because tasks in the middle of the pipeline are bypassing your custom pool and executing on the common ForkJoinPool.\n\njava\nCompletableFuture.supplyAsync(() -> fetchUserData(userId), customExecutor)\n    .thenApplyAsync(user -> enrichUserProfile(user))\n    .thenAcceptAsync(profile -> saveProfile(profile), customExecutor);\n",
+      "question": "Which of the following explains why tasks in this pipeline are escaping your custom executor?",
       "options": [
-        "A) The JVM Class Loader subsystem enforces class uniqueness purely by fully qualified name, but dynamic linking failures in Spring's CGLIB library corrupted the Class object metadata.",
-        "B) The JVM identifies a class uniquely by the combination of its fully qualified class name AND the specific `ClassLoader` instance that defined it. Since `com.app.CustomContext` was loaded by both `LaunchedURLClassLoader` and `PluginClassLoader`, they are treated as completely incompatible types by the JVM.",
-        "C) The JVM's parent delegation model was bypassed, causing a Namespace collision in the Metaspace which automatically marks any cast operation on that type as invalid.",
-        "D) The class loader hierarchy violated the 'No-Duplicate' policy of the Java Memory Model, leading to race conditions where the JIT compiler optimized the type cast incorrectly."
+        "A) The thenApplyAsync stage does not pass the customExecutor as an argument, causing it to fall back to the default ForkJoinPool.commonPool().",
+        "B) The thenApplyAsync method automatically inherits the executor of the previous stage only if the previous stage returned a custom subtype of CompletableFuture.",
+        "C) The customExecutor rejected the task due to queue saturation, forcing the JVM to dynamically delegate the task to the ForkJoinPool.",
+        "D) Virtual threads are enabled, which automatically overrides all custom executors to run on the virtual carrier thread pool instead."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The JVM identifies a class uniquely by the combination of its fully qualified class name AND the specific `ClassLoader` instance that defined it. Since `com.app.CustomContext` was loaded by both `LaunchedURLClassLoader` and `PluginClassLoader`, they are treated as completely incompatible types by the JVM.",
-      "explanation": "In the Java Virtual Machine, type identity is scoped by the class loader. Two classes with the exact same fully qualified name (e.g., `com.app.CustomContext`) loaded by different ClassLoader instances are treated by the JVM runtime as completely different and isolated types. Attempting to cast an instance created by one ClassLoader to the type definition loaded by another ClassLoader results in a `java.lang.ClassCastException`, even though the simple and package names are identical. This commonly happens when custom class loaders fail to delegate class loading to their parent first."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The thenApplyAsync stage does not pass the customExecutor as an argument, causing it to fall back to the default ForkJoinPool.commonPool().",
+      "explanation": "In Java's `CompletableFuture` API, chaining methods that end with `Async` (such as `thenApplyAsync`, `thenAcceptAsync`, etc.) have overloaded variants. If an explicit `Executor` is not provided as the second argument, the stage defaults to using the system-wide `ForkJoinPool.commonPool()` (or the thread executor defined by the underlying CompletableFuture implementation), regardless of the executor used by the preceding stage. To maintain resource isolation and prevent thread starvation on the common pool, `customExecutor` must be passed to every async step in the chain."
     }
   ]
 }
