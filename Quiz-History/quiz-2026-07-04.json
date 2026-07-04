@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
-  "mode": "Java",
+  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a Spring Boot application migrated to Java 21 Virtual Threads experiences severe performance degradation and thread starvation under high I/O load. Your thread dumps show that while the system has spawned thousands of virtual threads, the underlying carrier threads (`ForkJoinPool-1-worker-*`) are completely blocked. You locate the following code snippet in a critical path:\n\njava\npublic class FinancialService {\n    private final Object lock = new Object();\n    @Autowired private ExternalPaymentClient paymentClient;\n\n    public void processTransaction(String transactionId) {\n        synchronized(lock) {\n            // High-latency external HTTP call\n            paymentClient.postTransaction(transactionId);\n        }\n    }\n}\n",
-      "question": "What is the primary cause of this thread starvation issue under virtual threads?",
+      "scenario": "A fintech company deploys a Deep Neural Network (DNN) with over 150 high-dimensional transactional and demographic features for real-time credit risk assessment. The model performs exceptionally well with an AUC of 0.92, but fails compliance audits under the GDPR 'Right to Explanation' clause. The compliance team mandates that the system must provide local explanations for credit denials within a strict 50ms latency SLA per transaction. The engineering team implements KernelSHAP, but finds that computing exact Shapley values on the high-dimensional input space averages 2.4 seconds per inference, heavily breaching the SLA.",
+      "question": "Which optimization strategy or alternative explainability approach should the engineering team adopt to satisfy the strict 50ms latency constraint while maintaining the predictive accuracy of the primary DNN model?",
       "options": [
-        "A) The JVM fails to yield the virtual thread because executing a synchronized block pins the virtual thread to its carrier thread, blocking the carrier thread from executing other virtual threads during the blocking I/O operation.",
-        "B) The default carrier ForkJoinPool is limited to a single worker thread when synchronized blocks are detected by the class loader.",
-        "C) Virtual threads cannot perform network I/O operations inside synchronized blocks, throwing an uncatchable IllegalStateException that halts the carrier pool.",
-        "D) The Spring dependency injection mechanism forces the synchronized block to execute on the main platform thread instead of the virtual thread task scheduler."
+        "A) Replace the DNN with a globally interpretable decision tree of depth 5, sacrificing predictive accuracy to meet the real-time SLA.",
+        "B) Train a global linear surrogate model using L1 regularization (Lasso) on the raw input features and use its global weights as the local explanation for every transaction.",
+        "C) Implement DeepSHAP or Integrated Gradients, which leverage the internal network gradients and a representative background dataset to approximate feature attributions in linear time.",
+        "D) Apply KernelSHAP but restrict the feature space to the top 5 global features, discarding the remaining 145 features from the explanation calculation."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The JVM fails to yield the virtual thread because executing a synchronized block pins the virtual thread to its carrier thread, blocking the carrier thread from executing other virtual threads during the blocking I/O operation.",
-      "explanation": "In Java 21, when a virtual thread runs inside a `synchronized` block or method (or calls a native method), it 'pins' its carrier platform thread. During a pinning state, if the virtual thread performs a blocking I/O operation, the carrier thread is blocked as well, instead of being released to run other virtual threads. This defeats the cooperative scheduling of virtual threads and leads to carrier thread starvation. To resolve this, developers should replace `synchronized` blocks with `ReentrantLock`, which allows virtual threads to unmount gracefully during blocking operations."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Implement DeepSHAP or Integrated Gradients, which leverage the internal network gradients and a representative background dataset to approximate feature attributions in linear time.",
+      "explanation": "KernelSHAP is model-agnostic but computationally expensive because it estimates Shapley values by perturbing inputs and running model evaluations, which scales exponentially with the number of features. For deep neural networks, DeepSHAP (which adapts DeepLIFT to approximate SHAP values) and Integrated Gradients utilize path integrals of gradients along a straight line from a baseline to the input. This takes advantage of backpropagation mechanics, allowing local feature attributions to be calculated in a single or few backward passes. This easily meets the sub-50ms real-time SLA while maintaining the complex DNN's high predictive accuracy."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a Spring `@Transactional` service method invokes an asynchronous task using `CompletableFuture`. Users report that database updates executed inside the async block are either not committed to the database or throw a `LazyInitializationException` when accessing lazy-loaded JPA relationships.\n\njava\n@Service\npublic class OrderService {\n    @Autowired private OrderRepository repo;\n\n    @Transactional\n    public void processOrder(Long orderId) {\n        Order order = repo.findById(orderId).orElseThrow();\n        CompletableFuture.runAsync(() -> {\n            order.setStatus(Status.COMPLETED);\n            repo.save(order); \n        });\n    }\n}\n",
-      "question": "Why does the transaction context fail to propagate to the asynchronous task inside the CompletableFuture?",
+      "scenario": "An AI-driven healthcare diagnostic platform is trained to predict patient hospital readmission rates. The historical dataset is highly skewed, comprising 85% majority-demographic patients (Group A) and 15% minority-demographic patients (Group B). Although the model achieves 90% overall classification accuracy, a post-deployment audit reveals that the False Negative Rate (FNR) for Group B is 35%, compared to only 10% for Group A. This disparity means critical minority patients are disproportionately denied early-intervention care.",
+      "question": "To enforce 'Equal Opportunity' (equalizing False Negative Rates across both groups) without retraining the underlying model from scratch due to compute budget limits, which intervention should be implemented?",
       "options": [
-        "A) CompletableFuture transactions automatically roll back unless the nested lambda is annotated with @Commit.",
-        "B) Spring's declarative transaction management uses ThreadLocal to store the transaction context (such as the JDBC Connection and Hibernate Session), which does not propagate across thread boundaries to the asynchronous execution thread.",
-        "C) The Spring Proxy interceptor rejects any return type of CompletableFuture when transaction boundaries are active.",
-        "D) The database connection pool locks the transaction to the current thread ID, throwing an exception if any other thread attempts to commit on that connection."
+        "A) Apply a pre-processing re-weighting scheme to the training data to balance the representation, and then retrain the model.",
+        "B) Implement a post-processing optimization framework (such as Hardt et al.'s approach) to solve a linear program that establishes group-specific decision thresholds on the predicted probabilities.",
+        "C) Employ an in-processing adversarial debiasing framework that jointly optimizes classification accuracy and minimizes sensitive attribute predictability.",
+        "D) Apply a uniform threshold reduction across all predictions until the overall False Negative Rate drops to 10%."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Spring's declarative transaction management uses ThreadLocal to store the transaction context (such as the JDBC Connection and Hibernate Session), which does not propagate across thread boundaries to the asynchronous execution thread.",
-      "explanation": "Spring's transaction propagation relies on a `ThreadLocal` mechanism (via `TransactionSynchronizationManager`) to bind the active database transaction/session to the current executing thread. When `CompletableFuture.runAsync()` is called, the execution shifts to a thread from the common `ForkJoinPool` (or a custom executor). Since `ThreadLocal` variables are not inherited by default across these asynchronously spawned threads, the new thread has no active transaction context, resulting in decoupled database operations, autocommit behavior, or `LazyInitializationException` due to the lack of an active Hibernate Session."
+      "correct_answer_text": "B) Implement a post-processing optimization framework (such as Hardt et al.'s approach) to solve a linear program that establishes group-specific decision thresholds on the predicted probabilities.",
+      "explanation": "Equal Opportunity is a fairness metric requiring equal True Positive Rates (and consequently, equal False Negative Rates) across protected groups. Since the scenario specifies that retraining the model is not feasible due to compute constraints, pre-processing (A) and in-processing (C) methods are ruled out. Post-processing optimization (Hardt et al.) takes the pre-computed probability outputs of an existing model and optimizes group-specific thresholds to satisfy the fairness criteria while maximizing overall accuracy, making it computationally trivial and highly effective for this constraint."
     },
     {
       "id": 3,
-      "scenario": "You are analyzing a performance bottleneck in an asynchronous pipeline processing user profiles. The application uses a custom configured ThreadPoolTaskExecutor with limited threads to prevent downstream database saturation. However, metrics indicate that during peak hours, CPU usage spikes heavily because tasks in the middle of the pipeline are bypassing your custom pool and executing on the common ForkJoinPool.\n\njava\nCompletableFuture.supplyAsync(() -> fetchUserData(userId), customExecutor)\n    .thenApplyAsync(user -> enrichUserProfile(user))\n    .thenAcceptAsync(profile -> saveProfile(profile), customExecutor);\n",
-      "question": "Which of the following explains why tasks in this pipeline are escaping your custom executor?",
+      "scenario": "A computer vision model is deployed in an autonomous manufacturing facility to inspect structural integrity in metal parts. The QA team uses Gradient-weighted Class Activation Mapping (Grad-CAM) to generate explanation heatmaps. The heatmaps consistently highlight the cracked regions of the metal parts. However, a safety engineer suspects that the model is actually utilizing spurious background artifacts (like shadows and conveyor belt alignment lines) rather than learning the actual shape of the structural cracks, and that the Grad-CAM output is simply acting as an edge detector.",
+      "question": "Which validation technique should the QA team perform to rigorously test whether the Grad-CAM explanations are truly faithful to the model's learned parameters rather than merely acting as an independent image processor?",
       "options": [
-        "A) The thenApplyAsync stage does not pass the customExecutor as an argument, causing it to fall back to the default ForkJoinPool.commonPool().",
-        "B) The thenApplyAsync method automatically inherits the executor of the previous stage only if the previous stage returned a custom subtype of CompletableFuture.",
-        "C) The customExecutor rejected the task due to queue saturation, forcing the JVM to dynamically delegate the task to the ForkJoinPool.",
-        "D) Virtual threads are enabled, which automatically overrides all custom executors to run on the virtual carrier thread pool instead."
+        "A) Run a Model Parameter Randomization Test by comparing Grad-CAM outputs of the trained model against those of an identical network with completely randomized weights.",
+        "B) Apply a guided backpropagation layer on top of Grad-CAM to sharpen the visualization of high-frequency pixel variations.",
+        "C) Compute the Peak Signal-to-Noise Ratio (PSNR) between the Grad-CAM heatmap and the raw input image edges.",
+        "D) Perform a baseline comparison by switching the Grad-CAM target layer from the final convolutional layer to the input layer."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) The thenApplyAsync stage does not pass the customExecutor as an argument, causing it to fall back to the default ForkJoinPool.commonPool().",
-      "explanation": "In Java's `CompletableFuture` API, chaining methods that end with `Async` (such as `thenApplyAsync`, `thenAcceptAsync`, etc.) have overloaded variants. If an explicit `Executor` is not provided as the second argument, the stage defaults to using the system-wide `ForkJoinPool.commonPool()` (or the thread executor defined by the underlying CompletableFuture implementation), regardless of the executor used by the preceding stage. To maintain resource isolation and prevent thread starvation on the common pool, `customExecutor` must be passed to every async step in the chain."
+      "correct_answer_text": "A) Run a Model Parameter Randomization Test by comparing Grad-CAM outputs of the trained model against those of an identical network with completely randomized weights.",
+      "explanation": "Adebayo et al. proposed 'Sanity Checks for Saliency Maps', demonstrating that many popular explanation methods (including variants of saliency and CAM) produce visually pleasing explanations that are invariant to the model's parameters and labels\u2014acting essentially as edge detectors. By performing a Model Parameter Randomization Test (cascading weight randomization from the top layer down), if the generated explanation map does not change drastically when the model weights are randomized, the explanation method is uninformative of the model's actual learned features and is unfaithful to its decision-making logic."
     }
   ]
 }
