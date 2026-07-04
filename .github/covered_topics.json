@@ -167,7 +167,8 @@
     "Designing a Distributed Cache with Consistent Hashing and LRU",
     "Distributed Cache Architecture: Seamless Scaling with Consistent Hashing and Local LRU Eviction",
     "High-Performance Distributed Caching: Consistent Hashing and LRU Eviction Architecture",
-    "Mastering Distributed Cache Design: Consistent Hashing & LRU Eviction Under the Hood"
+    "Mastering Distributed Cache Design: Consistent Hashing & LRU Eviction Under the Hood",
+    "Architectural Blueprint: Engineering a Fault-Tolerant Distributed Cache with Consistent Hashing and Local LRU Eviction"
   ],
   "Design a Distributed ID Generator (Snowflake ID)": [
     "Design a Distributed ID Generator (Snowflake ID)",
