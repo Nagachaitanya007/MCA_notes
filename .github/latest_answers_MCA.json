@@ -1,48 +1,48 @@
 {
-  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
+  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A fintech company deploys a Deep Neural Network (DNN) with over 150 high-dimensional transactional and demographic features for real-time credit risk assessment. The model performs exceptionally well with an AUC of 0.92, but fails compliance audits under the GDPR 'Right to Explanation' clause. The compliance team mandates that the system must provide local explanations for credit denials within a strict 50ms latency SLA per transaction. The engineering team implements KernelSHAP, but finds that computing exact Shapley values on the high-dimensional input space averages 2.4 seconds per inference, heavily breaching the SLA.",
-      "question": "Which optimization strategy or alternative explainability approach should the engineering team adopt to satisfy the strict 50ms latency constraint while maintaining the predictive accuracy of the primary DNN model?",
+      "scenario": "Real-world Industrial Problem Statement: A multilingual financial news aggregator is building a real-time sentiment analysis engine for Hinglish (mixed Hindi and English written in Latin script) and colloquial Spanish-English social media feeds. When deploying their BERT-based model, they observe a high rate of Out-of-Vocabulary (OOV) errors, resulting in numerous '[UNK]' tokens. Additionally, fallback character-level tokenization for unseen slang is inflating sequence lengths, causing a downstream 2.5x increase in transformer self-attention latency, which violates their 50ms real-time service level agreement (SLA).",
+      "question": "Which tokenization strategy and configuration should the engineering team adopt to eliminate the '[UNK]' tokens while minimizing sequence lengths and computational overhead?",
       "options": [
-        "A) Replace the DNN with a globally interpretable decision tree of depth 5, sacrificing predictive accuracy to meet the real-time SLA.",
-        "B) Train a global linear surrogate model using L1 regularization (Lasso) on the raw input features and use its global weights as the local explanation for every transaction.",
-        "C) Implement DeepSHAP or Integrated Gradients, which leverage the internal network gradients and a representative background dataset to approximate feature attributions in linear time.",
-        "D) Apply KernelSHAP but restrict the feature space to the top 5 global features, discarding the remaining 145 features from the explanation calculation."
+        "A) Implement Byte-Level Byte-Pair Encoding (BBPE) trained on the target multilingual corpus, setting an optimal vocabulary size (e.g., 50k) to prevent over-fragmentation into single-byte tokens.",
+        "B) Apply standard WordPiece tokenization with a small vocabulary size (e.g., 15k) combined with aggressive lemmatization to map slang back to root English/Spanish terms.",
+        "C) Transition to a strict Character-Level tokenizer with a vocabulary size of 256 to guarantee zero OOV tokens and compress embedding layer parameters.",
+        "D) Deploy an un-tokenized, whitespace-split word-level tokenizer with a dynamic fallback dictionary stored in a fast in-memory Redis cache."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Implement DeepSHAP or Integrated Gradients, which leverage the internal network gradients and a representative background dataset to approximate feature attributions in linear time.",
-      "explanation": "KernelSHAP is model-agnostic but computationally expensive because it estimates Shapley values by perturbing inputs and running model evaluations, which scales exponentially with the number of features. For deep neural networks, DeepSHAP (which adapts DeepLIFT to approximate SHAP values) and Integrated Gradients utilize path integrals of gradients along a straight line from a baseline to the input. This takes advantage of backpropagation mechanics, allowing local feature attributions to be calculated in a single or few backward passes. This easily meets the sub-50ms real-time SLA while maintaining the complex DNN's high predictive accuracy."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Implement Byte-Level Byte-Pair Encoding (BBPE) trained on the target multilingual corpus, setting an optimal vocabulary size (e.g., 50k) to prevent over-fragmentation into single-byte tokens.",
+      "explanation": "Byte-Level BPE (BBPE) addresses the OOV problem by using bytes as the base vocabulary instead of characters. This ensures that any Unicode string can be tokenized without requiring an '[UNK]' token. By pre-training the merge rules on the target multilingual corpus (Hinglish/Spanish-English) and selecting an optimal vocabulary size, the model merges frequent byte sequences into larger, meaningful subwords. This keeps the tokenized sequence length short, which directly minimizes the $O(N^2)$ computational complexity of the Transformer's self-attention layers, thereby preserving real-time latency requirements."
     },
     {
       "id": 2,
-      "scenario": "An AI-driven healthcare diagnostic platform is trained to predict patient hospital readmission rates. The historical dataset is highly skewed, comprising 85% majority-demographic patients (Group A) and 15% minority-demographic patients (Group B). Although the model achieves 90% overall classification accuracy, a post-deployment audit reveals that the False Negative Rate (FNR) for Group B is 35%, compared to only 10% for Group A. This disparity means critical minority patients are disproportionately denied early-intervention care.",
-      "question": "To enforce 'Equal Opportunity' (equalizing False Negative Rates across both groups) without retraining the underlying model from scratch due to compute budget limits, which intervention should be implemented?",
+      "scenario": "Real-world Industrial Problem Statement: A legal-tech firm is processing complex multi-party contracts averaging 18,000 words per document using standard encoder-decoder Transformer architectures (such as BART) for summarization. During production runs, the system encounters frequent Out-of-Memory (OOM) errors on Nvidia A100 (80GB) GPUs. Profile traces reveal that the quadratic $O(N^2)$ memory and time complexity of the self-attention matrix calculation is scaling unsustainably with the long sequence lengths.",
+      "question": "Which architectural optimization or attention mechanism modification will most effectively resolve the GPU memory bottleneck while preserving global contextual representations across the entire contract?",
       "options": [
-        "A) Apply a pre-processing re-weighting scheme to the training data to balance the representation, and then retrain the model.",
-        "B) Implement a post-processing optimization framework (such as Hardt et al.'s approach) to solve a linear program that establishes group-specific decision thresholds on the predicted probabilities.",
-        "C) Employ an in-processing adversarial debiasing framework that jointly optimizes classification accuracy and minimizes sensitive attribute predictability.",
-        "D) Apply a uniform threshold reduction across all predictions until the overall False Negative Rate drops to 10%."
+        "A) Configure local sliding-window attention across all layers, completely disabling global attention patterns to achieve strict $O(N)$ linear complexity.",
+        "B) Replace vanilla self-attention with a sparse attention mechanism (e.g., Longformer or BigBird) that combines local sliding-window attention with a set of systematically selected global 'anchor' tokens.",
+        "C) Downscale the hidden state dimension ($d_{model}$) and feed-forward dimension ($d_{ff}$) by 75% while keeping the original quadratic dot-product attention intact.",
+        "D) Implement Locality-Sensitive Hashing (LSH) attention (Reformer) configured with a single hash bucket to force deterministic $O(1)$ memory allocation per sequence."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Implement a post-processing optimization framework (such as Hardt et al.'s approach) to solve a linear program that establishes group-specific decision thresholds on the predicted probabilities.",
-      "explanation": "Equal Opportunity is a fairness metric requiring equal True Positive Rates (and consequently, equal False Negative Rates) across protected groups. Since the scenario specifies that retraining the model is not feasible due to compute constraints, pre-processing (A) and in-processing (C) methods are ruled out. Post-processing optimization (Hardt et al.) takes the pre-computed probability outputs of an existing model and optimizes group-specific thresholds to satisfy the fairness criteria while maximizing overall accuracy, making it computationally trivial and highly effective for this constraint."
+      "correct_answer_text": "B) Replace vanilla self-attention with a sparse attention mechanism (e.g., Longformer or BigBird) that combines local sliding-window attention with a set of systematically selected global 'anchor' tokens.",
+      "explanation": "Standard self-attention computes dot products between all pairs of tokens, scaling quadratically $O(N^2)$ in memory and compute. Sparse attention mechanisms like Longformer or BigBird combine local sliding-window attention (capturing local context) with global attention tokens (such as specific punctuation, key entities, or '[CLS]' tokens). This configuration reduces the computational complexity to $O(N \\cdot (k + g))$ where $k$ is the window size and $g$ is the number of global tokens. This linear scaling allows the model to process sequences of 18,000+ words on existing hardware without losing the global connections required for summarization."
     },
     {
       "id": 3,
-      "scenario": "A computer vision model is deployed in an autonomous manufacturing facility to inspect structural integrity in metal parts. The QA team uses Gradient-weighted Class Activation Mapping (Grad-CAM) to generate explanation heatmaps. The heatmaps consistently highlight the cracked regions of the metal parts. However, a safety engineer suspects that the model is actually utilizing spurious background artifacts (like shadows and conveyor belt alignment lines) rather than learning the actual shape of the structural cracks, and that the Grad-CAM output is simply acting as an edge detector.",
-      "question": "Which validation technique should the QA team perform to rigorously test whether the Grad-CAM explanations are truly faithful to the model's learned parameters rather than merely acting as an independent image processor?",
+      "scenario": "Real-world Industrial Problem Statement: An AI researcher is training a massive 96-layer deep Transformer model from scratch. During the initial training phase, they observe that after layer 40, the gradients flowing backward through the self-attention heads begin to vanish rapidly. Upon reviewing the codebase, they discover a critical omission in their custom attention implementation: they computed the attention matrix as $\\text{Attention}(Q, K, V) = \\text{softmax}(QK^T)V$ instead of scaling it with the factor $\\frac{1}{\\sqrt{d_k}}$.",
+      "question": "What is the exact mathematical reason why omitting the scaling factor $\\frac{1}{\\sqrt{d_k}}$ causes vanishing gradients in high-dimensional projection spaces?",
       "options": [
-        "A) Run a Model Parameter Randomization Test by comparing Grad-CAM outputs of the trained model against those of an identical network with completely randomized weights.",
-        "B) Apply a guided backpropagation layer on top of Grad-CAM to sharpen the visualization of high-frequency pixel variations.",
-        "C) Compute the Peak Signal-to-Noise Ratio (PSNR) between the Grad-CAM heatmap and the raw input image edges.",
-        "D) Perform a baseline comparison by switching the Grad-CAM target layer from the final convolutional layer to the input layer."
+        "A) Without the scaling factor, the matrix multiplication $QK^T$ yields values that are too small, driving the softmax outputs to zero and halting the update of key vectors.",
+        "B) As the projection dimension $d_k$ grows large, the dot products of $Q$ and $K$ grow large in magnitude, pushing the softmax function into regions with extremely small gradients (saturation).",
+        "C) Omitting the scale factor violates the structural symmetry of the attention matrix, leading to non-invertible gradient updates during backpropagation.",
+        "D) The missing scale factor causes the query and key vectors to become orthogonal to one another, resulting in an identity matrix that blocks all gradient flow."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Run a Model Parameter Randomization Test by comparing Grad-CAM outputs of the trained model against those of an identical network with completely randomized weights.",
-      "explanation": "Adebayo et al. proposed 'Sanity Checks for Saliency Maps', demonstrating that many popular explanation methods (including variants of saliency and CAM) produce visually pleasing explanations that are invariant to the model's parameters and labels\u2014acting essentially as edge detectors. By performing a Model Parameter Randomization Test (cascading weight randomization from the top layer down), if the generated explanation map does not change drastically when the model weights are randomized, the explanation method is uninformative of the model's actual learned features and is unfaithful to its decision-making logic."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) As the projection dimension $d_k$ grows large, the dot products of $Q$ and $K$ grow large in magnitude, pushing the softmax function into regions with extremely small gradients (saturation).",
+      "explanation": "Assuming the components of query $q$ and key $k$ are independent random variables with mean 0 and variance 1, their dot product $q \\cdot k = \\sum_{i=1}^{d_k} q_i k_i$ has mean 0 and variance $d_k$. For large projection dimensions $d_k$, the dot products grow large in magnitude. This pushes the softmax activation function into flat, saturated regions where its derivative is nearly zero. Dividing by the scaling factor $\\sqrt{d_k}$ pulls the variance back to 1, preventing the softmax from saturating and thus preserving healthy gradient flow during backpropagation."
     }
   ]
 }

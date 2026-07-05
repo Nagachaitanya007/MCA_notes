@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
-  "mode": "Java",
+  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot service migrating to Java 21 Virtual Threads (`Executors.newVirtualThreadPerTaskExecutor()`) is experiencing severe performance degradation and high latency under load. Thread dumps reveal many virtual threads in the `PARKED` state, while the underlying carrier threads (`ForkJoinPool-1-worker-*`) are fully blocked. You locate the following class responsible for managing shared configuration state:\n\njava\n@Service\npublic class ConfigurationManager {\n    private final Map<String, String> cache = new ConcurrentHashMap<>();\n\n    public synchronized String getValue(String key) {\n        if (!cache.containsKey(key)) {\n            String value = fetchFromRemoteDatabase(key); // IO-bound network call (~50ms)\n            cache.put(key, value);\n        }\n        return cache.get(key);\n    }\n}\n",
-      "question": "What is the primary cause of this performance degradation and carrier thread blocking?",
+      "scenario": "Real-world Industrial Problem Statement: A multilingual financial news aggregator is building a real-time sentiment analysis engine for Hinglish (mixed Hindi and English written in Latin script) and colloquial Spanish-English social media feeds. When deploying their BERT-based model, they observe a high rate of Out-of-Vocabulary (OOV) errors, resulting in numerous '[UNK]' tokens. Additionally, fallback character-level tokenization for unseen slang is inflating sequence lengths, causing a downstream 2.5x increase in transformer self-attention latency, which violates their 50ms real-time service level agreement (SLA).",
+      "question": "Which tokenization strategy and configuration should the engineering team adopt to eliminate the '[UNK]' tokens while minimizing sequence lengths and computational overhead?",
       "options": [
-        "A) Virtual threads do not support calling methods on classes managed as Spring singleton beans.",
-        "B) The `synchronized` keyword pins the virtual thread to its carrier thread during the blocking network call, preventing other virtual threads from being scheduled on that carrier.",
-        "C) The `ConcurrentHashMap` class internally locks on table buckets, which causes Virtual Thread deadlocks in Java 21.",
-        "D) Network IO calls cannot be unmounted from carrier threads unless the socket channel is explicitly configured in non-blocking mode."
+        "A) Implement Byte-Level Byte-Pair Encoding (BBPE) trained on the target multilingual corpus, setting an optimal vocabulary size (e.g., 50k) to prevent over-fragmentation into single-byte tokens.",
+        "B) Apply standard WordPiece tokenization with a small vocabulary size (e.g., 15k) combined with aggressive lemmatization to map slang back to root English/Spanish terms.",
+        "C) Transition to a strict Character-Level tokenizer with a vocabulary size of 256 to guarantee zero OOV tokens and compress embedding layer parameters.",
+        "D) Deploy an un-tokenized, whitespace-split word-level tokenizer with a dynamic fallback dictionary stored in a fast in-memory Redis cache."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `synchronized` keyword pins the virtual thread to its carrier thread during the blocking network call, preventing other virtual threads from being scheduled on that carrier.",
-      "explanation": "In Java 21, virtual threads are designed to unmount from their carrier threads when they perform blocking operations (like blocking network I/O or `Thread.sleep()`). However, if a virtual thread executes a blocking operation inside a `synchronized` block or method, it becomes 'pinned' to its carrier thread. Under heavy load, all carrier threads become pinned, causing severe starvation as no other virtual threads can be scheduled. Replacing the `synchronized` keyword with a `ReentrantLock` solves this issue because locks from `java.util.concurrent.locks` do not cause carrier thread pinning."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Implement Byte-Level Byte-Pair Encoding (BBPE) trained on the target multilingual corpus, setting an optimal vocabulary size (e.g., 50k) to prevent over-fragmentation into single-byte tokens.",
+      "explanation": "Byte-Level BPE (BBPE) addresses the OOV problem by using bytes as the base vocabulary instead of characters. This ensures that any Unicode string can be tokenized without requiring an '[UNK]' token. By pre-training the merge rules on the target multilingual corpus (Hinglish/Spanish-English) and selecting an optimal vocabulary size, the model merges frequent byte sequences into larger, meaningful subwords. This keeps the tokenized sequence length short, which directly minimizes the $O(N^2)$ computational complexity of the Transformer's self-attention layers, thereby preserving real-time latency requirements."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where database updates inside a Spring Service method annotated with `@Transactional` are occasionally lost or fail with a `LazyInitializationException`. The codebase reveals the following processing logic:\n\njava\n@Service\npublic class OrderService {\n    @Autowired private OrderRepository orderRepository;\n\n    @Transactional\n    public void processOrder(Long orderId) {\n        Order order = orderRepository.findById(orderId)\n            .orElseThrow(() -> new EntityNotFoundException());\n        \n        CompletableFuture.runAsync(() -> {\n            order.setStatus(OrderStatus.PROCESSED);\n            orderRepository.save(order);\n        });\n    }\n}\n",
-      "question": "Why does this architecture fail to commit transactions or throw `LazyInitializationException`?",
+      "scenario": "Real-world Industrial Problem Statement: A legal-tech firm is processing complex multi-party contracts averaging 18,000 words per document using standard encoder-decoder Transformer architectures (such as BART) for summarization. During production runs, the system encounters frequent Out-of-Memory (OOM) errors on Nvidia A100 (80GB) GPUs. Profile traces reveal that the quadratic $O(N^2)$ memory and time complexity of the self-attention matrix calculation is scaling unsustainably with the long sequence lengths.",
+      "question": "Which architectural optimization or attention mechanism modification will most effectively resolve the GPU memory bottleneck while preserving global contextual representations across the entire contract?",
       "options": [
-        "A) Spring transactions cannot persist entities that are modified within lambda expressions.",
-        "B) The default pool used by `CompletableFuture.runAsync()` (ForkJoinPool.commonPool()) automatically rolls back any active transaction boundaries.",
-        "C) Spring's `@Transactional` mechanism relies on `ThreadLocal` storage to manage the active transaction and Hibernate Session. The asynchronous task runs on a different thread which lacks this context.",
-        "D) The `Order` entity is detached automatically when passing it as a parameter into any functional interface."
+        "A) Configure local sliding-window attention across all layers, completely disabling global attention patterns to achieve strict $O(N)$ linear complexity.",
+        "B) Replace vanilla self-attention with a sparse attention mechanism (e.g., Longformer or BigBird) that combines local sliding-window attention with a set of systematically selected global 'anchor' tokens.",
+        "C) Downscale the hidden state dimension ($d_{model}$) and feed-forward dimension ($d_{ff}$) by 75% while keeping the original quadratic dot-product attention intact.",
+        "D) Implement Locality-Sensitive Hashing (LSH) attention (Reformer) configured with a single hash bucket to force deterministic $O(1)$ memory allocation per sequence."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Spring's `@Transactional` mechanism relies on `ThreadLocal` storage to manage the active transaction and Hibernate Session. The asynchronous task runs on a different thread which lacks this context.",
-      "explanation": "Spring's transaction management and JPA's `EntityManager` / Hibernate `Session` are bound to the current executing thread using `ThreadLocal` storage. When `CompletableFuture.runAsync()` is called, it schedules execution on a thread pool (typically `ForkJoinPool.commonPool()`). This background thread does not share the parent thread's `ThreadLocal` context, meaning it runs without an active transaction or open Hibernate session. Consequently, lazy-loaded properties cannot be initialized, and `orderRepository.save(order)` is executed outside of the parent transaction, preventing a coordinated commit."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Replace vanilla self-attention with a sparse attention mechanism (e.g., Longformer or BigBird) that combines local sliding-window attention with a set of systematically selected global 'anchor' tokens.",
+      "explanation": "Standard self-attention computes dot products between all pairs of tokens, scaling quadratically $O(N^2)$ in memory and compute. Sparse attention mechanisms like Longformer or BigBird combine local sliding-window attention (capturing local context) with global attention tokens (such as specific punctuation, key entities, or '[CLS]' tokens). This configuration reduces the computational complexity to $O(N \\cdot (k + g))$ where $k$ is the window size and $g$ is the number of global tokens. This linear scaling allows the model to process sequences of 18,000+ words on existing hardware without losing the global connections required for summarization."
     },
     {
       "id": 3,
-      "scenario": "You are debugging an API Gateway service that aggregates data from downstream microservices. Under high traffic, the service experiences thread pool exhaustion, resulting in timeouts for all incoming API requests. The thread dump shows all threads in your custom `ExecutorService` are blocked in a `WAITING` state. You locate this coordinator method:\n\njava\npublic CompletableFuture<DataPayload> aggregateData(String userId) {\n    CompletableFuture<User> userFuture = CompletableFuture.supplyAsync(() -> userService.getUser(userId), executor);\n    CompletableFuture<Preferences> prefFuture = CompletableFuture.supplyAsync(() -> prefService.getPreferences(userId), executor);\n\n    return CompletableFuture.allOf(userFuture, prefFuture)\n        .thenApply(v -> {\n            User user = userFuture.join();\n            Preferences pref = prefFuture.join();\n            return new DataPayload(user, pref);\n        });\n} \n",
-      "question": "What is the primary cause of the thread pool exhaustion in this design?",
+      "scenario": "Real-world Industrial Problem Statement: An AI researcher is training a massive 96-layer deep Transformer model from scratch. During the initial training phase, they observe that after layer 40, the gradients flowing backward through the self-attention heads begin to vanish rapidly. Upon reviewing the codebase, they discover a critical omission in their custom attention implementation: they computed the attention matrix as $\\text{Attention}(Q, K, V) = \\text{softmax}(QK^T)V$ instead of scaling it with the factor $\\frac{1}{\\sqrt{d_k}}$.",
+      "question": "What is the exact mathematical reason why omitting the scaling factor $\\frac{1}{\\sqrt{d_k}}$ causes vanishing gradients in high-dimensional projection spaces?",
       "options": [
-        "A) The `executor` pool is exhausted because `CompletableFuture.allOf()` spawns an additional monitor thread for each task passed to it.",
-        "B) Calling `join()` inside the `thenApply` callback of `allOf` causes a deadlock because `thenApply` executes on the same threads from the `executor` pool, leading to starvation.",
-        "C) If either `userService.getUser()` or `prefService.getPreferences()` blocks indefinitely (e.g., due to missing HTTP client socket timeouts), the threads in the `executor` executing these tasks will remain blocked, eventually leading to pool exhaustion.",
-        "D) `CompletableFuture.allOf()` does not propagate exceptions, which forces the `executor` threads to spin in a CPU-heavy busy-wait loop."
+        "A) Without the scaling factor, the matrix multiplication $QK^T$ yields values that are too small, driving the softmax outputs to zero and halting the update of key vectors.",
+        "B) As the projection dimension $d_k$ grows large, the dot products of $Q$ and $K$ grow large in magnitude, pushing the softmax function into regions with extremely small gradients (saturation).",
+        "C) Omitting the scale factor violates the structural symmetry of the attention matrix, leading to non-invertible gradient updates during backpropagation.",
+        "D) The missing scale factor causes the query and key vectors to become orthogonal to one another, resulting in an identity matrix that blocks all gradient flow."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) If either `userService.getUser()` or `prefService.getPreferences()` blocks indefinitely (e.g., due to missing HTTP client socket timeouts), the threads in the `executor` executing these tasks will remain blocked, eventually leading to pool exhaustion.",
-      "explanation": "In asynchronous systems, futures rely on underlying IO operations completing either successfully or exceptionally. If the HTTP client inside `userService` or `prefService` lacks explicit socket read and connection timeouts, and the remote server hangs, the thread executing that task in the `executor` will block indefinitely. Over time, all threads in the `executor` pool are consumed by these hanging requests, causing a pool starvation deadlock. To prevent this, always configure explicit timeouts on HTTP clients and use `CompletableFuture.orTimeout()` or `CompletableFuture.completeOnTimeout()` (introduced in Java 9)."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) As the projection dimension $d_k$ grows large, the dot products of $Q$ and $K$ grow large in magnitude, pushing the softmax function into regions with extremely small gradients (saturation).",
+      "explanation": "Assuming the components of query $q$ and key $k$ are independent random variables with mean 0 and variance 1, their dot product $q \\cdot k = \\sum_{i=1}^{d_k} q_i k_i$ has mean 0 and variance $d_k$. For large projection dimensions $d_k$, the dot products grow large in magnitude. This pushes the softmax activation function into flat, saturated regions where its derivative is nearly zero. Dividing by the scaling factor $\\sqrt{d_k}$ pulls the variance back to 1, preventing the softmax from saturating and thus preserving healthy gradient flow during backpropagation."
     }
   ]
 }
