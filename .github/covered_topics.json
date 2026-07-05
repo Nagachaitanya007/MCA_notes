@@ -71,7 +71,8 @@
     "JVM Memory Architecture: ZGC Colored Pointers and Virtual Memory Multi-Mapping",
     "JVM Custom Class Loaders & Runtime Isolation: Breaking the Delegation Model for Hot-Swapping and Dependency Conflicts",
     "JVM Memory Model and Garbage Collection",
-    "JVM Safepoints and Thread Handshakes: How the JVM Suspends Execution for GC and Runtime Security"
+    "JVM Safepoints and Thread Handshakes: How the JVM Suspends Execution for GC and Runtime Security",
+    "JVM Metaspace Internals: How Class Loading Builds InstanceKlass, Vtables, and Itables"
   ],
   "Design a Real-time Chat System (WebSockets, Redis Pub/Sub)": [
     "Scalable Real-time Chat: WebSockets & Redis Pub/Sub",
