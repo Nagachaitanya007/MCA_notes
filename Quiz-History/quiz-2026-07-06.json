@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
-  "mode": "Java",
+  "topic": "Machine Learning: Classification vs Regression Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a Spring Boot 3.2 application deployed on JDK 21 exhibits severe performance degradation under high concurrent load. The application utilizes Virtual Threads (`Executors.newVirtualThreadPerTaskExecutor()`) to process incoming HTTP requests. A thread dump reveals that many platform carrier threads are in `BLOCKED` states, and CPU utilization is unusually low despite high response latencies. You locate the following service implementation:\n\njava\n@Service\npublic class PaymentProcessingService {\n    private final PaymentGatewayClient gatewayClient;\n\n    public PaymentProcessingService(PaymentGatewayClient gatewayClient) {\n        this.gatewayClient = gatewayClient;\n    }\n\n    public synchronized PaymentResult processPayment(PaymentRequest request) {\n        // Heavy external HTTP call to a legacy payment provider\n        return gatewayClient.executeHttpCall(request);\n    }\n}\n",
-      "question": "What is the primary cause of this performance bottleneck?",
+      "scenario": "A financial technology company is developing an algorithmic credit risk assessment engine to estimate the 'Loss Given Default' (LGD) for enterprise loans. LGD represents the percentage of the loan amount lost if a borrower defaults. Analyzing historical data reveals a highly skewed, zero-inflated distribution: 92% of the borrowers do not default (loss is exactly 0), while the remaining 8% exhibit a continuous range of loss percentages between 5% and 100%. The data science team is debating whether to treat this as a single unified regression model or a multi-stage modeling pipeline.",
+      "question": "Which of the following architectural paradigms and evaluation strategies is most mathematically and practically sound for this scenario?",
       "options": [
-        "A) The JVM GC is pausing virtual threads because synchronized blocks cause heap fragmentation when carrier threads are garbage collected.",
-        "B) The virtual thread executing `processPayment` pins its carrier platform thread during the blocking HTTP I/O operation due to the `synchronized` keyword, preventing other virtual threads from scheduling.",
-        "C) The Spring `@Service` proxy forces the virtual thread to fallback to a platform thread, causing a dead lock on the database connection pool.",
-        "D) Virtual threads do not support non-blocking I/O operations, causing them to block permanently when invoking legacy HTTP clients."
+        "A) Train a single Deep Neural Network regression model using Mean Squared Error (MSE) loss, as its high capacity will naturally fit both the zero-spike and the continuous tail.",
+        "B) Implement a two-stage Hurdle model: first, a binary classifier to predict the probability of default, and second, a regressor (such as Gamma or Beta regression) trained exclusively on the non-zero default instances.",
+        "C) Apply a standard logarithmic transform to the target variable, train a single Ridge Regression model, and evaluate model performance strictly using the coefficient of determination (R-squared).",
+        "D) Discretize the continuous loss percentage into 100 equal-width bins, treat the task as a 100-class classification problem, and optimize using categorical cross-entropy."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The virtual thread executing `processPayment` pins its carrier platform thread during the blocking HTTP I/O operation due to the `synchronized` keyword, preventing other virtual threads from scheduling.",
-      "explanation": "In JDK 21, when a virtual thread runs inside a `synchronized` block or method and executes a blocking operation (like network I/O), the virtual thread is pinned to its carrier platform thread (`ForkJoinPool` worker). It cannot be unmounted. This exhausts the carrier thread pool, causing other virtual threads to stall. To resolve this, the code should use `ReentrantLock` instead of the `synchronized` keyword, which allows the virtual thread to unmount smoothly during blocking operations."
+      "correct_answer_text": "B) Implement a two-stage Hurdle model: first, a binary classifier to predict the probability of default, and second, a regressor (such as Gamma or Beta regression) trained exclusively on the non-zero default instances.",
+      "explanation": "Zero-inflated continuous data violates basic assumptions of standard regression algorithms (such as homoscedasticity and normality of residuals). A single regression model optimized via MSE will heavily bias its predictions toward zero, severely underestimating the loss in true default scenarios. A Hurdle/two-stage model mathematically decouples the decision boundary of occurrence (classification: default vs. non-default) from the intensity of the outcome (regression: how much is lost). Using a Gamma or Beta distribution for the second stage is ideal because LGD is bounded and non-negative, preventing physically impossible predictions (e.g., negative losses)."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a Spring Boot application processes financial transactions. A service method marked with `@Transactional` initiates an asynchronous task using `CompletableFuture.supplyAsync` to perform a parallel audit log. Developers report that the audit log occasionally fails to write to the database, or writes with missing context, and database connection pool exhaustion is frequently observed under peak load. \n\njava\n@Transactional\npublic void completeOrder(Order order) {\n    orderRepository.save(order);\n    CompletableFuture.runAsync(() -> {\n        auditService.logTransaction(order.getId(), \"COMPLETED\");\n    }, customExecutor);\n}\n",
-      "question": "What is the primary architectural cause of this data inconsistency and resource exhaustion?",
+      "scenario": "An autonomous drone manufacturing company is designing an on-board, real-time obstacle avoidance classifier. The system processes high-dimensional LiDAR point cloud vectors (exceeding 120,000 features per frame) and must classify the environment into 'Safe to Proceed' or 'Immediate Hazard'. The processing unit on-board the drone is an edge computing chip with severe memory limitations and a strict hard real-time latency budget of less than 3 milliseconds per inference.",
+      "question": "To meet both the high-dimensionality challenge and the extreme inference latency constraint, which machine learning pipeline should the system architect select?",
       "options": [
-        "A) The Spring transaction boundary is bound to the executing thread using `ThreadLocal`. The asynchronous thread runs outside this transaction context, executing without the parent transaction lock and holding separate DB connections.",
-        "B) `CompletableFuture` executes tasks sequentially if the custom executor's thread pool is initialized inside a `@Transactional` proxy.",
-        "C) The garbage collector eagerly collects the `Order` entity proxy when it crosses the thread boundary, throwing a `NullPointerException` inside the `customExecutor` thread.",
-        "D) Spring's transaction manager terminates the connection pool immediately when the main thread exits the `@Transactional` boundary, cutting off any active background threads."
+        "A) Apply Kernel Principal Component Analysis (KPCA) to reduce the features to 100, and classify using a Support Vector Machine (SVM) with a Radial Basis Function (RBF) kernel.",
+        "B) Apply Random Projection (based on the Johnson-Lindenstrauss lemma) to reduce dimensionality to 200, followed by a sparse L1-regularized Logistic Regression classifier.",
+        "C) Pass the raw 120,000-dimensional features directly into a Naive Bayes classifier, leveraging its conditional independence assumption to calculate probabilities in O(d) time.",
+        "D) Train an ensemble of 800 Deep Gradient Boosted Decision Trees (GBDT) directly on the raw feature space, utilizing on-board parallel GPU execution to guarantee speed."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The Spring transaction boundary is bound to the executing thread using `ThreadLocal`. The asynchronous thread runs outside this transaction context, executing without the parent transaction lock and holding separate DB connections.",
-      "explanation": "Spring's transaction management relies on `ThreadLocal` to bind the active physical database connection and transaction state to the current execution thread. When utilizing `CompletableFuture.runAsync`, the task is handed off to a thread from the `customExecutor`. This thread does not inherit the transaction context, causing it to run in a separate transaction (or none at all), which leads to race conditions, isolation leaks, and the acquisition of additional database connections, contributing to pool exhaustion."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Apply Random Projection (based on the Johnson-Lindenstrauss lemma) to reduce dimensionality to 200, followed by a sparse L1-regularized Logistic Regression classifier.",
+      "explanation": "To meet a <3ms latency budget on resource-constrained edge hardware, computational complexity must be minimized. Kernel PCA and RBF-SVM scale poorly at inference time because they require calculating kernel distances against a large set of support vectors, violating real-time constraints. Ensembles of 800 GBDTs are too heavy for memory and edge processors. Random projection is extremely fast because it projects the high-dimensional space into a lower dimension using a random matrix, preserving pairwise distances without expensive eigen-decompositions. Pair this with a sparse L1-regularized Logistic Regression, and the inference step is simplified to a highly optimized, sparse vector dot product, completing in microseconds."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production Out-Of-Memory (OOM) issue. The engineering team recently migrated a high-throughput stateless REST API from a traditional platform thread-per-request model to Virtual Threads via `Executors.newVirtualThreadPerTaskExecutor()`. The API heavily invokes a third-party serialization library that caches parser contexts in a `ThreadLocal` variable to optimize performance. Under a load test of 50,000 concurrent requests, the JVM crashes with `java.lang.OutOfMemoryError: Java heap space`.",
-      "question": "What is the root cause of the memory exhaustion after adopting Virtual Threads?",
+      "scenario": "An enterprise SaaS platform wants to predict whether high-value corporate clients will churn (cancel their subscription). The dataset is highly imbalanced, with a churn rate of only 0.15% (highly skewed). The business operations team establishes that a False Negative (failing to identify a client who will churn) is 40 times more costly to the company than a False Positive (incorrectly flagging a loyal client as a risk, which triggers a simple automated check-in email).",
+      "question": "How should the development team design the optimization objective and evaluation framework to align with these business realities?",
       "options": [
-        "A) Virtual Threads are allocated on the OS kernel stack instead of the JVM heap, leading to native memory fragmentation.",
-        "B) The virtual thread pool does not support automatic scaling, causing virtual threads to accumulate in a queue inside the JVM Metaspace.",
-        "C) Unlike platform threads which are limited in number, creating tens of thousands of active virtual threads results in a massive accumulation of `ThreadLocal` instances that cannot be reclaimed while the threads are alive.",
-        "D) The JVM fails to garbage collect virtual threads because they are pinned to the application's root class loader by default."
+        "A) Train a standard Random Forest classifier to optimize Area Under the Receiver Operating Characteristic (AUROC) curve, setting the classification threshold at 0.5.",
+        "B) Reformulate the task as a regression problem to predict the exact remaining contract days, optimize using Mean Absolute Error (MAE), and flag any client with less than 30 days left.",
+        "C) Apply Synthetic Minority Over-sampling Technique (SMOTE) to achieve a perfect 50:50 class balance, and optimize the model using raw Classification Accuracy.",
+        "D) Train a classifier using a cost-sensitive loss function (assigning a 40x penalty to False Negatives) and optimize the model using the F-beta score metric with beta set to 2."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Unlike platform threads which are limited in number, creating tens of thousands of active virtual threads results in a massive accumulation of `ThreadLocal` instances that cannot be reclaimed while the threads are alive.",
-      "explanation": "Virtual threads are designed to be short-lived and cheap to create in massive quantities. However, each virtual thread maintains its own `ThreadLocal` map. If a library caches heavy objects (like serialization contexts) inside `ThreadLocal` variables, and the application spawns tens of thousands of concurrent virtual threads, the heap will hold tens of thousands of these heavy cached objects. This negates the memory benefits of virtual threads. The solution is to migrate away from `ThreadLocal` in favor of Scoped Values or shared, thread-safe instances."
+      "correct_answer_letter": "D",
+      "correct_answer_text": "D) Train a classifier using a cost-sensitive loss function (assigning a 40x penalty to False Negatives) and optimize the model using the F-beta score metric with beta set to 2.",
+      "explanation": "When dealing with highly imbalanced data combined with asymmetric business costs, standard metrics and default loss functions fail. Maximizing AUROC or raw accuracy ignores the uneven cost distribution, as a model can achieve 99.85% accuracy by simply predicting 'no churn' for everyone. Incorporating cost-sensitive learning directly into the loss function (by weighting the binary cross-entropy) forces the decision boundary to skew in favor of catching the minority class (reducing False Negatives). Evaluating using the F-beta metric (where beta = 2) mathematically weights Recall higher than Precision, aligning directly with the business's high cost for missed detections."
     }
   ]
 }

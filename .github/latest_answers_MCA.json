@@ -1,48 +1,48 @@
 {
-  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
+  "topic": "Machine Learning: Classification vs Regression Scenarios",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "Real-world Industrial Problem Statement: A multilingual financial news aggregator is building a real-time sentiment analysis engine for Hinglish (mixed Hindi and English written in Latin script) and colloquial Spanish-English social media feeds. When deploying their BERT-based model, they observe a high rate of Out-of-Vocabulary (OOV) errors, resulting in numerous '[UNK]' tokens. Additionally, fallback character-level tokenization for unseen slang is inflating sequence lengths, causing a downstream 2.5x increase in transformer self-attention latency, which violates their 50ms real-time service level agreement (SLA).",
-      "question": "Which tokenization strategy and configuration should the engineering team adopt to eliminate the '[UNK]' tokens while minimizing sequence lengths and computational overhead?",
+      "scenario": "A financial technology company is developing an algorithmic credit risk assessment engine to estimate the 'Loss Given Default' (LGD) for enterprise loans. LGD represents the percentage of the loan amount lost if a borrower defaults. Analyzing historical data reveals a highly skewed, zero-inflated distribution: 92% of the borrowers do not default (loss is exactly 0), while the remaining 8% exhibit a continuous range of loss percentages between 5% and 100%. The data science team is debating whether to treat this as a single unified regression model or a multi-stage modeling pipeline.",
+      "question": "Which of the following architectural paradigms and evaluation strategies is most mathematically and practically sound for this scenario?",
       "options": [
-        "A) Implement Byte-Level Byte-Pair Encoding (BBPE) trained on the target multilingual corpus, setting an optimal vocabulary size (e.g., 50k) to prevent over-fragmentation into single-byte tokens.",
-        "B) Apply standard WordPiece tokenization with a small vocabulary size (e.g., 15k) combined with aggressive lemmatization to map slang back to root English/Spanish terms.",
-        "C) Transition to a strict Character-Level tokenizer with a vocabulary size of 256 to guarantee zero OOV tokens and compress embedding layer parameters.",
-        "D) Deploy an un-tokenized, whitespace-split word-level tokenizer with a dynamic fallback dictionary stored in a fast in-memory Redis cache."
+        "A) Train a single Deep Neural Network regression model using Mean Squared Error (MSE) loss, as its high capacity will naturally fit both the zero-spike and the continuous tail.",
+        "B) Implement a two-stage Hurdle model: first, a binary classifier to predict the probability of default, and second, a regressor (such as Gamma or Beta regression) trained exclusively on the non-zero default instances.",
+        "C) Apply a standard logarithmic transform to the target variable, train a single Ridge Regression model, and evaluate model performance strictly using the coefficient of determination (R-squared).",
+        "D) Discretize the continuous loss percentage into 100 equal-width bins, treat the task as a 100-class classification problem, and optimize using categorical cross-entropy."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Implement Byte-Level Byte-Pair Encoding (BBPE) trained on the target multilingual corpus, setting an optimal vocabulary size (e.g., 50k) to prevent over-fragmentation into single-byte tokens.",
-      "explanation": "Byte-Level BPE (BBPE) addresses the OOV problem by using bytes as the base vocabulary instead of characters. This ensures that any Unicode string can be tokenized without requiring an '[UNK]' token. By pre-training the merge rules on the target multilingual corpus (Hinglish/Spanish-English) and selecting an optimal vocabulary size, the model merges frequent byte sequences into larger, meaningful subwords. This keeps the tokenized sequence length short, which directly minimizes the $O(N^2)$ computational complexity of the Transformer's self-attention layers, thereby preserving real-time latency requirements."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Implement a two-stage Hurdle model: first, a binary classifier to predict the probability of default, and second, a regressor (such as Gamma or Beta regression) trained exclusively on the non-zero default instances.",
+      "explanation": "Zero-inflated continuous data violates basic assumptions of standard regression algorithms (such as homoscedasticity and normality of residuals). A single regression model optimized via MSE will heavily bias its predictions toward zero, severely underestimating the loss in true default scenarios. A Hurdle/two-stage model mathematically decouples the decision boundary of occurrence (classification: default vs. non-default) from the intensity of the outcome (regression: how much is lost). Using a Gamma or Beta distribution for the second stage is ideal because LGD is bounded and non-negative, preventing physically impossible predictions (e.g., negative losses)."
     },
     {
       "id": 2,
-      "scenario": "Real-world Industrial Problem Statement: A legal-tech firm is processing complex multi-party contracts averaging 18,000 words per document using standard encoder-decoder Transformer architectures (such as BART) for summarization. During production runs, the system encounters frequent Out-of-Memory (OOM) errors on Nvidia A100 (80GB) GPUs. Profile traces reveal that the quadratic $O(N^2)$ memory and time complexity of the self-attention matrix calculation is scaling unsustainably with the long sequence lengths.",
-      "question": "Which architectural optimization or attention mechanism modification will most effectively resolve the GPU memory bottleneck while preserving global contextual representations across the entire contract?",
+      "scenario": "An autonomous drone manufacturing company is designing an on-board, real-time obstacle avoidance classifier. The system processes high-dimensional LiDAR point cloud vectors (exceeding 120,000 features per frame) and must classify the environment into 'Safe to Proceed' or 'Immediate Hazard'. The processing unit on-board the drone is an edge computing chip with severe memory limitations and a strict hard real-time latency budget of less than 3 milliseconds per inference.",
+      "question": "To meet both the high-dimensionality challenge and the extreme inference latency constraint, which machine learning pipeline should the system architect select?",
       "options": [
-        "A) Configure local sliding-window attention across all layers, completely disabling global attention patterns to achieve strict $O(N)$ linear complexity.",
-        "B) Replace vanilla self-attention with a sparse attention mechanism (e.g., Longformer or BigBird) that combines local sliding-window attention with a set of systematically selected global 'anchor' tokens.",
-        "C) Downscale the hidden state dimension ($d_{model}$) and feed-forward dimension ($d_{ff}$) by 75% while keeping the original quadratic dot-product attention intact.",
-        "D) Implement Locality-Sensitive Hashing (LSH) attention (Reformer) configured with a single hash bucket to force deterministic $O(1)$ memory allocation per sequence."
+        "A) Apply Kernel Principal Component Analysis (KPCA) to reduce the features to 100, and classify using a Support Vector Machine (SVM) with a Radial Basis Function (RBF) kernel.",
+        "B) Apply Random Projection (based on the Johnson-Lindenstrauss lemma) to reduce dimensionality to 200, followed by a sparse L1-regularized Logistic Regression classifier.",
+        "C) Pass the raw 120,000-dimensional features directly into a Naive Bayes classifier, leveraging its conditional independence assumption to calculate probabilities in O(d) time.",
+        "D) Train an ensemble of 800 Deep Gradient Boosted Decision Trees (GBDT) directly on the raw feature space, utilizing on-board parallel GPU execution to guarantee speed."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Replace vanilla self-attention with a sparse attention mechanism (e.g., Longformer or BigBird) that combines local sliding-window attention with a set of systematically selected global 'anchor' tokens.",
-      "explanation": "Standard self-attention computes dot products between all pairs of tokens, scaling quadratically $O(N^2)$ in memory and compute. Sparse attention mechanisms like Longformer or BigBird combine local sliding-window attention (capturing local context) with global attention tokens (such as specific punctuation, key entities, or '[CLS]' tokens). This configuration reduces the computational complexity to $O(N \\cdot (k + g))$ where $k$ is the window size and $g$ is the number of global tokens. This linear scaling allows the model to process sequences of 18,000+ words on existing hardware without losing the global connections required for summarization."
+      "correct_answer_text": "B) Apply Random Projection (based on the Johnson-Lindenstrauss lemma) to reduce dimensionality to 200, followed by a sparse L1-regularized Logistic Regression classifier.",
+      "explanation": "To meet a <3ms latency budget on resource-constrained edge hardware, computational complexity must be minimized. Kernel PCA and RBF-SVM scale poorly at inference time because they require calculating kernel distances against a large set of support vectors, violating real-time constraints. Ensembles of 800 GBDTs are too heavy for memory and edge processors. Random projection is extremely fast because it projects the high-dimensional space into a lower dimension using a random matrix, preserving pairwise distances without expensive eigen-decompositions. Pair this with a sparse L1-regularized Logistic Regression, and the inference step is simplified to a highly optimized, sparse vector dot product, completing in microseconds."
     },
     {
       "id": 3,
-      "scenario": "Real-world Industrial Problem Statement: An AI researcher is training a massive 96-layer deep Transformer model from scratch. During the initial training phase, they observe that after layer 40, the gradients flowing backward through the self-attention heads begin to vanish rapidly. Upon reviewing the codebase, they discover a critical omission in their custom attention implementation: they computed the attention matrix as $\\text{Attention}(Q, K, V) = \\text{softmax}(QK^T)V$ instead of scaling it with the factor $\\frac{1}{\\sqrt{d_k}}$.",
-      "question": "What is the exact mathematical reason why omitting the scaling factor $\\frac{1}{\\sqrt{d_k}}$ causes vanishing gradients in high-dimensional projection spaces?",
+      "scenario": "An enterprise SaaS platform wants to predict whether high-value corporate clients will churn (cancel their subscription). The dataset is highly imbalanced, with a churn rate of only 0.15% (highly skewed). The business operations team establishes that a False Negative (failing to identify a client who will churn) is 40 times more costly to the company than a False Positive (incorrectly flagging a loyal client as a risk, which triggers a simple automated check-in email).",
+      "question": "How should the development team design the optimization objective and evaluation framework to align with these business realities?",
       "options": [
-        "A) Without the scaling factor, the matrix multiplication $QK^T$ yields values that are too small, driving the softmax outputs to zero and halting the update of key vectors.",
-        "B) As the projection dimension $d_k$ grows large, the dot products of $Q$ and $K$ grow large in magnitude, pushing the softmax function into regions with extremely small gradients (saturation).",
-        "C) Omitting the scale factor violates the structural symmetry of the attention matrix, leading to non-invertible gradient updates during backpropagation.",
-        "D) The missing scale factor causes the query and key vectors to become orthogonal to one another, resulting in an identity matrix that blocks all gradient flow."
+        "A) Train a standard Random Forest classifier to optimize Area Under the Receiver Operating Characteristic (AUROC) curve, setting the classification threshold at 0.5.",
+        "B) Reformulate the task as a regression problem to predict the exact remaining contract days, optimize using Mean Absolute Error (MAE), and flag any client with less than 30 days left.",
+        "C) Apply Synthetic Minority Over-sampling Technique (SMOTE) to achieve a perfect 50:50 class balance, and optimize the model using raw Classification Accuracy.",
+        "D) Train a classifier using a cost-sensitive loss function (assigning a 40x penalty to False Negatives) and optimize the model using the F-beta score metric with beta set to 2."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) As the projection dimension $d_k$ grows large, the dot products of $Q$ and $K$ grow large in magnitude, pushing the softmax function into regions with extremely small gradients (saturation).",
-      "explanation": "Assuming the components of query $q$ and key $k$ are independent random variables with mean 0 and variance 1, their dot product $q \\cdot k = \\sum_{i=1}^{d_k} q_i k_i$ has mean 0 and variance $d_k$. For large projection dimensions $d_k$, the dot products grow large in magnitude. This pushes the softmax activation function into flat, saturated regions where its derivative is nearly zero. Dividing by the scaling factor $\\sqrt{d_k}$ pulls the variance back to 1, preventing the softmax from saturating and thus preserving healthy gradient flow during backpropagation."
+      "correct_answer_letter": "D",
+      "correct_answer_text": "D) Train a classifier using a cost-sensitive loss function (assigning a 40x penalty to False Negatives) and optimize the model using the F-beta score metric with beta set to 2.",
+      "explanation": "When dealing with highly imbalanced data combined with asymmetric business costs, standard metrics and default loss functions fail. Maximizing AUROC or raw accuracy ignores the uneven cost distribution, as a model can achieve 99.85% accuracy by simply predicting 'no churn' for everyone. Incorporating cost-sensitive learning directly into the loss function (by weighting the binary cross-entropy) forces the decision boundary to skew in favor of catching the minority class (reducing False Negatives). Evaluating using the F-beta metric (where beta = 2) mathematically weights Recall higher than Precision, aligning directly with the business's high cost for missed detections."
     }
   ]
 }
