@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput microservice periodically crashes with a `ConcurrentModificationException` under heavy traffic. A team member implemented a custom thread-safe LRU cache using the following code snippet:\n\njava\n@Service\npublic class CustomCacheService<K, V> {\n    private final Map<K, V> cache = new LinkedHashMap<>(16, 0.75f, true) {\n        @Override\n        protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {\n            return size() > 500;\n        }\n    };\n\n    public synchronized V get(K key) {\n        return cache.get(key);\n    }\n\n    public synchronized void put(K key, V value) {\n        cache.put(key, value);\n    }\n\n    public Collection<V> getValues() {\n        return cache.values();\n    }\n}\n\n\nOther services regularly call `getValues()` to inspect active cache contents.",
+      "scenario": "You are debugging a production issue where a `HashMap` is being used to cache user session data. The `HashMap` is implemented as a `ConcurrentHashMap` to ensure thread safety, but you notice that the cache is not being updated correctly. Upon further investigation, you find the following code snippet: `Map<String, String> cache = new `ConcurrentHashMap<>`();` ... `cache.putIfAbsent(key, value);` ... `cache.get(key);`. The issue is that sometimes the `get(key)` operation returns `null`, even though `putIfAbsent(key, value)` was called previously.",
       "question": "What is the primary cause of this issue?",
       "options": [
-        "A) The `getValues()` method is not synchronized, allowing concurrent threads to iterate over the collection view while a synchronized `put()` call structurally modifies the underlying map.",
-        "B) Since the `LinkedHashMap` is initialized with `accessOrder = true`, any read operation via `get()` is structurally modifying the underlying doubly-linked list. If another thread is concurrently iterating over the collection returned by `getValues()`, a `ConcurrentModificationException` will occur even if no `put()` writes are active.",
-        "C) The `removeEldestEntry` invocation is executed inside the synchronized block of `put()` but runs asynchronously, causing a race condition on the internal size tracking counter.",
-        "D) Under high memory pressure, Spring's proxy wrapper forces garbage collection on singleton bean fields, breaking the internal references of the custom `LinkedHashMap` subclass."
+        "A) The `ConcurrentHashMap` is not properly synchronized.",
+        "B) The `putIfAbsent(key, value)` operation is not atomic.",
+        "C) The `get(key)` operation is not retrieving the latest value due to a stale entry in the cache.",
+        "D) The `HashMap` is being resized, causing the entry to be lost."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Since the `LinkedHashMap` is initialized with `accessOrder = true`, any read operation via `get()` is structurally modifying the underlying doubly-linked list. If another thread is concurrently iterating over the collection returned by `getValues()`, a `ConcurrentModificationException` will occur even if no `put()` writes are active.",
-      "explanation": "In `LinkedHashMap`, passing `true` for the `accessOrder` argument in the constructor configures the map to order its elements by last access. This means that invoking `get(K key)` changes the iteration order of the map by moving the accessed node to the end of the doubly-linked list. This reordering is considered a structural modification. Because `getValues()` returns a live view backed by the map, any thread iterating over that view will immediately throw a `ConcurrentModificationException` if another thread invokes the synchronized `get()` method concurrently, because the modification count (`modCount`) is updated during the read."
+      "correct_answer_text": "B) The `putIfAbsent(key, value)` operation is not atomic.",
+      "explanation": "The `putIfAbsent(key, value)` operation in `ConcurrentHashMap` is atomic, but it may still fail to update the cache if multiple threads are competing to update the same key. This is because the `putIfAbsent` method will only succeed if the key is not already present in the map. If multiple threads are calling `putIfAbsent` simultaneously, it's possible that one thread will see the key as absent and attempt to put a value, while another thread has already put a value but it hasn't been visible yet due to the concurrent nature of the map. This can lead to a situation where the `get(key)` operation returns `null`, even though `putIfAbsent(key, value)` was called previously."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where your application experiences a severe OutOfMemoryError (OOM) on the heap. Analysis of the heap dump reveals millions of dynamically loaded `PluginClassLoader` instances that cannot be garbage collected. Your team recently introduced a metadata caching mechanism using `WeakHashMap` to hold configuration metadata linked to each dynamic plugin's classloader:\n\n`private final Map<ClassLoader, PluginMetadata> cache = new WeakHashMap<>();`\n\nEach `PluginMetadata` object retains a strong reference to the plugin's entry point class, which was loaded by that specific `PluginClassLoader` instance.",
-      "question": "What is the primary cause of this memory leak?",
+      "scenario": "You are debugging a production issue where a `TreeMap` is being used to store a large amount of data. The `TreeMap` is implemented with a custom `Comparator` to ensure that the data is sorted correctly. However, you notice that the `TreeMap` is throwing a `ConcurrentModificationException` when trying to iterate over its entries. The code snippet is as follows: `TreeMap<String, String> map = new `TreeMap<>`>(new `CustomComparator`());` ... `map.put(key, value);` ... `for (`Map.Entry<String, String>` entry : map.entrySet()) { ... }`. The issue is that the `ConcurrentModificationException` is being thrown even though the `TreeMap` is not being accessed by multiple threads.",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) A `WeakHashMap` only cleans up garbage-collected keys during write operations (`put` or `remove`), so a read-heavy application will never trigger key cleanup.",
-        "B) The garbage collector cannot clean up `ClassLoader` instances because they are registered globally in the JVM's bootstrap classloader hierarchy.",
-        "C) The value stored in the `WeakHashMap` holds a strong reference back to the key (the `ClassLoader` instance) via its entry point class. This strong reference loop prevents the weak key from ever being cleared by the GC.",
-        "D) `WeakHashMap` uses soft reference values instead of weak reference keys internally, which delays reclamation until the JVM is critically low on physical RAM."
+        "A) The `CustomComparator` is not properly implemented.",
+        "B) The `TreeMap` is being modified while iterating over its entries.",
+        "C) The `TreeMap` is not properly synchronized.",
+        "D) The `entrySet()` method is not properly implemented."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The value stored in the `WeakHashMap` holds a strong reference back to the key (the `ClassLoader` instance) via its entry point class. This strong reference loop prevents the weak key from ever being cleared by the GC.",
-      "explanation": "In a `WeakHashMap`, only the keys are stored as `WeakReference` objects, while the values are stored as strong references. If the value (`PluginMetadata`) contains a strong reference to the key (`ClassLoader`) either directly or transitively (via the entry point class, which points to its defining classloader), it creates a strong reference loop: Map Entry -> Value -> Class -> ClassLoader -> Map Key. This strong reference prevents the GC from reclaiming the key, rendering the `WeakHashMap` weak-key mechanics entirely useless and resulting in a memory leak."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The `TreeMap` is being modified while iterating over its entries.",
+      "explanation": "The `ConcurrentModificationException` is being thrown because the `TreeMap` is being modified while iterating over its entries. This is because the `put(key, value)` operation is being called while the `for` loop is iterating over the `entrySet()`. The `TreeMap` is designed to throw a `ConcurrentModificationException` if it detects that the map is being modified structurally while iterating over it. To fix this issue, the iteration and modification operations should be separated, or a `CopyOnWriteArrayList` should be used to create a copy of the map's entries before iterating over them."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where database write operations occasionally fail silently, leading to data inconsistency. You locate a Spring `@Service` bean managing task execution. Under high concurrency, worker threads poll a custom queue-backed buffer and invoke a transactional method. However, you notice that the transactions do not roll back on runtime failures. The relevant snippet of the service is structured as follows:\n\njava\n@Service\npublic class TaskProcessorService {\n\n    public void processPendingBuffer() {\n        List<Task> tasks = drainBuffer();\n        for (Task task : tasks) {\n            executeTask(task);\n        }\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void executeTask(Task task) {\n        // DB operations here\n        if (task.hasError()) {\n            throw new TaskProcessingException(\"Failed to process task\");\n        }\n    }\n}\n",
-      "question": "What is the primary cause of the transaction management failure?",
+      "scenario": "You are debugging a production issue where a custom implementation of `Collection` is being used to store a large amount of data. The custom implementation uses a `synchronized` block to ensure thread safety. However, you notice that the implementation is suffering from poor performance due to excessive contention between threads. The code snippet is as follows: `public class `CustomCollection`<E> implements `Collection`<E> { ... `synchronized (this) { ... }` ... }. The issue is that the `synchronized` block is causing a bottleneck in the application.",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) Spring's `@Transactional` proxy interceptor is bypassed when the transactional method `executeTask` is called internally (using `this` implicitly) from another method within the same service bean.",
-        "B) The `Propagation.REQUIRES_NEW` attribute forces transaction creation to run on a separate background system thread, which detaches it from the caller's context.",
-        "C) Custom exceptions such as `TaskProcessingException` are not recognized by Spring's AOP framework, which by default only rolls back on standard JDK runtime errors.",
-        "D) The `@Transactional` annotation is invalid when declared on non-final public methods because Spring cannot subclass them using dynamic proxies."
+        "A) The `synchronized` block is not properly implemented.",
+        "B) The `CustomCollection` is not properly designed for concurrent access.",
+        "C) The `synchronized` block is causing excessive contention between threads.",
+        "D) The `CustomCollection` is not properly synchronized."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Spring's `@Transactional` proxy interceptor is bypassed when the transactional method `executeTask` is called internally (using `this` implicitly) from another method within the same service bean.",
-      "explanation": "Spring's declarative transaction management (`@Transactional`) relies on AOP proxies. When another bean calls a method on `TaskProcessorService`, it calls the proxy, which initiates or manages the transaction. However, when `processPendingBuffer()` calls `executeTask()` internally, it bypasses the proxy and directly invokes the target method on the raw instance (via an implicit `this` reference). Because the proxy interceptor is never invoked, no transaction is created or managed for `executeTask()`, leading to silent database failures and a lack of rollback mechanics on errors."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) The `synchronized` block is causing excessive contention between threads.",
+      "explanation": "The `synchronized` block is causing excessive contention between threads because it is locking the entire `CustomCollection` instance. This means that only one thread can access the collection at a time, causing a bottleneck in the application. To fix this issue, a more fine-grained locking strategy should be used, such as using a `ReentrantLock` or a `Lock` object to lock specific parts of the collection. Alternatively, a concurrent collection implementation such as `CopyOnWriteArrayList` or `ConcurrentHashMap` could be used to reduce contention between threads."
     }
   ]
 }
