@@ -84,7 +84,8 @@
     "State Sync and Message Routing in Multi-Node WebSocket Systems",
     "Cross-Server Message Delivery Pipeline in Distributed WebSocket Chat",
     "Designing a Real-time Chat System with WebSockets and Redis Pub/Sub",
-    "Distributed Session Registry and Pub/Sub Topology for Real-Time Chat"
+    "Distributed Session Registry and Pub/Sub Topology for Real-Time Chat",
+    "Message Delivery Guarantees and Offline Buffering in Distributed WebSocket Systems"
   ],
   "Memory Management & Garbage Collection Tuning": [
     "Java Memory Management & Garbage Collection Tuning",
