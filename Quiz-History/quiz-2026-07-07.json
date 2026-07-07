@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
-  "mode": "Java",
+  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `HashMap` is being used to cache user session data. The `HashMap` is implemented as a `ConcurrentHashMap` to ensure thread safety, but you notice that the cache is not being updated correctly. Upon further investigation, you find the following code snippet: `Map<String, String> cache = new `ConcurrentHashMap<>`();` ... `cache.putIfAbsent(key, value);` ... `cache.get(key);`. The issue is that sometimes the `get(key)` operation returns `null`, even though `putIfAbsent(key, value)` was called previously.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A large-scale enterprise e-commerce platform uses an OWL 2 DL ontology to represent millions of products, their relations, and dynamic pricing rules. During traffic spikes, the semantic reasoning engine (Pellet) suffers from severe latency degradation and Out-of-Memory (OOM) errors. Investigation reveals that the reasoning engine is trying to execute real-time classification and consistency checking over a massive T-Box (Terminology Box) and A-Box (Assertion Box) with high relational expressiveness (including transitive properties and existential quantification).",
+      "question": "Which ontologicial design trade-off and profile migration strategy should the lead AI architect implement to guarantee sub-second, real-time query performance over millions of assertions without losing the ability to perform basic taxonomic inferences?",
       "options": [
-        "A) The `ConcurrentHashMap` is not properly synchronized.",
-        "B) The `putIfAbsent(key, value)` operation is not atomic.",
-        "C) The `get(key)` operation is not retrieving the latest value due to a stale entry in the cache.",
-        "D) The `HashMap` is being resized, causing the entry to be lost."
+        "A) Migrate the ontology to the OWL 2 QL profile. This limits existential quantification on the right-hand side of subclass axioms, allowing conjunctive query answering to be rewritten as standard SQL/SPARQL queries that can be evaluated directly on relational/triple stores with AC0 data complexity.",
+        "B) Downgrade the ontology to the OWL 2 EL profile, which supports universal quantification and disjunction, thus ensuring polynomial-time reasoning while retaining full expressiveness for complex product configurations.",
+        "C) Keep the OWL 2 DL profile but implement a parallelized tableau-based reasoning pipeline using a distributed graph database, partitioning the T-Box across multiple compute nodes to scale the EXPTime-complete reasoning process horizontally.",
+        "D) Transition the DL T-Box to RDF Schema (RDFS) and write custom, recursive forward-chaining rules in an external rule engine (such as Drools) to resolve existential constraints asynchronously."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `putIfAbsent(key, value)` operation is not atomic.",
-      "explanation": "The `putIfAbsent(key, value)` operation in `ConcurrentHashMap` is atomic, but it may still fail to update the cache if multiple threads are competing to update the same key. This is because the `putIfAbsent` method will only succeed if the key is not already present in the map. If multiple threads are calling `putIfAbsent` simultaneously, it's possible that one thread will see the key as absent and attempt to put a value, while another thread has already put a value but it hasn't been visible yet due to the concurrent nature of the map. This can lead to a situation where the `get(key)` operation returns `null`, even though `putIfAbsent(key, value)` was called previously."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Migrate the ontology to the OWL 2 QL profile. This limits existential quantification on the right-hand side of subclass axioms, allowing conjunctive query answering to be rewritten as standard SQL/SPARQL queries that can be evaluated directly on relational/triple stores with AC0 data complexity.",
+      "explanation": "OWL 2 QL is designed specifically for applications with massive datasets (large A-Boxes) where query answering is the primary reasoning task. Its mathematical foundation is based on the DL-Lite family of description logics. The key feature of OWL 2 QL is that conjunctive queries can be rewritten into SQL or SPARQL queries and executed directly by standard database engines. This reduces the data complexity of query answering to AC0, which scales exceptionally well. OWL 2 EL (Option B) is incorrect because it does not support universal quantification or disjunction, and its query answering is PTime-complete. Parallelizing tableau algorithms (Option C) is notoriously difficult due to non-deterministic choice points, and does not change the worst-case EXPTime complexity. RDFS (Option D) lacks the formal semantics required to handle existential constraints correctly and safely."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a `TreeMap` is being used to store a large amount of data. The `TreeMap` is implemented with a custom `Comparator` to ensure that the data is sorted correctly. However, you notice that the `TreeMap` is throwing a `ConcurrentModificationException` when trying to iterate over its entries. The code snippet is as follows: `TreeMap<String, String> map = new `TreeMap<>`>(new `CustomComparator`());` ... `map.put(key, value);` ... `for (`Map.Entry<String, String>` entry : map.entrySet()) { ... }`. The issue is that the `ConcurrentModificationException` is being thrown even though the `TreeMap` is not being accessed by multiple threads.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A healthcare analytics pipeline uses a Semantic Network to map patient diagnostics, symptoms, and inherited medical conditions. The network contains over 10 million nodes with deep 'is-a' inheritance hierarchies (up to 60 levels deep) and extreme degree skewness (certain 'hub' disease categories contain over 500,000 incoming edges). Real-time decision-support systems query this network to verify if a patient's diagnostic profile qualifies as an instance of a high-level systemic disease. The online depth-first/breadth-first traversal methods currently in use are causing query timeouts.",
+      "question": "What is the most computationally efficient strategy to mitigate query latency spikes caused by the high-depth and high-degree skew in this inheritance network?",
       "options": [
-        "A) The `CustomComparator` is not properly implemented.",
-        "B) The `TreeMap` is being modified while iterating over its entries.",
-        "C) The `TreeMap` is not properly synchronized.",
-        "D) The `entrySet()` method is not properly implemented."
+        "A) Use an online Bidirectional BFS restricted with a bloom filter to prune visited paths, yielding a constant O(1) space and time complexity for arbitrary path traversals.",
+        "B) Implement Interval Labeling (such as 2-Hop or nested interval labeling) on the taxonomy, reducing transitive inheritance validation to constant-time O(1) or O(log N) numeric range comparisons instead of graph traversals.",
+        "C) Convert the semantic net into an undirected minimum spanning tree using Kruskal's algorithm, resolving inheritance conflicts via a simple lowest common ancestor (LCA) search.",
+        "D) Apply a MapReduce-based transitive closure pre-computation pipeline that runs on every write operation, updating a globally replicated flat adjacency matrix."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `TreeMap` is being modified while iterating over its entries.",
-      "explanation": "The `ConcurrentModificationException` is being thrown because the `TreeMap` is being modified while iterating over its entries. This is because the `put(key, value)` operation is being called while the `for` loop is iterating over the `entrySet()`. The `TreeMap` is designed to throw a `ConcurrentModificationException` if it detects that the map is being modified structurally while iterating over it. To fix this issue, the iteration and modification operations should be separated, or a `CopyOnWriteArrayList` should be used to create a copy of the map's entries before iterating over them."
+      "correct_answer_text": "B) Implement Interval Labeling (such as 2-Hop or nested interval labeling) on the taxonomy, reducing transitive inheritance validation to constant-time O(1) or O(log N) numeric range comparisons instead of graph traversals.",
+      "explanation": "In deeply nested and highly skewed semantic networks, graph traversal algorithms (like BFS or DFS) suffer from explosive runtime complexity when traversing hub nodes or deep paths. Interval labeling (or 2-Hop labeling) resolves this by encoding structural reachability (transitive closure) directly into labels assigned to the nodes (e.g., using post-order and pre-order traversal numbers). This transforms a expensive graph reachability query (is-a traversal) into a simple, highly efficient range containment test (e.g., is label_A contained within interval_B?), which runs in O(1) or O(log N) time. Option A is incorrect because a bloom filter cannot guarantee correctness (it has false positives) and BFS remains expensive on dense graphs. Option C is incorrect because converting a semantic net (DAG) to a spanning tree destroys multiple inheritance and directional relations. Option D is incorrect because executing MapReduce transitive closure on every write operation is computationally prohibitive and creates a massive write bottleneck."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a custom implementation of `Collection` is being used to store a large amount of data. The custom implementation uses a `synchronized` block to ensure thread safety. However, you notice that the implementation is suffering from poor performance due to excessive contention between threads. The code snippet is as follows: `public class `CustomCollection`<E> implements `Collection`<E> { ... `synchronized (this) { ... }` ... }. The issue is that the `synchronized` block is causing a bottleneck in the application.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "An automated financial compliance auditing system translates complex regulatory frameworks into First-Order Logic (FOL) sentences. To audit loan portfolios, the system converts these FOL sentences into Conjunctive Normal Form (CNF) and uses a resolution refutation-based theorem prover. During batch auditing of high-risk portfolios, the prover encounters a state-space explosion: the 'clause pool' grows exponentially as irrelevant clauses resolve with each other, leading to Out-of-Memory (OOM) crashes before a proof can be found.",
+      "question": "Which resolution strategy should the AI designer implement to guarantee both refutation-completeness for First-Order Logic and a highly focused search space that prevents the generation of irrelevant resolvents?",
       "options": [
-        "A) The `synchronized` block is not properly implemented.",
-        "B) The `CustomCollection` is not properly designed for concurrent access.",
-        "C) The `synchronized` block is causing excessive contention between threads.",
-        "D) The `CustomCollection` is not properly synchronized."
+        "A) Input Resolution, which restricts all resolution steps to occur exclusively between a clause in the original input set and another clause in the current derivation.",
+        "B) Set-of-Support Resolution, which designates a subset of clauses (the negation of the query/goal) as the 'support set' and restricts all resolution steps to ensure at least one parent clause is derived from or belongs to this set.",
+        "C) Unit Resolution, which mandates that at least one of the parent clauses in any resolution step must be a unit clause (containing a single literal), applied to arbitrary FOL clauses.",
+        "D) Linear Resolution with depth-first backtracking, discarding any derived resolvent whose term depth exceeds a hard-coded constraint."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The `synchronized` block is causing excessive contention between threads.",
-      "explanation": "The `synchronized` block is causing excessive contention between threads because it is locking the entire `CustomCollection` instance. This means that only one thread can access the collection at a time, causing a bottleneck in the application. To fix this issue, a more fine-grained locking strategy should be used, such as using a `ReentrantLock` or a `Lock` object to lock specific parts of the collection. Alternatively, a concurrent collection implementation such as `CopyOnWriteArrayList` or `ConcurrentHashMap` could be used to reduce contention between threads."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Set-of-Support Resolution, which designates a subset of clauses (the negation of the query/goal) as the 'support set' and restricts all resolution steps to ensure at least one parent clause is derived from or belongs to this set.",
+      "explanation": "The Set-of-Support resolution strategy is refutation-complete for First-Order Logic (provided the base set of axioms is consistent). It works by identifying a 'set of support' (usually the negated goal/theorem we want to prove) and insisting that every resolution step must involve at least one clause from this set or its descendants. This highly focus-driven search prevents the prover from resolving unrelated background axioms with each other, dramatically pruning the search space and preventing state-space explosion. Option A (Input Resolution) is not refutation-complete for general FOL. Option C (Unit Resolution) is extremely efficient but is not refutation-complete for arbitrary FOL sentences (it is only complete for Horn clauses). Option D (depth-limiting) destroys the refutation-completeness of the prover, which could lead to false compliance approvals."
     }
   ]
 }
