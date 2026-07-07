@@ -20,7 +20,8 @@
     "Scaling Safely with Virtual Threads: Overcoming the Pinning and ThreadLocal Memory Traps",
     "Java Concurrency & Multithreading: Understanding Virtual Threads and CompletableFuture",
     "Resource Protection in Modern Concurrency: Transitioning from Thread Pools to Semantic Rate Limiting",
-    "Java Concurrency & Multithreading: Efficient Execution with CompletableFuture"
+    "Java Concurrency & Multithreading: Efficient Execution with CompletableFuture",
+    "Latency Budgets & Timeout Orchestration: Managing Deadlines with CompletableFuture and Virtual Threads"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
