@@ -56,7 +56,8 @@
     "The Lock-Free Stack: Mastering CAS and Lock-Free Custom Collections",
     "The Multi-Indexed Collection: Custom In-Memory Secondary Indexing",
     "Custom Collection Implementations with Java",
-    "The Disjoint Set (Union-Find) Collection: Mastering Dynamic Connectivity & Near-Constant Time Set Merging"
+    "The Disjoint Set (Union-Find) Collection: Mastering Dynamic Connectivity & Near-Constant Time Set Merging",
+    "The Interval Map: Mastering Custom Range-Search & Temporal Collections"
   ],
   "JVM Internals (Memory Model, G1/ZGC, Class Loading)": [
     "JVM Internals: The Lifecycle of a Java Object",
