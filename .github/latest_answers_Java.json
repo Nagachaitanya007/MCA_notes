@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
+  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot application experiences a gradual increase in Heap usage, leading to eventual OutOfMemoryError (OOM) in the Old Generation. The application utilizes a custom thread pool via `ThreadPoolTaskExecutor` to process asynchronous tasks. A developer wrote the following filter to propagate security context using `ThreadLocal`:\n\njava\n@Component\npublic class SecurityContextFilter implements Filter {\n    private static final ThreadLocal<UserContext> contextHolder = new ThreadLocal<>();\n\n    @Override\n    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {\n        UserContext context = extractContext(request);\n        contextHolder.set(context);\n        chain.doFilter(request, response);\n    }\n}\n",
-      "question": "What is the primary cause of this memory leak under high-throughput conditions?",
+      "scenario": "You are debugging a production issue where a high-throughput Java 21 Spring Boot application utilizing Virtual Threads experiences severe performance degradation. Thread dumps reveal that carrier threads are constantly blocked, preventing other virtual threads from executing. You locate the following snippet in a legacy class:\n\njava\npublic class DataIngestionService {\n    private final Object lock = new Object();\n\n    public void ingestData(Payload data) {\n        synchronized (lock) {\n            // Blocking network call to external API\n            restTemplate.postForEntity(\\\"https://api.example.com/data\\\", data, String.class);\n        }\n    }\n}\n",
+      "question": "What is the primary cause of this thread starvation?",
       "options": [
-        "A) The `UserContext` instances are held in the Young Generation and cannot be promoted because of the filter lifecycle.",
-        "B) Since the executor threads are reused, the `ThreadLocal` references are never cleared via `remove()`, preventing the thread-associated values from being garbage collected.",
-        "C) Spring's `@Async` annotation creates a new JDK Dynamic Proxy for each request, filling up the Metaspace.",
-        "D) The JVM's G1GC cannot track references held in static variables, causing them to be categorized as GC Roots that are never scanned."
+        "A) The `RestTemplate` bean is not thread-safe, causing the carrier thread to deadlock.",
+        "B) The virtual thread executing the blocking network call inside a `synchronized` block pins its carrier thread, preventing other virtual threads from mounting.",
+        "C) The JVM cannot transition a virtual thread to a `PARKED` state if it holds any object monitor, triggering a `StackOverflowError` on the carrier thread.",
+        "D) Virtual threads do not support synchronous HTTP calls and automatically fallback to platform threads, exhausting the thread pool."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Since the executor threads are reused, the `ThreadLocal` references are never cleared via `remove()`, preventing the thread-associated values from being garbage collected.",
-      "explanation": "In web containers and thread pools, threads are kept alive and reused to process multiple tasks/requests. If a `ThreadLocal` value is set but not explicitly cleared using `remove()`, the reference to `UserContext` remains in the thread's `ThreadLocalMap` even after the thread finishes executing the current request. Over time, as more threads in the pool retain strong references to these stale contexts, a major memory leak develops in the Old Generation."
+      "correct_answer_text": "B) The virtual thread executing the blocking network call inside a `synchronized` block pins its carrier thread, preventing other virtual threads from mounting.",
+      "explanation": "In Java 21, when a virtual thread executes a blocking operation inside a `synchronized` block or method, it 'pins' its carrier platform thread. Instead of yielding the carrier thread to other virtual threads, both the virtual thread and its carrier thread remain blocked, leading to carrier thread starvation. Replacing `synchronized` with `ReentrantLock` allows the virtual thread to unmount during blocking I/O."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a low-latency Spring Boot microservice experiences sudden 15-second Stop-The-World (STW) pauses during peak hours. Upon inspecting the GC logs, you observe frequent messages saying `G1 Humongous Allocation` followed immediately by `To-space Exhaustion` and a Full GC cycle. The heap size is 16GB, and the G1 region size is configured to the default (which is automatically determined as 8MB based on heap size).",
-      "question": "What is the primary cause of these devastating STW pauses, and how should you address it?",
+      "scenario": "You are debugging a production issue where database modifications made within an asynchronous process are not being committed to the database. The Spring service class is configured as follows:\n\njava\n@Service\npublic class OrderService {\n\n    @Transactional\n    public CompletableFuture<Void> processOrderAsync(Order order) {\n        return CompletableFuture.runAsync(() -> {\n            saveOrder(order);\n            updateInventory(order);\n        });\n    }\n\n    private void saveOrder(Order order) { /* ... */ }\n    private void updateInventory(Order order) { /* ... */ }\n}\n",
+      "question": "Why are the database updates failing to commit within a transaction context?",
       "options": [
-        "A) Objects larger than 4MB (50% of G1 region size) are allocated directly into the Old Generation, causing rapid fragmentation and forcing G1GC to perform an expensive Full GC. This should be fixed by increasing the G1 region size via `-XX:G1HeapRegionSize=16m` or `32m`.",
-        "B) The Young Generation is too small, forcing humongous objects to overflow into the Survivor space. This should be fixed by increasing `-XX:NewRatio`.",
-        "C) Spring's transactional proxies are creating cyclic dependencies that G1GC struggles to resolve during the marking phase.",
-        "D) The Metaspace is full, forcing G1 to trigger a Full GC to clean up dead class loaders."
+        "A) `CompletableFuture.runAsync()` bypasses the Spring proxy because it is called on the self-instance.",
+        "B) Spring's `@Transactional` annotation only works on methods returning synchronous `void` or `ResponseEntity` types.",
+        "C) The execution inside `CompletableFuture.runAsync()` runs on a thread from the `ForkJoinPool.commonPool()`, which does not inherit the transaction context bound to the caller's `ThreadLocal`.",
+        "D) The `Order` object is not serialized, causing the database connection pool to reject the transaction."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Objects larger than 4MB (50% of G1 region size) are allocated directly into the Old Generation, causing rapid fragmentation and forcing G1GC to perform an expensive Full GC. This should be fixed by increasing the G1 region size via `-XX:G1HeapRegionSize=16m` or `32m`.",
-      "explanation": "In G1GC, any object that is larger than 50% of the G1 Heap Region size is classified as a 'Humongous Object' and allocated directly into the Old Generation in contiguous regions. This bypasses the Young Gen coping phase, leading to premature fragmentation of the heap. When G1 cannot find enough contiguous free regions for these allocations, it triggers a costly STW Full GC. Increasing the region size via `-XX:G1HeapRegionSize` prevents these large allocations from being classified as humongous."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) The execution inside `CompletableFuture.runAsync()` runs on a thread from the `ForkJoinPool.commonPool()`, which does not inherit the transaction context bound to the caller's `ThreadLocal`.",
+      "explanation": "Spring's transaction management relies on a `ThreadLocal` storage (`TransactionSynchronizationManager`) to bind the active database connection to the current thread. When `CompletableFuture.runAsync` executes, it spawns a task on a separate thread from the `ForkJoinPool.commonPool`. This worker thread lacks the transaction context established by `@Transactional` on the parent thread, running the database operations without transactional boundaries."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a reactive Spring WebFlux gateway application is killed by the OS Out-Of-Memory (OOM) Killer. Monitoring tools show that JVM heap utilization remains perfectly stable at around 35%, and Metaspace usage is constant. However, the container's physical memory usage continuously climbs until it reaches the cgroup limit. The gateway uses a custom `WebFilter` to intercept incoming payloads and modify headers using Netty's `ByteBuf`.",
-      "question": "What is the most likely root cause of this native memory leak?",
+      "scenario": "You are debugging a production issue where a high-scale microservice experiences a massive `OutOfMemoryError` (OOM: Java heap space) shortly after migrating its execution model to Virtual Threads. Analysis of the heap dump shows millions of `ThreadLocalMap` entry instances holding onto large `byte[]` buffers.",
+      "question": "What is the root cause of this memory leak in the virtual thread environment?",
       "options": [
-        "A) The `ByteBuf` allocated via Netty's allocator is not being released using `ReferenceCountUtil.release()`, leaking native off-heap memory.",
-        "B) High garbage collection activity in the Young Generation is causing excessive JNI global references to be leaked.",
-        "C) Spring WebFlux is retaining thread-local transaction states inside the Reactor Netty event loop threads.",
-        "D) The JVM's Code Cache has reached its maximum capacity, causing the JIT compiler to leak memory."
+        "A) Virtual threads do not garbage collect their `ThreadLocal` variables until the carrier platform thread is destroyed.",
+        "B) High-throughput virtual threads create millions of short-lived threads, each retaining its own `ThreadLocal` state, which leads to massive heap accumulation compared to a bounded platform thread pool.",
+        "C) The JVM allocates a fixed 1MB carrier stack for every `ThreadLocal` map declared inside a virtual thread.",
+        "D) Virtual threads require the use of `InheritableThreadLocal` to allow JVM garbage collection to clean up dead references."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The `ByteBuf` allocated via Netty's allocator is not being released using `ReferenceCountUtil.release()`, leaking native off-heap memory.",
-      "explanation": "Netty uses direct off-heap memory allocators for high-performance I/O buffer management, bypassing the standard JVM Heap. These allocations are reference-counted manually. If a custom `WebFilter` or interceptor intercepts a `ByteBuf` and fails to call `ReferenceCountUtil.release()` (or pass the ownership down the Reactive pipeline), the native direct memory is leaked. Because this allocation occurs off-heap, JVM GC statistics look healthy while the OS process memory grows unchecked until the OS OOM Killer intervenes."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) High-throughput virtual threads create millions of short-lived threads, each retaining its own `ThreadLocal` state, which leads to massive heap accumulation compared to a bounded platform thread pool.",
+      "explanation": "In a traditional platform thread model, thread pools constrain the number of active threads (e.g., 200), reusing `ThreadLocal` variables safely. However, because virtual threads are lightweight and designed to be created in millions, having code (or dependencies) that allocates heavy objects inside `ThreadLocal` variables will result in millions of distinct allocations on the heap, rapidly exhausting available memory. Scoped values should be used instead of `ThreadLocal` in virtual thread contexts."
     }
   ]
 }
