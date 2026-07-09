@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
-  "mode": "Java",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Java 21 Spring Boot application utilizing Virtual Threads experiences severe performance degradation. Thread dumps reveal that carrier threads are constantly blocked, preventing other virtual threads from executing. You locate the following snippet in a legacy class:\n\njava\npublic class DataIngestionService {\n    private final Object lock = new Object();\n\n    public void ingestData(Payload data) {\n        synchronized (lock) {\n            // Blocking network call to external API\n            restTemplate.postForEntity(\\\"https://api.example.com/data\\\", data, String.class);\n        }\n    }\n}\n",
-      "question": "What is the primary cause of this thread starvation?",
+      "scenario": "Real-world Industrial Problem Statement: A credit card consortium is deploying a real-time fraud detection pipeline. The transaction amount feature ($X$) exhibits a severe right-skewed power-law distribution with extreme values (ranging from $0.01 to $1,000,000). The dataset also contains legitimate $0.00 system verification transactions. The downstream model uses an ensemble of Logistic Regression (highly sensitive to scale and non-normality) and Gradient Boosted Decision Trees (GBDT). You need a preprocessing step that normalizes skewness, preserves zero-valued transactions, and mitigates the mathematical impact of extreme outliers on the linear model component.",
+      "question": "Which mathematical transformation pipeline is most appropriate to prepare this skewed feature for both estimators?",
       "options": [
-        "A) The `RestTemplate` bean is not thread-safe, causing the carrier thread to deadlock.",
-        "B) The virtual thread executing the blocking network call inside a `synchronized` block pins its carrier thread, preventing other virtual threads from mounting.",
-        "C) The JVM cannot transition a virtual thread to a `PARKED` state if it holds any object monitor, triggering a `StackOverflowError` on the carrier thread.",
-        "D) Virtual threads do not support synchronous HTTP calls and automatically fallback to platform threads, exhausting the thread pool."
+        "A) Apply a standard Logarithmic transformation log(x + 1) to resolve the zero-value issue, followed by MinMax Scaling to bound the range to [0, 1].",
+        "B) Apply a Box-Cox transformation with an optimized lambda parameter after adding a tiny constant (1e-5) to handle the zero-valued transactions.",
+        "C) Apply the Yeo-Johnson transformation to handle zero/negative values natively, followed by RobustScaler to scale the features based on the Interquartile Range (IQR).",
+        "D) Apply a standard Z-score normalization directly to the raw features to center the mean and scale to unit variance."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The virtual thread executing the blocking network call inside a `synchronized` block pins its carrier thread, preventing other virtual threads from mounting.",
-      "explanation": "In Java 21, when a virtual thread executes a blocking operation inside a `synchronized` block or method, it 'pins' its carrier platform thread. Instead of yielding the carrier thread to other virtual threads, both the virtual thread and its carrier thread remain blocked, leading to carrier thread starvation. Replacing `synchronized` with `ReentrantLock` allows the virtual thread to unmount during blocking I/O."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Apply the Yeo-Johnson transformation to handle zero/negative values natively, followed by RobustScaler to scale the features based on the Interquartile Range (IQR).",
+      "explanation": "The Yeo-Johnson transformation is a power transform that can be applied to zero and negative values, unlike the Box-Cox transform which strictly requires positive values. Applying log(x+1) can still leave significant tail density in highly skewed distributions and is sensitive to the scale of x. Following Yeo-Johnson with RobustScaler (which uses median and IQR) ensures that the remaining extreme outliers do not heavily distort the scaling of the feature, which is critical for the Logistic Regression component. Standard scaler and MinMax scalers are highly sensitive to extreme outliers because they use the mean, standard deviation, minimum, and maximum, which are heavily pulled by extreme values."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where database modifications made within an asynchronous process are not being committed to the database. The Spring service class is configured as follows:\n\njava\n@Service\npublic class OrderService {\n\n    @Transactional\n    public CompletableFuture<Void> processOrderAsync(Order order) {\n        return CompletableFuture.runAsync(() -> {\n            saveOrder(order);\n            updateInventory(order);\n        });\n    }\n\n    private void saveOrder(Order order) { /* ... */ }\n    private void updateInventory(Order order) { /* ... */ }\n}\n",
-      "question": "Why are the database updates failing to commit within a transaction context?",
+      "scenario": "Real-world Industrial Problem Statement: An industrial IoT firm monitors a gas turbine using 150 highly correlated high-frequency sensor channels. Due to intermittent wireless sensor node dropouts, up to 15% of the data matrix contains values that are Missing Completely At Random (MCAR). The downstream anomaly detection engine must run on an edge-gateway device with tight compute constraints, requiring a processing latency of less than 30 milliseconds per batch.",
+      "question": "Which missing value imputation strategy optimally balances mathematical reconstruction accuracy (preserving the covariance structure) with real-time computational constraints on the edge device?",
       "options": [
-        "A) `CompletableFuture.runAsync()` bypasses the Spring proxy because it is called on the self-instance.",
-        "B) Spring's `@Transactional` annotation only works on methods returning synchronous `void` or `ResponseEntity` types.",
-        "C) The execution inside `CompletableFuture.runAsync()` runs on a thread from the `ForkJoinPool.commonPool()`, which does not inherit the transaction context bound to the caller's `ThreadLocal`.",
-        "D) The `Order` object is not serialized, causing the database connection pool to reject the transaction."
+        "A) Implement a K-Nearest Neighbors (KNN) Imputer (k=5) computed dynamically on the edge gateway for each incoming streaming batch.",
+        "B) Train a MissForest (Iterative Random Forest) imputer offline, and run the pre-trained forest estimators online to impute missing entries on the edge.",
+        "C) Compute a Principal Component Analysis (PCA) projection matrix offline, and utilize an iterative Expectation-Maximization PCA (EM-PCA) reconstruction approach on the edge, initialized with mean imputation.",
+        "D) Apply MICE (Multiple Imputation by Chained Equations) dynamically on the edge to generate five parallel imputed datasets and average their predictions."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) The execution inside `CompletableFuture.runAsync()` runs on a thread from the `ForkJoinPool.commonPool()`, which does not inherit the transaction context bound to the caller's `ThreadLocal`.",
-      "explanation": "Spring's transaction management relies on a `ThreadLocal` storage (`TransactionSynchronizationManager`) to bind the active database connection to the current thread. When `CompletableFuture.runAsync` executes, it spawns a task on a separate thread from the `ForkJoinPool.commonPool`. This worker thread lacks the transaction context established by `@Transactional` on the parent thread, running the database operations without transactional boundaries."
+      "correct_answer_text": "C) Compute a Principal Component Analysis (PCA) projection matrix offline, and utilize an iterative Expectation-Maximization PCA (EM-PCA) reconstruction approach on the edge, initialized with mean imputation.",
+      "explanation": "Since the 150 sensor channels are highly correlated, the data lies on a lower-dimensional subspace. PCA captures this covariance structure efficiently. Once the projection matrix is trained offline, projecting the partially observed vector (with missing values initialized to the mean) into the principal subspace and reconstructing it back is a sequence of highly optimized, low-latency linear algebra operations (matrix multiplications). This is computationally feasible within the 30ms budget. On the other hand, KNN, MissForest, and MICE are highly iterative and computationally expensive at inference time, making them unsuitable for real-time edge execution with 150 dimensions."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a high-scale microservice experiences a massive `OutOfMemoryError` (OOM: Java heap space) shortly after migrating its execution model to Virtual Threads. Analysis of the heap dump shows millions of `ThreadLocalMap` entry instances holding onto large `byte[]` buffers.",
-      "question": "What is the root cause of this memory leak in the virtual thread environment?",
+      "scenario": "Real-world Industrial Problem Statement: A genomics research institute is developing a diagnostic classifier for rare genetic disorders using gene expression profiles. The dataset contains 20,000 features (genes) but only 500 patient samples. The data contains extreme outliers caused by technical batch effects and instrumentation noise. Applying standard outlier detection algorithms either flag legitimate rare biological variants as noise or fail due to the high-dimensional curse of dimensionality.",
+      "question": "Which approach is mathematically most robust for identifying and separating technical outliers from true biological signals in this high-dimensional, low-sample-size setting?",
       "options": [
-        "A) Virtual threads do not garbage collect their `ThreadLocal` variables until the carrier platform thread is destroyed.",
-        "B) High-throughput virtual threads create millions of short-lived threads, each retaining its own `ThreadLocal` state, which leads to massive heap accumulation compared to a bounded platform thread pool.",
-        "C) The JVM allocates a fixed 1MB carrier stack for every `ThreadLocal` map declared inside a virtual thread.",
-        "D) Virtual threads require the use of `InheritableThreadLocal` to allow JVM garbage collection to clean up dead references."
+        "A) Calculate the Mahalanobis distance for all 500 samples across the 20,000 features, and drop samples with distances exceeding the 97.5th percentile of the Chi-squared distribution.",
+        "B) Apply Robust PCA (RPCA) via Principal Component Pursuit to decompose the data matrix into a Low-Rank matrix (representing stable biological signals) and a Sparse matrix (representing sparse technical outliers).",
+        "C) Train a deep Autoencoder with Mean Squared Error (MSE) loss on all features, and classify samples with reconstruction errors above a fixed threshold as technical outliers.",
+        "D) Apply an Isolation Forest directly on the 20,000-dimensional space using Euclidean distance-based splits to isolate outliers in early recursive partitioning."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) High-throughput virtual threads create millions of short-lived threads, each retaining its own `ThreadLocal` state, which leads to massive heap accumulation compared to a bounded platform thread pool.",
-      "explanation": "In a traditional platform thread model, thread pools constrain the number of active threads (e.g., 200), reusing `ThreadLocal` variables safely. However, because virtual threads are lightweight and designed to be created in millions, having code (or dependencies) that allocates heavy objects inside `ThreadLocal` variables will result in millions of distinct allocations on the heap, rapidly exhausting available memory. Scoped values should be used instead of `ThreadLocal` in virtual thread contexts."
+      "correct_answer_text": "B) Apply Robust PCA (RPCA) via Principal Component Pursuit to decompose the data matrix into a Low-Rank matrix (representing stable biological signals) and a Sparse matrix (representing sparse technical outliers).",
+      "explanation": "In high-dimensional, low-sample-size regimes ($p \\gg n$), traditional multivariate outlier detection techniques fail. The covariance matrix is singular (not invertible), making Mahalanobis distance unusable without severe regularization bias. Isolation Forests suffer from the curse of dimensionality because random axis-aligned splits become ineffective when most dimensions are noise. Autoencoders are prone to overfitting on small sample sizes ($n=500$). Robust PCA (RPCA) solves this by decomposing the data matrix $D$ into $L$ (low-rank, capturing structural biological variance) and $S$ (sparse, capturing gross errors and technical outliers) via convex optimization. This mathematically separates systemic patterns from sparse, high-magnitude noise without throwing away biological data."
     }
   ]
 }
