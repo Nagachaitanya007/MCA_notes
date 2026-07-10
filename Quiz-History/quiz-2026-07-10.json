@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
-  "mode": "Java",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot application migrated to Java 21 Virtual Threads experiences unexpected latency spikes and thread starvation under load. Profiling reveals that several carrier threads are blocked. The culprit is a legacy database driver containing the following code: `public synchronized byte[] fetchPayload() { return socket.readNBytes(1024); }`.",
-      "question": "What is the primary cause of this thread starvation issue?",
+      "scenario": "Real-world Industrial Problem Statement: A high-frequency trading platform processes transaction volumes that are highly right-skewed and contain frequent zero-value records (representing periods of zero trade volume for illiquid assets). An AI engineer is preparing this feature for a Ridge Regression model that assumes homoscedasticity and normally distributed residuals. Applying a traditional logarithmic transformation fails due to the undefined value of log(0).",
+      "question": "Which preprocessing transformation is mathematically most appropriate to handle this skewed feature without losing the zero-value data points or introducing arbitrary bias?",
       "options": [
-        "A) Virtual threads do not support socket I/O operations and fallback to heavy OS thread emulation.",
-        "B) The virtual thread becomes pinned to its carrier thread during the `synchronized` block, blocking the underlying platform thread during the blocking I/O operation.",
-        "C) The Spring Proxy wrapper fails to intercept `synchronized` methods, causing a JVM deadlock.",
-        "D) The JVM Garbage Collector suspends carrier threads when virtual threads enter `synchronized` blocks containing local byte arrays."
+        "A) Box-Cox transformation applied after adding a manually tuned hyperparameter epsilon to all zero values.",
+        "B) Yeo-Johnson transformation applied directly to the raw feature data.",
+        "C) Standard Z-score normalization followed by an inverse hyperbolic sine (Asinh) transformation.",
+        "D) Quantile Transformation mapped to a uniform distribution followed by Min-Max scaling."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The virtual thread becomes pinned to its carrier thread during the `synchronized` block, blocking the underlying platform thread during the blocking I/O operation.",
-      "explanation": "In Java 21, virtual threads are designed to yield their carrier platform threads during blocking operations. However, if a virtual thread executes a blocking operation (like socket I/O) while inside a `synchronized` block or method, it becomes 'pinned' to its carrier thread. Instead of yielding, the carrier thread is blocked as well, negating the throughput benefits of virtual threads and causing starvation in the carrier ForkJoinPool. Replacing `synchronized` with `ReentrantLock` resolves this issue."
+      "correct_answer_text": "B) Yeo-Johnson transformation applied directly to the raw feature data.",
+      "explanation": "The Box-Cox transformation requires strictly positive data (>0). While adding a small constant (e.g., x + epsilon) is a common workaround, it introduces arbitrary bias and distorts the distribution, especially if there are many zeros. The Yeo-Johnson transformation is a modification of the Box-Cox power transformation that natively allows for zero and negative values. It stabilizes variance and minimizes skewness across positive, zero, and negative values mathematically without requiring arbitrary shift parameters, making it ideal for linear models sensitive to non-normality."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a `@Transactional` Spring Service method executes a background task using `CompletableFuture.supplyAsync(() -> orderRepository.save(order), customThreadPool)`. During a database failure, the primary transaction rolls back successfully, but the async save operation commits anyway or throws unexpected connection errors.",
-      "question": "What is the primary cause of this transaction propagation failure?",
+      "scenario": "Real-world Industrial Problem Statement: A smart-grid energy provider collects real-time streaming data from 10,000 IoT sensors. Due to intermittent network dropouts, approximately 8% of the sensor readings are missing at any given timestamp. The downstream anomaly detection model (a real-time Isolation Forest) cannot handle missing values (NaNs). The strict system Service Level Agreement (SLA) requires end-to-end inference latency to be under 50 milliseconds per batch.",
+      "question": "Which missing value imputation strategy balances mathematical rigor with strict operational real-time latency constraints?",
       "options": [
-        "A) Spring's `@Transactional` uses `ThreadLocal` storage to manage connection resources, which do not propagate automatically to the thread pool running the `CompletableFuture` task.",
-        "B) The `customThreadPool` bypasses Spring's CGLIB proxies, leading to direct JDBC calls that ignore transaction boundaries entirely.",
-        "C) CompletableFuture tasks are implicitly wrapped in a `PROPAGATION_REQUIRES_NEW` context by the JVM.",
-        "D) The Spring Transaction Manager blocks asynchronous execution unless the thread pool implements `DelegatingSecurityContextExecutor`."
+        "A) K-Nearest Neighbors (KNN) Imputation (k=5) computed on a sliding window of the last 100 historical timesteps.",
+        "B) Multivariate Imputation by Chained Equations (MICE) using a fast linear regressor as the iterative estimator.",
+        "C) Last Observation Carried Forward (LOCF) combined with a pre-computed rolling median fallback for sensor-specific historical windows.",
+        "D) Expectation-Maximization (EM) algorithm to estimate the joint covariance matrix and impute values dynamically."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Spring's `@Transactional` uses `ThreadLocal` storage to manage connection resources, which do not propagate automatically to the thread pool running the `CompletableFuture` task.",
-      "explanation": "Spring's declarative transaction management (`@Transactional`) relies heavily on `ThreadLocal` storage (via `TransactionSynchronizationManager`) to bind the active database connection and transaction state to the current thread. When initiating asynchronous work via `CompletableFuture` on a separate thread pool, the transaction context is lost. Consequently, the asynchronous thread executes in a different context, either auto-committing or failing to participate in the outer transaction."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Last Observation Carried Forward (LOCF) combined with a pre-computed rolling median fallback for sensor-specific historical windows.",
+      "explanation": "In real-time systems with 10,000 sensors and a 50ms SLA, iterative and distance-based imputation techniques like MICE and KNN are computationally prohibitive. KNN requires O(N^2) distance calculations, and MICE requires multiple iterative regression passes, failing the latency budget. LOCF is an O(1) complexity operation that leverages temporal correlation in streaming sensor data. Combining it with a pre-computed rolling median fallback handles edge cases (such as when the initial stream sequence starts with missing values) efficiently within microseconds, adhering to strict SLAs."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where an asynchronous pipeline silently fails. The code is written as: `CompletableFuture.supplyAsync(() -> userService.fetchUser(id)).thenApply(user -> billingService.calculateTax(user)).thenAccept(tax -> notificationService.send(tax));` When `fetchUser` throws an exception, no errors are printed in the logs, and downstream tasks simply do not run.",
-      "question": "What is the primary cause of this silent failure?",
+      "scenario": "Real-world Industrial Problem Statement: A cybersecurity firm is building an intrusion detection system (IDS) using a dataset containing 150 network traffic features. The dataset contains a mixture of multimodal distributions, heavy-tailed noise, and extreme outliers representing zero-day exploits. The engineering team must choose an outlier detection algorithm that avoids the 'curse of dimensionality' and does not assume a specific parametric distribution of normal traffic.",
+      "question": "Which outlier detection approach is best suited for this high-dimensional, non-parametric scenario?",
       "options": [
-        "A) Java's `ForkJoinPool.commonPool()` discards exceptions automatically to prevent main thread disruption.",
-        "B) The exception is encapsulated inside the returned `CompletableFuture` and is only thrown or exposed when terminal methods like `.get()`, `.join()`, or exceptional handling stages are invoked.",
-        "C) `thenApply` intercepts any subclass of `RuntimeException` and converts it into a `null` return value.",
-        "D) The JVM's Garbage Collector reclaims failed asynchronous pipelines before they can propagate exceptions to the console."
+        "A) Robust Mahalanobis Distance using a Minimum Covariance Determinant (MCD) estimator.",
+        "B) Isolation Forest (iForest) leveraging random axis-aligned splits.",
+        "C) Local Outlier Factor (LOF) computed using pairwise Euclidean distance metrics.",
+        "D) One-Class Support Vector Machine (OC-SVM) with a linear kernel and L1 regularization."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The exception is encapsulated inside the returned `CompletableFuture` and is only thrown or exposed when terminal methods like `.get()`, `.join()`, or exceptional handling stages are invoked.",
-      "explanation": "In `CompletableFuture` pipelines, exceptions are propagated exceptionally down the chain. If a stage throws an exception, all subsequent non-exceptional processing stages (such as `thenApply` or `thenAccept`) are skipped. However, unless you explicitly handle the error using `.exceptionally()`, `.handle()`, `.whenComplete()`, or block on the final future using `.get()` or `.join()`, the exception remains unhandled inside the final unobserved future, resulting in silent failure."
+      "correct_answer_text": "B) Isolation Forest (iForest) leveraging random axis-aligned splits.",
+      "explanation": "High-dimensional spaces (150 dimensions) render distance-based metrics like Local Outlier Factor (LOF) and Mahalanobis distance highly ineffective due to the 'curse of dimensionality', where distance vectors collapse and pairwise distances become uniform. Furthermore, the MCD estimator for Mahalanobis distance becomes unstable when the number of features is large relative to the sample size. Isolation Forest (iForest) isolates anomalies by randomly selecting a feature and a split value. Because anomalies require fewer recursive splits to isolate than normal points, it scales efficiently O(N log N) and works exceptionally well in high-dimensional, non-parametric spaces."
     }
   ]
 }

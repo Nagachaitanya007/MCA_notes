@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "Real-world Industrial Problem Statement: A credit card consortium is deploying a real-time fraud detection pipeline. The transaction amount feature ($X$) exhibits a severe right-skewed power-law distribution with extreme values (ranging from $0.01 to $1,000,000). The dataset also contains legitimate $0.00 system verification transactions. The downstream model uses an ensemble of Logistic Regression (highly sensitive to scale and non-normality) and Gradient Boosted Decision Trees (GBDT). You need a preprocessing step that normalizes skewness, preserves zero-valued transactions, and mitigates the mathematical impact of extreme outliers on the linear model component.",
-      "question": "Which mathematical transformation pipeline is most appropriate to prepare this skewed feature for both estimators?",
+      "scenario": "Real-world Industrial Problem Statement: A high-frequency trading platform processes transaction volumes that are highly right-skewed and contain frequent zero-value records (representing periods of zero trade volume for illiquid assets). An AI engineer is preparing this feature for a Ridge Regression model that assumes homoscedasticity and normally distributed residuals. Applying a traditional logarithmic transformation fails due to the undefined value of log(0).",
+      "question": "Which preprocessing transformation is mathematically most appropriate to handle this skewed feature without losing the zero-value data points or introducing arbitrary bias?",
       "options": [
-        "A) Apply a standard Logarithmic transformation log(x + 1) to resolve the zero-value issue, followed by MinMax Scaling to bound the range to [0, 1].",
-        "B) Apply a Box-Cox transformation with an optimized lambda parameter after adding a tiny constant (1e-5) to handle the zero-valued transactions.",
-        "C) Apply the Yeo-Johnson transformation to handle zero/negative values natively, followed by RobustScaler to scale the features based on the Interquartile Range (IQR).",
-        "D) Apply a standard Z-score normalization directly to the raw features to center the mean and scale to unit variance."
+        "A) Box-Cox transformation applied after adding a manually tuned hyperparameter epsilon to all zero values.",
+        "B) Yeo-Johnson transformation applied directly to the raw feature data.",
+        "C) Standard Z-score normalization followed by an inverse hyperbolic sine (Asinh) transformation.",
+        "D) Quantile Transformation mapped to a uniform distribution followed by Min-Max scaling."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Apply the Yeo-Johnson transformation to handle zero/negative values natively, followed by RobustScaler to scale the features based on the Interquartile Range (IQR).",
-      "explanation": "The Yeo-Johnson transformation is a power transform that can be applied to zero and negative values, unlike the Box-Cox transform which strictly requires positive values. Applying log(x+1) can still leave significant tail density in highly skewed distributions and is sensitive to the scale of x. Following Yeo-Johnson with RobustScaler (which uses median and IQR) ensures that the remaining extreme outliers do not heavily distort the scaling of the feature, which is critical for the Logistic Regression component. Standard scaler and MinMax scalers are highly sensitive to extreme outliers because they use the mean, standard deviation, minimum, and maximum, which are heavily pulled by extreme values."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Yeo-Johnson transformation applied directly to the raw feature data.",
+      "explanation": "The Box-Cox transformation requires strictly positive data (>0). While adding a small constant (e.g., x + epsilon) is a common workaround, it introduces arbitrary bias and distorts the distribution, especially if there are many zeros. The Yeo-Johnson transformation is a modification of the Box-Cox power transformation that natively allows for zero and negative values. It stabilizes variance and minimizes skewness across positive, zero, and negative values mathematically without requiring arbitrary shift parameters, making it ideal for linear models sensitive to non-normality."
     },
     {
       "id": 2,
-      "scenario": "Real-world Industrial Problem Statement: An industrial IoT firm monitors a gas turbine using 150 highly correlated high-frequency sensor channels. Due to intermittent wireless sensor node dropouts, up to 15% of the data matrix contains values that are Missing Completely At Random (MCAR). The downstream anomaly detection engine must run on an edge-gateway device with tight compute constraints, requiring a processing latency of less than 30 milliseconds per batch.",
-      "question": "Which missing value imputation strategy optimally balances mathematical reconstruction accuracy (preserving the covariance structure) with real-time computational constraints on the edge device?",
+      "scenario": "Real-world Industrial Problem Statement: A smart-grid energy provider collects real-time streaming data from 10,000 IoT sensors. Due to intermittent network dropouts, approximately 8% of the sensor readings are missing at any given timestamp. The downstream anomaly detection model (a real-time Isolation Forest) cannot handle missing values (NaNs). The strict system Service Level Agreement (SLA) requires end-to-end inference latency to be under 50 milliseconds per batch.",
+      "question": "Which missing value imputation strategy balances mathematical rigor with strict operational real-time latency constraints?",
       "options": [
-        "A) Implement a K-Nearest Neighbors (KNN) Imputer (k=5) computed dynamically on the edge gateway for each incoming streaming batch.",
-        "B) Train a MissForest (Iterative Random Forest) imputer offline, and run the pre-trained forest estimators online to impute missing entries on the edge.",
-        "C) Compute a Principal Component Analysis (PCA) projection matrix offline, and utilize an iterative Expectation-Maximization PCA (EM-PCA) reconstruction approach on the edge, initialized with mean imputation.",
-        "D) Apply MICE (Multiple Imputation by Chained Equations) dynamically on the edge to generate five parallel imputed datasets and average their predictions."
+        "A) K-Nearest Neighbors (KNN) Imputation (k=5) computed on a sliding window of the last 100 historical timesteps.",
+        "B) Multivariate Imputation by Chained Equations (MICE) using a fast linear regressor as the iterative estimator.",
+        "C) Last Observation Carried Forward (LOCF) combined with a pre-computed rolling median fallback for sensor-specific historical windows.",
+        "D) Expectation-Maximization (EM) algorithm to estimate the joint covariance matrix and impute values dynamically."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) Compute a Principal Component Analysis (PCA) projection matrix offline, and utilize an iterative Expectation-Maximization PCA (EM-PCA) reconstruction approach on the edge, initialized with mean imputation.",
-      "explanation": "Since the 150 sensor channels are highly correlated, the data lies on a lower-dimensional subspace. PCA captures this covariance structure efficiently. Once the projection matrix is trained offline, projecting the partially observed vector (with missing values initialized to the mean) into the principal subspace and reconstructing it back is a sequence of highly optimized, low-latency linear algebra operations (matrix multiplications). This is computationally feasible within the 30ms budget. On the other hand, KNN, MissForest, and MICE are highly iterative and computationally expensive at inference time, making them unsuitable for real-time edge execution with 150 dimensions."
+      "correct_answer_text": "C) Last Observation Carried Forward (LOCF) combined with a pre-computed rolling median fallback for sensor-specific historical windows.",
+      "explanation": "In real-time systems with 10,000 sensors and a 50ms SLA, iterative and distance-based imputation techniques like MICE and KNN are computationally prohibitive. KNN requires O(N^2) distance calculations, and MICE requires multiple iterative regression passes, failing the latency budget. LOCF is an O(1) complexity operation that leverages temporal correlation in streaming sensor data. Combining it with a pre-computed rolling median fallback handles edge cases (such as when the initial stream sequence starts with missing values) efficiently within microseconds, adhering to strict SLAs."
     },
     {
       "id": 3,
-      "scenario": "Real-world Industrial Problem Statement: A genomics research institute is developing a diagnostic classifier for rare genetic disorders using gene expression profiles. The dataset contains 20,000 features (genes) but only 500 patient samples. The data contains extreme outliers caused by technical batch effects and instrumentation noise. Applying standard outlier detection algorithms either flag legitimate rare biological variants as noise or fail due to the high-dimensional curse of dimensionality.",
-      "question": "Which approach is mathematically most robust for identifying and separating technical outliers from true biological signals in this high-dimensional, low-sample-size setting?",
+      "scenario": "Real-world Industrial Problem Statement: A cybersecurity firm is building an intrusion detection system (IDS) using a dataset containing 150 network traffic features. The dataset contains a mixture of multimodal distributions, heavy-tailed noise, and extreme outliers representing zero-day exploits. The engineering team must choose an outlier detection algorithm that avoids the 'curse of dimensionality' and does not assume a specific parametric distribution of normal traffic.",
+      "question": "Which outlier detection approach is best suited for this high-dimensional, non-parametric scenario?",
       "options": [
-        "A) Calculate the Mahalanobis distance for all 500 samples across the 20,000 features, and drop samples with distances exceeding the 97.5th percentile of the Chi-squared distribution.",
-        "B) Apply Robust PCA (RPCA) via Principal Component Pursuit to decompose the data matrix into a Low-Rank matrix (representing stable biological signals) and a Sparse matrix (representing sparse technical outliers).",
-        "C) Train a deep Autoencoder with Mean Squared Error (MSE) loss on all features, and classify samples with reconstruction errors above a fixed threshold as technical outliers.",
-        "D) Apply an Isolation Forest directly on the 20,000-dimensional space using Euclidean distance-based splits to isolate outliers in early recursive partitioning."
+        "A) Robust Mahalanobis Distance using a Minimum Covariance Determinant (MCD) estimator.",
+        "B) Isolation Forest (iForest) leveraging random axis-aligned splits.",
+        "C) Local Outlier Factor (LOF) computed using pairwise Euclidean distance metrics.",
+        "D) One-Class Support Vector Machine (OC-SVM) with a linear kernel and L1 regularization."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Apply Robust PCA (RPCA) via Principal Component Pursuit to decompose the data matrix into a Low-Rank matrix (representing stable biological signals) and a Sparse matrix (representing sparse technical outliers).",
-      "explanation": "In high-dimensional, low-sample-size regimes ($p \\gg n$), traditional multivariate outlier detection techniques fail. The covariance matrix is singular (not invertible), making Mahalanobis distance unusable without severe regularization bias. Isolation Forests suffer from the curse of dimensionality because random axis-aligned splits become ineffective when most dimensions are noise. Autoencoders are prone to overfitting on small sample sizes ($n=500$). Robust PCA (RPCA) solves this by decomposing the data matrix $D$ into $L$ (low-rank, capturing structural biological variance) and $S$ (sparse, capturing gross errors and technical outliers) via convex optimization. This mathematically separates systemic patterns from sparse, high-magnitude noise without throwing away biological data."
+      "correct_answer_text": "B) Isolation Forest (iForest) leveraging random axis-aligned splits.",
+      "explanation": "High-dimensional spaces (150 dimensions) render distance-based metrics like Local Outlier Factor (LOF) and Mahalanobis distance highly ineffective due to the 'curse of dimensionality', where distance vectors collapse and pairwise distances become uniform. Furthermore, the MCD estimator for Mahalanobis distance becomes unstable when the number of features is large relative to the sample size. Isolation Forest (iForest) isolates anomalies by randomly selecting a feature and a split value. Because anomalies require fewer recursive splits to isolate than normal points, it scales efficiently O(N log N) and works exceptionally well in high-dimensional, non-parametric spaces."
     }
   ]
 }
