@@ -147,7 +147,8 @@
     "Multi-Leader Replication: Mastering Write Conflict Resolution",
     "Leaderless Replication: Mastering Quorum Consensus & Active Anti-Entropy",
     "Cross-Shard Distributed Transactions: Two-Phase Commit (2PC) vs. The Saga Pattern",
-    "Database Sharding & Replication Strategies"
+    "Database Sharding & Replication Strategies",
+    "Read-After-Write Consistency: Mitigating Replication Lag in Primary-Replica Topologies"
   ],
   "Design a Notification System (Kafka + SQS + Webhooks)": [
     "Designing a Scalable Notification System (Kafka + SQS + Webhooks)",
