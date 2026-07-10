@@ -57,7 +57,8 @@
     "The Multi-Indexed Collection: Custom In-Memory Secondary Indexing",
     "Custom Collection Implementations with Java",
     "The Disjoint Set (Union-Find) Collection: Mastering Dynamic Connectivity & Near-Constant Time Set Merging",
-    "The Interval Map: Mastering Custom Range-Search & Temporal Collections"
+    "The Interval Map: Mastering Custom Range-Search & Temporal Collections",
+    "The Indexed Priority Queue: Mastering Constant-Time Lookups and O(log N) Updates in Custom Heaps"
   ],
   "JVM Internals (Memory Model, G1/ZGC, Class Loading)": [
     "JVM Internals: The Lifecycle of a Java Object",
