@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
+  "topic": "Exception Handling Strategies in Distributed Systems",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot application utilizing Java 21 Virtual Threads experiences severe latency spikes and thread starvation under heavy load. The application calls an external HTTP payment gateway inside a `synchronized` block:\n\njava\npublic class PaymentService {\n    private final HttpClient client = HttpClient.newHttpClient();\n\n    public synchronized String processPayment(URI uri) {\n        try {\n            HttpRequest request = HttpRequest.newBuilder(uri).GET().build();\n            return client.send(request, HttpResponse.BodyHandlers.ofString()).body();\n        } catch (Exception e) {\n            throw new RuntimeException(e);\n        }\n    }\n}\n",
-      "question": "What is the primary cause of this performance degradation when migrating to Virtual Threads?",
+      "scenario": "You are debugging a production issue where a transaction fails to roll back during an external system outage. A Spring Boot service invokes a local helper method annotated with `@Transactional` to isolate the state changes. However, when an exception is thrown from the helper method, the database changes persist, polluting the database.\n\njava\n@Service\npublic class PaymentService {\n    @Autowired \n    private PaymentRepository repo;\n\n    public void processPayment(Order order) {\n        try {\n            executePayment(order);\n        } catch (PaymentException e) {\n            log.error(\"Payment failed, retrying...\", e);\n            throw e;\n        }\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void executePayment(Order order) {\n        repo.save(order);\n        if (externalGatewayFailed()) {\n            throw new PaymentException(\"Gateway Timeout\");\n        }\n    }\n}\n",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) Virtual threads are blocked by the OS kernel because `HttpClient` does not natively support non-blocking virtual execution.",
-        "B) The `synchronized` keyword causes the virtual thread to pin its carrier platform thread (ForkJoinPool worker) during the blocking network I/O, preventing other virtual threads from executing on that carrier.",
-        "C) The JVM cannot run virtual threads inside standard Spring services, causing Spring's AOP proxies to execute the task in a single-threaded fallback pool.",
-        "D) Virtual threads do not support reentrant monitors, leading to an immediate silent deadlock when the `synchronized` block is entered."
+        "A) The class is not marked with @Validated, causing proxy validation to fail at runtime.",
+        "B) PaymentException is a checked exception and is not caught by the default Spring transaction rollback rules.",
+        "C) Spring's proxy-based AOP bypasses the @Transactional aspect because executePayment is called via local self-invocation (this).",
+        "D) Propagation.REQUIRES_NEW cannot be used with database operations that occur before network calls."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `synchronized` keyword causes the virtual thread to pin its carrier platform thread (ForkJoinPool worker) during the blocking network I/O, preventing other virtual threads from executing on that carrier.",
-      "explanation": "In Java 21, virtual threads are mounted onto platform threads (carrier threads) to perform execution. If a virtual thread encounters a blocking operation (such as network I/O) while inside a `synchronized` block or method, the JVM's scheduler is unable to unmount the virtual thread from its carrier thread. This state is known as 'pinning'. When carrier threads are pinned, they cannot run any other virtual threads, leading to carrier thread exhaustion and severe system-wide starvation. Replacing `synchronized` with a `ReentrantLock` resolves this issue, as lock acquisitions in `java.util.concurrent` allow virtual threads to unmount during blocks."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Spring's proxy-based AOP bypasses the @Transactional aspect because executePayment is called via local self-invocation (this).",
+      "explanation": "In Spring's default configuration, AOP proxies wrap the target beans. When `processPayment` is called from an external class, the call passes through the proxy, which handles transaction boundaries. However, when `processPayment` internally calls `executePayment(order)`, it uses `this.executePayment(order)` implicitly. This local self-invocation bypasses the Spring Proxy completely, meaning the `@Transactional` aspect is never executed, no new transaction is started, and rollback logic is never triggered."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a developer attempted to run asynchronous database writes inside a Spring `@Service` bean using `CompletableFuture`. The application is throwing `LazyInitializationException` and database writes are silently failing to commit to the database:\n\njava\n@Service\npublic class UserService {\n    @Autowired private UserRepository userRepository;\n\n    @Transactional\n    public CompletableFuture<User> createUserAsync(UserDto dto) {\n        return CompletableFuture.supplyAsync(() -> {\n            User user = new User(dto.getName());\n            return userRepository.save(user);\n        });\n    }\n}\n",
-      "question": "Why does the transaction management fail or behave unpredictably in this scenario?",
+      "scenario": "You are debugging a production issue where your microservice orchestrator handles distributed saga steps using `CompletableFuture` chains with a custom thread pool. Under high load, downstream service timeouts trigger exceptions, but instead of executing the compensation logic, the entire service hangs. Heap analysis shows thousands of blocked threads in `ForkJoinPool.commonPool`.\n\njava\npublic CompletableFuture<Void> processSaga(Order order) {\n    return CompletableFuture.supplyAsync(() -> paymentClient.charge(order), customExecutor)\n        .thenApplyAsync(result -> inventoryClient.reserve(result)) \n        .exceptionally(ex -> {\n            compensate(order);\n            return null;\n        });\n}\n",
+      "question": "What is the primary cause of the service hanging and thread exhaustion?",
       "options": [
-        "A) Spring's `@Transactional` proxy interceptor does not support methods returning `CompletableFuture` and automatically triggers a transaction rollback.",
-        "B) Spring's proxy relies on `ThreadLocal` to propagate the transaction context. Because `CompletableFuture.supplyAsync` runs on a different thread, the database operations inside the lambda execute outside the active Spring transaction.",
-        "C) The JPA entity manager blocks any operations executing inside a `ForkJoinPool` to prevent concurrent database writes.",
-        "D) The calling controller thread commits the transaction immediately when returning the future, invalidating the connection before the worker thread can write."
+        "A) Exceptionally blocks are synchronously executed on the main application thread, causing context switching locks.",
+        "B) The second step, thenApplyAsync, does not specify customExecutor, causing it to run in the default ForkJoinPool.commonPool and block system resources.",
+        "C) CompletableFuture.supplyAsync swallows InterruptedExceptions, preventing thread pool worker termination.",
+        "D) The customExecutor is configured with a DiscardPolicy, dropping task rejections silently."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Spring's proxy relies on `ThreadLocal` to propagate the transaction context. Because `CompletableFuture.supplyAsync` runs on a different thread, the database operations inside the lambda execute outside the active Spring transaction.",
-      "explanation": "Spring's transaction management abstraction uses a `ThreadLocal` variable (managed via `TransactionSynchronizationManager`) to store and bind the transactional context and connection resources to the thread executing the `@Transactional` method. When `CompletableFuture.supplyAsync` is invoked, the processing is offloaded to a worker thread from the `ForkJoinPool.commonPool()` (by default). This separate thread does not inherit the parent thread's `ThreadLocal` values, meaning the JPA operations inside the asynchronous lambda run outside the managed transaction scope, resulting in unexpected autocommits or exceptions."
+      "correct_answer_text": "B) The second step, thenApplyAsync, does not specify customExecutor, causing it to run in the default ForkJoinPool.commonPool and block system resources.",
+      "explanation": "If no specific executor is provided to async chaining operations like `thenApplyAsync` or `thenAcceptAsync`, they default to the JVM-wide `ForkJoinPool.commonPool()`. If the nested client call (`inventoryClient.reserve()`) performs blocking network I/O and encounters latency or hangs, it will block threads in the shared common pool. This starves other non-blocking or system-level framework components (such as Spring WebFlux or parallel streams) that rely on the common pool, leading to complete application lockup."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a high-volume service orchestrates downstream microservice calls using `CompletableFuture.supplyAsync` without specifying a custom executor. During an outage of a dependency, the entire application becomes completely unresponsive, and health checks fail across unrelated endpoints.",
-      "question": "What is the architectural cause of this system-wide failure?",
+      "scenario": "You are debugging a production issue where a critical distributed microservice is experiencing intermittent network partitions. You have implemented a resiliency circuit breaker. Under high load, the downstream database fails, and the driver throws custom database exceptions. Although thousands of these exceptions are thrown, the circuit breaker remains in the `CLOSED` state, continuing to hit the failing database until the JVM crashes. You discover that your exception classification logic scans the exception stack trace to verify the root cause, but the trace array is empty.",
+      "question": "What JVM optimization is causing this failure to trip the circuit breaker?",
       "options": [
-        "A) Without a custom executor, `CompletableFuture` defaults to the globally shared `ForkJoinPool.commonPool()`. Blocking I/O calls to the failing dependency exhaust this common pool, starving other JVM tasks.",
-        "B) The default configuration of `CompletableFuture` spawns an unbounded number of native OS threads, leading to kernel-level Out-Of-Memory (OOM) errors.",
-        "C) The JVM's Garbage Collector prioritizes cleaning pending `CompletableFuture` objects, invoking Stop-The-World (STW) pauses that freeze the application.",
-        "D) Spring Boot's internal Tomcat container handles incoming HTTP requests directly inside the `CompletableFuture` common pool, causing immediate container deadlocks."
+        "A) Escape Analysis optimizing out the exception allocation on the heap.",
+        "B) The JIT Compiler inlining the exception class and removing the Cause property.",
+        "C) The -XX:+OmitStackTraceInFastThrow optimization removing stack traces from frequently thrown exceptions.",
+        "D) Garbage Collection sweeping stack frame metadata during heavy GC cycles."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Without a custom executor, `CompletableFuture` defaults to the globally shared `ForkJoinPool.commonPool()`. Blocking I/O calls to the failing dependency exhaust this common pool, starving other JVM tasks.",
-      "explanation": "When no custom `Executor` is supplied to `CompletableFuture.supplyAsync()`, it defaults to using `ForkJoinPool.commonPool()`. This pool is statically shared across the entire JVM. If tasks executing blocking I/O (such as HTTP calls to a failing dependency) run inside the common pool without strict timeouts, they will quickly consume all available worker threads in the pool. This starves other application features (e.g., parallel streams, other asynchronous operations) that rely on the same pool, leading to a cascading, system-wide outage."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) The -XX:+OmitStackTraceInFastThrow optimization removing stack traces from frequently thrown exceptions.",
+      "explanation": "The HotSpot JVM optimizes performance for frequently thrown exceptions (such as `NullPointerException`, `ArithmeticException`, or custom driver exceptions) through the `-XX:+OmitStackTraceInFastThrow` optimization. After a certain threshold of the exact same exception being thrown from the exact same location, the JVM stops populating the expensive stack trace array. If your circuit breaker or exception classification logic relies on inspecting the stack trace (e.g., calling `Throwable.getStackTrace()`) to identify specific root causes, it will receive an empty array and fail to classify the exception correctly, leaving the circuit breaker closed."
     }
   ]
 }
