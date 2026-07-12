@@ -21,7 +21,8 @@
     "Java Concurrency & Multithreading: Understanding Virtual Threads and CompletableFuture",
     "Resource Protection in Modern Concurrency: Transitioning from Thread Pools to Semantic Rate Limiting",
     "Java Concurrency & Multithreading: Efficient Execution with CompletableFuture",
-    "Latency Budgets & Timeout Orchestration: Managing Deadlines with CompletableFuture and Virtual Threads"
+    "Latency Budgets & Timeout Orchestration: Managing Deadlines with CompletableFuture and Virtual Threads",
+    "The Virtual Thread Scheduler: ForkJoinPool Work-Stealing, Queue Mechanics, and Task Scheduling"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
