@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
+  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-volume Spring Boot application deployed on an embedded Tomcat container slowly degrades in performance over several days. GC logs reveal that Major GCs are occurring with increasing frequency, and the Tenured (Old) generation memory usage never drops back to its baseline, eventually triggering `OutOfMemoryError`. You find the following Filter responsible for tracking user sessions:\n\njava\n@Component\npublic class UserContextFilter implements Filter {\n    private static final ThreadLocal<UserContext> contextHolder = new ThreadLocal<>();\n\n    @Override\n    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {\n        UserContext context = extractContext(request);\n        contextHolder.set(context);\n        chain.doFilter(request, response);\n    }\n}\n",
+      "scenario": "You are debugging a production issue where a financial transaction service occasionally updates account balances incorrectly under high concurrent load. A junior engineer wrote the following class to update account balances, attempting to use a local cache flag to avoid redundant DB reads:\n\njava\n@Service\npublic class AccountService {\n    private final AccountRepository repository;\n    private boolean isCacheValid = false;\n\n    public AccountService(AccountRepository repository) {\n        this.repository = repository;\n    }\n\n    public void processPayment(Long accountId, BigDecimal amount) {\n        if (!isCacheValid) {\n            updateBalanceTx(accountId, amount);\n            isCacheValid = true;\n        }\n    }\n\n    @Transactional\n    public void updateBalanceTx(Long accountId, BigDecimal amount) {\n        Account account = repository.findById(accountId).orElseThrow();\n        account.setBalance(account.getBalance().subtract(amount));\n        repository.save(account);\n    }\n}\n\n\nUnder high concurrency, balances are updated incorrectly, and transactions do not appear to roll back on runtime exceptions.",
       "question": "What is the primary cause of this issue?",
       "options": [
-        "A) The `ThreadLocal` variable is never cleared using `.remove()`, causing the `UserContext` objects to remain bound to Tomcat's reusable worker threads indefinitely, leading to a memory leak.",
-        "B) Spring's `@Component` annotation forces the filter to run in a prototype scope, creating new `ThreadLocal` instances per request.",
-        "C) The filter does not use a `WeakReference` for the `ThreadLocal` key, which prevents the `Filter` class itself from being garbage collected.",
-        "D) Tomcat's thread pool does not recycle threads, causing memory fragmentation in the Young Generation."
+        "A) The `isCacheValid` flag lacks the `volatile` modifier (violating the Java Memory Model thread visibility rules), and the self-invocation of `updateBalanceTx` bypasses the Spring AOP proxy, running without any transaction context.",
+        "B) The `@Transactional` annotation fails because the `AccountService` bean is loaded by the Bootstrap ClassLoader, which does not support dynamic proxies.",
+        "C) G1 GC executes a concurrent mark phase during the invocation of `updateBalanceTx`, causing a write-barrier failure that corrupts heap memory references.",
+        "D) Spring's transaction interceptor does not support `BigDecimal` arithmetic operations unless the method is annotated with `@Transactional(rollbackFor = Exception.class)`."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) The `ThreadLocal` variable is never cleared using `.remove()`, causing the `UserContext` objects to remain bound to Tomcat's reusable worker threads indefinitely, leading to a memory leak.",
-      "explanation": "In an application server like Tomcat, threads are reused from a thread pool. When a value is set inside a `ThreadLocal` without calling `contextHolder.remove()` in a `finally` block, the reference to the `UserContext` remains bound to the thread. Even if the HTTP request lifecycle completes, the thread lives on in the pool, preventing GC of the context and any objects transitively referenced by it. This creates a classic memory leak in the Old Generation."
+      "correct_answer_text": "A) The `isCacheValid` flag lacks the `volatile` modifier (violating the Java Memory Model thread visibility rules), and the self-invocation of `updateBalanceTx` bypasses the Spring AOP proxy, running without any transaction context.",
+      "explanation": "This scenario demonstrates two critical flaws. First, calling `updateBalanceTx` directly from inside `processPayment` is a local self-invocation. Since Spring's `@Transactional` uses dynamic proxies or CGLIB proxies, calling a method internally bypasses the proxy wrapper entirely. Consequently, no database transaction is ever started. Second, `isCacheValid` is a non-volatile instance variable mutated without synchronization. Under the Java Memory Model (JMM), changes to `isCacheValid` may not be visible to other threads instantly, creating data races that allow multiple concurrent threads to read stale balances from the database."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a low-latency financial trading microservice experiences sporadic latency spikes (STW pauses) exceeding 200ms. The JVM is configured with `-XX:+UseG1GC -Xms16g -Xmx16g -XX:MaxGCPauseMillis=50`. Analysis of the GC logs reveals frequent `To-space exhausted` or `Evacuation Failure` warnings accompanied by full GC cycles under peak load.",
-      "question": "What is the primary cause of these evacuation failures, and how should you tune the JVM to resolve them?",
+      "scenario": "You are debugging a production issue where a low-latency financial exchange application migrated its JVM garbage collector from G1 to ZGC to achieve sub-millisecond pause times. Under peak transaction load, however, the application experiences massive latency spikes and thread starvation. JVM logs reveal frequent `Allocation Stall` warnings, showing application threads being blocked for several milliseconds during object allocations.",
+      "question": "What is the root cause of these allocation stalls in ZGC under high load, and how should it be mitigated?",
       "options": [
-        "A) The G1 collector is experiencing allocation rate spikes of large objects (Humongous Objects) that do not fit into standard regions, leading to fragmentation. Tuning `-XX:G1HeapRegionSize` to a larger value (e.g., `16m` or `32m`) and decreasing `-XX:InitiatingHeapOccupancyPercent` can mitigate this.",
-        "B) The JVM's Young generation size is too small, forcing premature promotion of short-lived objects into the Old generation. The fix is to hardcode `-XX:NewRatio=1`.",
-        "C) G1GC is failing because `-XX:MaxGCPauseMillis` is set too high, preventing the collector from starting mixed collections early enough.",
-        "D) The garbage collector is running out of Metaspace capacity, triggering synchronous Metaspace resizing GCs."
+        "A) ZGC reverts to a fully-synchronous Stop-The-World (STW) collector when Metaspace is exhausted, blocking all application threads until Class Loader metadata is purged.",
+        "B) ZGC operates concurrently; if the application's allocation rate is higher than ZGC's concurrent reclamation rate, the heap fills up, stalling application threads until GC frees space. Mitigation involves increasing heap size or tuning `-XX:ConcGCThreads`.",
+        "C) ZGC's colored pointers and load barriers violate the sequential consistency of the Java Memory Model (JMM), requiring the CPU to stall threads to enforce memory fence alignment.",
+        "D) Under high load, ZGC's thread local allocation buffers (TLABs) lose synchronization with CPU caches, forcing the JVM to fall back to global heap lock allocation."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The G1 collector is experiencing allocation rate spikes of large objects (Humongous Objects) that do not fit into standard regions, leading to fragmentation. Tuning `-XX:G1HeapRegionSize` to a larger value (e.g., `16m` or `32m`) and decreasing `-XX:InitiatingHeapOccupancyPercent` can mitigate this.",
-      "explanation": "In G1GC, an object is considered 'Humongous' if it spans more than 50% of a G1 region. These objects are allocated directly into the Old Generation as a contiguous sequence of regions. Frequent allocation of humongous objects leads to severe heap fragmentation and can easily trigger `To-space exhausted` / `Evacuation Failure` because G1 cannot find enough contiguous free regions to copy surviving objects during a GC pause. Increasing `-XX:G1HeapRegionSize` (up to `32m`) reduces the number of objects classified as humongous, and lowering `-XX:InitiatingHeapOccupancyPercent` (IHOP) forces marking cycles to start earlier, giving G1 more time to reclaim space before running out of free regions."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) ZGC operates concurrently; if the application's allocation rate is higher than ZGC's concurrent reclamation rate, the heap fills up, stalling application threads until GC frees space. Mitigation involves increasing heap size or tuning `-XX:ConcGCThreads`.",
+      "explanation": "ZGC is a concurrent garbage collector, meaning GC work runs alongside application threads. However, if the allocation rate of the application exceeds the reclamation speed of the concurrent GC threads, the JVM will run out of free heap pages. To avoid an outright `OutOfMemoryError`, ZGC introduces 'Allocation Stalls'\u2014artificially blocking allocating threads to give the concurrent GC cycle time to catch up and free pages. The primary remedies are increasing heap headroom (giving ZGC more time to complete its cycle) or increasing `-XX:ConcGCThreads` to accelerate GC cycle completion."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Spring Boot application's memory footprint spikes under load. Profiling reveals millions of dynamic proxy classes (generated via Spring AOP / CGLIB) are accumulating in Metaspace and are never garbage collected. The application dynamically registers custom-configured beans in the application context at runtime based on incoming HTTP requests using a custom dynamic bean definition registry.",
-      "question": "What is the primary architectural cause preventing these dynamically generated proxy classes from being garbage collected?",
+      "scenario": "You are debugging a production issue where a modular Spring-based plugin platform intermittently throws `ClassCastException` and `NoClassDefFoundError` errors after reloading a dynamic plugin. The system uses a custom `ClassLoader` hierarchy where each plugin has its own class loader. When casting an instance of `CommonUtility` produced by a reloaded plugin to a `CommonUtility` reference in the main application context, a `ClassCastException` is thrown even though the fully qualified class names are identical.",
+      "question": "What is the primary cause of this class casting failure?",
       "options": [
-        "A) Spring's `ApplicationContext` acts as a GC root holding references to the bean definitions, which in turn hold references to the dynamic classes and their defining classloaders, preventing them from being unloaded.",
-        "B) CGLIB uses a static cache inside the JVM Bootstrap ClassLoader that can never be cleared once dynamic proxies are created.",
-        "C) The JVM prevents class unloading of any class generated dynamically via bytecode manipulation to ensure thread-safety of the runtime.",
-        "D) The `@Transactional` annotation on the dynamically registered beans creates a circular hard reference loop with the JVM's ThreadLocal Transaction Manager."
+        "A) In the JVM, a class's identity is defined by both its fully qualified name and its defining `ClassLoader`. If the custom class loader loads its own copy of `CommonUtility` instead of delegating to the parent loader, the two classes are treated as distinct types.",
+        "B) The JVM's Garbage Collector (G1/ZGC) does not support class unloading in Metaspace for classes loaded by custom class loaders, leading to hash collisions in the system dictionary.",
+        "C) Spring's `@Autowired` proxy mechanism automatically registers class definitions in the Bootstrap class loader, which blocks type conversions across dynamic child contexts.",
+        "D) The reloaded plugin class loader triggers a JVM Safepoint that locks the transaction context, causing the JIT compiler to generate incorrect type casting instructions."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Spring's `ApplicationContext` acts as a GC root holding references to the bean definitions, which in turn hold references to the dynamic classes and their defining classloaders, preventing them from being unloaded.",
-      "explanation": "Classes can only be garbage collected (unloaded) if their defining ClassLoader is unreachable. When beans are dynamically registered in the Spring `ApplicationContext`, the context keeps a hard reference to their bean definitions. Since these dynamic bean definitions refer to the dynamically generated proxy classes (and by extension, the classloaders that defined them), they can never be garbage collected as long as the parent `ApplicationContext` remains alive. This results in a continuous leak in Metaspace."
+      "correct_answer_text": "A) In the JVM, a class's identity is defined by both its fully qualified name and its defining `ClassLoader`. If the custom class loader loads its own copy of `CommonUtility` instead of delegating to the parent loader, the two classes are treated as distinct types.",
+      "explanation": "In the Java Virtual Machine, a class's identity at runtime is uniquely defined by its fully qualified class name *and* the specific `ClassLoader` instance that loaded it. If the custom plugin ClassLoader breaks the standard Parent-Delegation model (using a child-first model, or containing an isolated copy of the shared library), it will load its own version of `CommonUtility`. Even if the bytecodes are identical, they are treated as completely unrelated types by the JVM, resulting in a `ClassCastException` if cast to each other."
     }
   ]
 }
