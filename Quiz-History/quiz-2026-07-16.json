@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
-  "mode": "Java",
+  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a low-latency Spring Boot application migrated from G1GC to ZGC to eliminate pause times. However, under high allocation bursts, the application throws `OutOfMemoryError: Java heap space` even though the heap is not fully exhausted by live objects, and heap profiling shows plenty of reclaimable memory.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A real-world healthcare platform integrates patient EHRs with SNOMED-CT (containing over 350,000 active concepts) to run a real-time clinical decision support system (CDSS). The initial implementation uses OWL 2 DL (which relies on the highly expressive SROIQ(D) Description Logic) to model complex medical relationships. However, during peak hospital operations, the tableau-based reasoning engine (e.g., HermiT) experiences exponential latency spikes and memory exhaustion, violating the strict 200ms SLA for drug-interaction alerts.",
+      "question": "To ensure deterministic, polynomial-time reasoning for concept subsumption and classification without completely abandoning formal semantics, which architectural and ontological modification must be implemented?",
       "options": [
-        "A) ZGC does not support object relocation, resulting in severe heap fragmentation that prevents new allocations from finding contiguous free blocks.",
-        "B) ZGC's concurrent allocation pacing failed to keep up with the allocation rate, causing application threads to allocate memory faster than the concurrent GC cycle could reclaim it, leading to allocation stalls and eventual OOM.",
-        "C) The ZGC collector requires a dedicated physical 'Survivor' space similar to G1GC, and without it, all newly allocated objects are immediately promoted to the Old Generation, triggering instant OOM.",
-        "D) ZGC uses colored pointers which double the header size of all dynamically allocated objects, causing the physical heap limit to be reached prematurely."
+        "A) Downgrade the ontology profile to OWL 2 EL, which restricts constructors to existential quantification and conjunction, guaranteeing polynomial-time complexity for classification.",
+        "B) Switch to the OWL 2 QL profile to enable fast relational database rewritings, sacrificing existential restrictions on the left-hand side of subclass axioms.",
+        "C) Migrate to OWL 2 RL, utilizing forward-chaining rule engines to materialise all inferences during offline batch-processing cycles.",
+        "D) Replace the DL reasoner with a distributed Graph Neural Network (GNN) to approximate link prediction, sacrificing logical soundness for constant time inference latency."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) ZGC's concurrent allocation pacing failed to keep up with the allocation rate, causing application threads to allocate memory faster than the concurrent GC cycle could reclaim it, leading to allocation stalls and eventual OOM.",
-      "explanation": "ZGC is a fully concurrent garbage collector, meaning GC cycles run concurrently with application threads. If the rate of memory allocation by application threads is higher than the rate at which ZGC can reclaim memory, the application will run out of heap space. Unlike Stop-The-World (STW) collectors that pause application threads to catch up, ZGC uses a pacing mechanism to slow down application allocations. If this pacing is insufficient or the spike is too severe, the JVM will stall and eventually throw an `OutOfMemoryError` despite having dead objects that haven't been swept yet."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Downgrade the ontology profile to OWL 2 EL, which restricts constructors to existential quantification and conjunction, guaranteeing polynomial-time complexity for classification.",
+      "explanation": "OWL 2 EL is specifically designed for large system ontologies (like SNOMED-CT) where the primary reasoning task is classification/subsumption. By omitting constructs like disjunction, universal quantification, and negation, OWL 2 EL reduces the reasoning complexity from NEXPTIME-complete (for OWL 2 DL) to polynomial time (PTIME-complete), resolving the exponential latency spikes while preserving the exact semantic capabilities required for clinical hierarchies."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a transaction-heavy Spring Boot service is experiencing silent data inconsistency. The developer wrote the following class to update a user's balance and log the transaction asynchronously:\n\njava\n@Service\npublic class UserService {\n    @Autowired private TransactionTemplate transactionTemplate;\n\n    @Transactional\n    public void updateBalanceAndLog(Long userId, BigDecimal amount) {\n        updateBalance(userId, amount);\n        CompletableFuture.runAsync(() -> logTransaction(userId, amount));\n    }\n\n    private void updateBalance(Long userId, BigDecimal amount) {\n        // Database update logic\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void logTransaction(Long userId, BigDecimal amount) {\n        // Insert transaction log\n    }\n}\n\n\nThe log table is missing records, and no exceptions are logged, even though `updateBalance` completes successfully.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A global supply chain monitoring system tracks logistics using a massive Semantic Network represented as RDF triples. Due to extreme hub-and-spoke distribution patterns, certain global shipping hubs (supernodes) possess millions of incoming/outgoing semantic relations (such as 'hasTransitTo' and 'managedBy'), whereas 95% of the local nodes have fewer than five connections. Path queries designed to detect circular dependencies or delay propagation cause Java Virtual Machine (JVM) Out-Of-Memory (OOM) errors during depth-first traversal of these supernodes.",
+      "question": "Which knowledge representation modification and querying strategy is most effective at resolving this performance bottleneck without losing the semantic definitions of the relationships?",
       "options": [
-        "A) Spring's `@Transactional` annotation does not support asynchronous execution, causing the JVM to automatically roll back any transaction spanning multiple threads.",
-        "B) `CompletableFuture.runAsync` executes on a background thread from the ForkJoinPool. Since Spring's transaction management relies on `ThreadLocal` storage, the background thread does not inherit the parent transaction context. Additionally, calling `logTransaction` internally (self-invocation) bypasses the Spring AOP Proxy, preventing a new transaction from being created.",
-        "C) The `Propagation.REQUIRES_NEW` parameter causes the system to block because both the parent transaction and the inner transaction attempt to acquire a database lock on the same connection pool thread, resulting in a thread starvation deadlock.",
-        "D) The Spring AOP proxy is configured using JDK Dynamic Proxies, which cannot proxy a class like `UserService` that implements no interfaces, causing the entire class's transaction metadata to be silently ignored."
+        "A) Restructure the ontology by partitioning high-degree relations using specific sub-properties (e.g., 'hasTransitTo_ZoneA') to bound the branching factor, and optimize queries using SPARQL Property Paths with strict graph-pattern matching limits.",
+        "B) Reify all supernode relations by introducing intermediate event nodes, and implement a hybrid index combining a structural index for low-degree nodes with an adjacency-list index.",
+        "C) Convert the Semantic Network into a directed acyclic graph (DAG) by pruning all inverse properties, and execute queries using a structural topological sort.",
+        "D) Implement a bidirectional breadth-first search (BFS) with adaptive frontier pruning that dynamically drops paths crossing nodes with degree exceeding a predefined threshold."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) `CompletableFuture.runAsync` executes on a background thread from the ForkJoinPool. Since Spring's transaction management relies on `ThreadLocal` storage, the background thread does not inherit the parent transaction context. Additionally, calling `logTransaction` internally (self-invocation) bypasses the Spring AOP Proxy, preventing a new transaction from being created.",
-      "explanation": "There are two major flaws here: 1) Self-invocation: Spring's declarative transaction management (`@Transactional`) uses AOP proxies. When calling a method on `this` (even implicitly or within a lambda in the same class), the call bypasses the proxy, meaning `@Transactional` on `logTransaction` has no effect. 2) Thread boundary: Spring's `TransactionSynchronizationManager` binds database connections and transaction states to `ThreadLocal` variables. Moving execution to a different thread via `CompletableFuture.runAsync` breaks this thread-bound context, causing the asynchronous execution to run outside of any managed transaction context."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Restructure the ontology by partitioning high-degree relations using specific sub-properties (e.g., 'hasTransitTo_ZoneA') to bound the branching factor, and optimize queries using SPARQL Property Paths with strict graph-pattern matching limits.",
+      "explanation": "In semantic networks with highly skewed node degrees, traversing supernodes results in a combinatorial explosion of the search space. By subclassing/partitioning properties (using sub-properties), we reduce the effective branching factor for target queries. When paired with SPARQL Property Paths that have bounded evaluation limits, the query engine can prune irrelevant branches early, avoiding the JVM heap exhaustion caused by uncontrolled expansion."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Spring Boot application dynamically loads plugins (compiled as JARs) at runtime using a custom `URLClassLoader`. After several dynamic plugin redeployments, the application crashes with `java.lang.OutOfMemoryError: Metaspace`. A heap dump analysis shows thousands of instances of your custom `ClassLoader` still residing in memory, even though the application has dereferenced them.",
-      "question": "What is the primary cause of this Metaspace leak?",
+      "scenario": "An autonomous railway signaling system uses a First-Order Logic (FOL) knowledge base to enforce safety interlocks and prevent train collisions at complex junctions. Under real-time conditions (where sensor telemetry updates at 50Hz), the resolution-refutation theorem prover occasionally experiences 'infinite loops' or unacceptable execution delays when evaluating complex, nested safety rules due to the semi-decidability of FOL.",
+      "question": "Which logical representation paradigm must be adopted to guarantee that all safety queries terminate deterministically in polynomial time while maintaining the capability to infer new safety facts?",
       "options": [
-        "A) The JVM's Metaspace is a non-garbage-collected memory region that only frees memory when the entire JVM process exits.",
-        "B) Active threads, system registries (like JDBC driver registers, thread pools), or ThreadLocal variables still hold references to classes loaded by the custom ClassLoader (or the ClassLoader itself), preventing the ClassLoader and its associated Metaspace metadata from being garbage collected.",
-        "C) ZGC and G1GC do not support class unloading in Metaspace, meaning dynamic class loading is fundamentally incompatible with modern low-pause collectors.",
-        "D) The custom `URLClassLoader` delegates to the System ClassLoader first, which promotes all dynamic class definitions to the Bootstrap ClassLoader level where metadata can never be reclaimed."
+        "A) Restrict the FOL rules to Datalog with stratified negation, which guarantees query termination in polynomial time with respect to the size of the facts database.",
+        "B) Convert the knowledge base into Propositional Logic, using a high-performance modern SAT solver with conflict-driven clause learning (CDCL).",
+        "C) Model the system using Fuzzy Logic, replacing strict truth-value evaluation with continuous probability intervals to bypass the halting problem.",
+        "D) Apply Description Logic with SHOIQ expressiveness, leveraging tableau-based reasoning engines to evaluate assertions during the real-time loop."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Active threads, system registries (like JDBC driver registers, thread pools), or ThreadLocal variables still hold references to classes loaded by the custom ClassLoader (or the ClassLoader itself), preventing the ClassLoader and its associated Metaspace metadata from being garbage collected.",
-      "explanation": "In the JVM, class metadata stored in Metaspace can only be garbage collected when the corresponding `ClassLoader` instance itself is garbage collected. A `ClassLoader` can only be garbage collected if there are zero live references to: 1) the ClassLoader itself, 2) any of the Class objects it has loaded, and 3) any instances of those classes. Common culprits in dynamic systems include system-level registries, ThreadLocal variables, or unfinished threads holding references to plugin classes, which keeps the ClassLoader reachable from GC Roots and leaks the Metaspace."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Restrict the FOL rules to Datalog with stratified negation, which guarantees query termination in polynomial time with respect to the size of the facts database.",
+      "explanation": "Datalog is a truly syntactic subset of First-Order Logic that disallows function symbols. This restriction makes Datalog fully decidable. When augmented with stratified negation, it guarantees that reasoning queries can be answered in polynomial time (PTIME-complete data complexity) with respect to the size of the database. This guarantees predictable, real-time execution bounds suitable for safety-critical operations like railway signaling."
     }
   ]
 }
