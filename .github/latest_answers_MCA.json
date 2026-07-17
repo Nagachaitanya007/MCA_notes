@@ -1,48 +1,48 @@
 {
-  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A real-world healthcare platform integrates patient EHRs with SNOMED-CT (containing over 350,000 active concepts) to run a real-time clinical decision support system (CDSS). The initial implementation uses OWL 2 DL (which relies on the highly expressive SROIQ(D) Description Logic) to model complex medical relationships. However, during peak hospital operations, the tableau-based reasoning engine (e.g., HermiT) experiences exponential latency spikes and memory exhaustion, violating the strict 200ms SLA for drug-interaction alerts.",
-      "question": "To ensure deterministic, polynomial-time reasoning for concept subsumption and classification without completely abandoning formal semantics, which architectural and ontological modification must be implemented?",
+      "scenario": "Real-world Industrial Problem Statement: A fintech company is building a real-time credit card fraud detection engine. The incoming stream of transaction amounts is highly right-skewed, ranging from $0.10 to $500,000.00, with 99.9% of transactions sitting below $100.00. The downstream deep learning anomaly detector employs L2 regularization (weight decay) and batch normalization, requiring zero-centered, bell-shaped numerical inputs to maintain training stability. Due to SLA constraints, preprocessing must run in sub-millisecond time complexity (O(1) space and time) on streaming data.",
+      "question": "Which of the following preprocessing pipelines is mathematically and computationally most appropriate to resolve this feature skewness under these strict real-time constraints?",
       "options": [
-        "A) Downgrade the ontology profile to OWL 2 EL, which restricts constructors to existential quantification and conjunction, guaranteeing polynomial-time complexity for classification.",
-        "B) Switch to the OWL 2 QL profile to enable fast relational database rewritings, sacrificing existential restrictions on the left-hand side of subclass axioms.",
-        "C) Migrate to OWL 2 RL, utilizing forward-chaining rule engines to materialise all inferences during offline batch-processing cycles.",
-        "D) Replace the DL reasoner with a distributed Graph Neural Network (GNN) to approximate link prediction, sacrificing logical soundness for constant time inference latency."
+        "A) Apply an online Log1p transformation to handle zero/positive skew, followed by a running Z-score standardization using Welford's algorithm to update mean and variance dynamically.",
+        "B) Implement a dynamic, sliding-window Box-Cox transformation that recalculates the optimal power parameter (lambda) on the fly for every micro-batch of 100 transactions.",
+        "C) Apply a Yeo-Johnson transformation utilizing historical parameters, followed by Min-Max normalization to scale features strictly between the bounds of -1 and 1.",
+        "D) Map the continuous transaction amounts into 100 uniform-width bins, and then apply one-hot encoding on-the-fly to eliminate numerical skewness completely."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Downgrade the ontology profile to OWL 2 EL, which restricts constructors to existential quantification and conjunction, guaranteeing polynomial-time complexity for classification.",
-      "explanation": "OWL 2 EL is specifically designed for large system ontologies (like SNOMED-CT) where the primary reasoning task is classification/subsumption. By omitting constructs like disjunction, universal quantification, and negation, OWL 2 EL reduces the reasoning complexity from NEXPTIME-complete (for OWL 2 DL) to polynomial time (PTIME-complete), resolving the exponential latency spikes while preserving the exact semantic capabilities required for clinical hierarchies."
+      "correct_answer_text": "A) Apply an online Log1p transformation to handle zero/positive skew, followed by a running Z-score standardization using Welford's algorithm to update mean and variance dynamically.",
+      "explanation": "For highly right-skewed data with values close to or containing zero, the Log1p transformation (log(x+1)) stabilizes variance and drives the distribution toward normality. Combining this with Welford's algorithm allows for the calculation of running mean and variance in O(1) time and space complexity without storing historical data streams. This keeps computational latencies well within the sub-millisecond requirement. Box-Cox (Option B) requires strictly positive values and is mathematically expensive to optimize dynamically on the fly. Static Yeo-Johnson (Option C) does not scale well to shifting real-time distributions, and Min-Max scaling is highly sensitive to outliers, which would squash normal transaction values. Uniform-width binning (Option D) in extremely skewed data leads to sparse, unbalanced buckets, violating optimal representation learning rules for Neural Networks."
     },
     {
       "id": 2,
-      "scenario": "A global supply chain monitoring system tracks logistics using a massive Semantic Network represented as RDF triples. Due to extreme hub-and-spoke distribution patterns, certain global shipping hubs (supernodes) possess millions of incoming/outgoing semantic relations (such as 'hasTransitTo' and 'managedBy'), whereas 95% of the local nodes have fewer than five connections. Path queries designed to detect circular dependencies or delay propagation cause Java Virtual Machine (JVM) Out-Of-Memory (OOM) errors during depth-first traversal of these supernodes.",
-      "question": "Which knowledge representation modification and querying strategy is most effective at resolving this performance bottleneck without losing the semantic definitions of the relationships?",
+      "scenario": "Real-world Industrial Problem Statement: An IoT predictive maintenance platform monitors 120 high-dimensional sensor streams from wind turbines. The dataset suffers from a high rate of missing values (18%) distributed randomly due to packet loss, alongside extreme transient spikes (outliers) caused by electrical interference. The processing gateway at the edge is highly resource-constrained, possessing only 4GB of RAM. The downstream model uses Robust Principal Component Analysis (RPCA) and XGBoost for failure classification.",
+      "question": "Which preprocessing pipeline resolves both the missing values and outlier anomalies while strictly respecting the edge gateway's memory constraints and preventing data leakage?",
       "options": [
-        "A) Restructure the ontology by partitioning high-degree relations using specific sub-properties (e.g., 'hasTransitTo_ZoneA') to bound the branching factor, and optimize queries using SPARQL Property Paths with strict graph-pattern matching limits.",
-        "B) Reify all supernode relations by introducing intermediate event nodes, and implement a hybrid index combining a structural index for low-degree nodes with an adjacency-list index.",
-        "C) Convert the Semantic Network into a directed acyclic graph (DAG) by pruning all inverse properties, and execute queries using a structural topological sort.",
-        "D) Implement a bidirectional breadth-first search (BFS) with adaptive frontier pruning that dynamically drops paths crossing nodes with degree exceeding a predefined threshold."
+        "A) Apply iterative Multivariate Imputation by Chained Equations (MICE) using Random Forest regressors, followed by Isolation Forest on the imputed matrix to prune outlier rows.",
+        "B) Impute missing values using K-Nearest Neighbors (KNN) imputer with Euclidean distance (K=5), followed by Z-score scaling to compress transient spikes.",
+        "C) Impute missing values with a running median computed over a historical window, and then scale the features using RobustScaler (Median and IQR) to mitigate the impact of transient outliers.",
+        "D) Drop all rows containing missing values to guarantee clean signals, then apply a global Minimum Covariance Determinant (MCD) estimator to filter out multidimensional outliers."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Restructure the ontology by partitioning high-degree relations using specific sub-properties (e.g., 'hasTransitTo_ZoneA') to bound the branching factor, and optimize queries using SPARQL Property Paths with strict graph-pattern matching limits.",
-      "explanation": "In semantic networks with highly skewed node degrees, traversing supernodes results in a combinatorial explosion of the search space. By subclassing/partitioning properties (using sub-properties), we reduce the effective branching factor for target queries. When paired with SPARQL Property Paths that have bounded evaluation limits, the query engine can prune irrelevant branches early, avoiding the JVM heap exhaustion caused by uncontrolled expansion."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Impute missing values with a running median computed over a historical window, and then scale the features using RobustScaler (Median and IQR) to mitigate the impact of transient outliers.",
+      "explanation": "Edge gateways require O(1) or low-memory O(N) operations. Running median imputation uses a fixed-size historical window (with low memory footprint) and is highly robust to outliers. RobustScaler scales features using median and IQR (Interquartile Range), which prevents outliers from distorting the scaling parameters (unlike Z-score, which uses mean and standard deviation, both of which are heavily influenced by extreme values). MICE (Option A) and KNN Imputation (Option B) are highly iterative, computationally heavy, and scale poorly in memory (O(N^2) space complexity for KNN), which would crash a 4GB RAM edge gateway. Dropping rows with 18% missing values spread across 120 features (Option D) would lead to the loss of almost the entire dataset due to the curse of dimensionality (probability of a row having at least one missing value is extremely high)."
     },
     {
       "id": 3,
-      "scenario": "An autonomous railway signaling system uses a First-Order Logic (FOL) knowledge base to enforce safety interlocks and prevent train collisions at complex junctions. Under real-time conditions (where sensor telemetry updates at 50Hz), the resolution-refutation theorem prover occasionally experiences 'infinite loops' or unacceptable execution delays when evaluating complex, nested safety rules due to the semi-decidability of FOL.",
-      "question": "Which logical representation paradigm must be adopted to guarantee that all safety queries terminate deterministically in polynomial time while maintaining the capability to infer new safety facts?",
+      "scenario": "Real-world Industrial Problem Statement: A cybersecurity firm is training an unsupervised anomaly detection model to detect Advanced Persistent Threats (APTs) in a network flow dataset containing 400 features and 5 million records. The threat vectors represent only 0.05% of the dataset and are hidden as local outliers within dense clusters of benign data. The data pipeline must process the high-dimensional space and train the detector in less than 10 minutes on a standard 16-core CPU cloud instance.",
+      "question": "Which strategy should the engineering team employ to pre-process the features and isolate these subtle anomalies without suffering from the curse of dimensionality or violating the computational time budget?",
       "options": [
-        "A) Restrict the FOL rules to Datalog with stratified negation, which guarantees query termination in polynomial time with respect to the size of the facts database.",
-        "B) Convert the knowledge base into Propositional Logic, using a high-performance modern SAT solver with conflict-driven clause learning (CDCL).",
-        "C) Model the system using Fuzzy Logic, replacing strict truth-value evaluation with continuous probability intervals to bypass the halting problem.",
-        "D) Apply Description Logic with SHOIQ expressiveness, leveraging tableau-based reasoning engines to evaluate assertions during the real-time loop."
+        "A) Calculate the Mahalanobis distance for each network flow in the original 400-dimensional space, and flag flows exceeding the critical chi-squared threshold value.",
+        "B) Apply Local Outlier Factor (LOF) with Minkowski distance (p=2) directly to the high-dimensional feature space to capture local density deviations.",
+        "C) Apply Random Projection to reduce the dimensions from 400 to 15, then run a multi-threaded Isolation Forest using a high number of base estimators (200 trees) with a small subsample size (256).",
+        "D) Train a Deep Autoencoder with 5 hidden layers on the raw dataset, and use the reconstruction error of the bottleneck layer (10 dimensions) as the primary anomaly score."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Restrict the FOL rules to Datalog with stratified negation, which guarantees query termination in polynomial time with respect to the size of the facts database.",
-      "explanation": "Datalog is a truly syntactic subset of First-Order Logic that disallows function symbols. This restriction makes Datalog fully decidable. When augmented with stratified negation, it guarantees that reasoning queries can be answered in polynomial time (PTIME-complete data complexity) with respect to the size of the database. This guarantees predictable, real-time execution bounds suitable for safety-critical operations like railway signaling."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Apply Random Projection to reduce the dimensions from 400 to 15, then run a multi-threaded Isolation Forest using a high number of base estimators (200 trees) with a small subsample size (256).",
+      "explanation": "Random Projection is extremely fast and preserves pairwise distances (due to the Johnson-Lindenstrauss lemma), reducing dimensionality from 400 to 15 in O(D*N) time. Isolation Forest scales linearly (O(n log n)) and works exceptionally well with small subsample sizes (like 256) per tree because it isolates anomalies in sparse partitions without requiring distance calculations across all dimensions. This combination easily fits within the 10-minute constraint on 16 cores. Mahalanobis distance (Option A) requires calculating and inverting a 400x400 covariance matrix, which is highly unstable and computationally expensive for 5M rows. Local Outlier Factor (Option B) has a quadratic complexity of O(N^2) due to pairwise distance computations, which would fail to run on 5 million rows within days. Training a Deep Autoencoder (Option D) on 5 million rows with 400 dimensions would take significantly longer than 10 minutes on a standard CPU instance."
     }
   ]
 }
