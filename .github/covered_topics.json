@@ -125,7 +125,8 @@
     "High-Scale URL Shortener: Resilient Key Generation and Horizontal Sharding",
     "Designing a URL Shortener with Key Generation Service and Sharding",
     "Zero-Collision URL Shortening: Pre-Generated Tokens and Partitioned Write Paths",
-    "Decoupling Key Generation (KGS) from Sharded Database Persistence"
+    "Decoupling Key Generation (KGS) from Sharded Database Persistence",
+    "Fault-Tolerant Token Ranges and Shard Routing in a High-Scale URL Shortener"
   ],
   "The CAP Theorem: Choosing between AP and CP in Distributed Systems": [
     "The CAP Theorem: Choosing Between AP and CP in Distributed Systems",
