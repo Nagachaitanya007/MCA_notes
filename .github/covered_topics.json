@@ -82,7 +82,8 @@
     "JVM Memory Model and Garbage Collection",
     "JVM Safepoints and Thread Handshakes: How the JVM Suspends Execution for GC and Runtime Security",
     "JVM Metaspace Internals: How Class Loading Builds InstanceKlass, Vtables, and Itables",
-    "JVM Memory Model: Escape Analysis and Scalar Replacement Internals"
+    "JVM Memory Model: Escape Analysis and Scalar Replacement Internals",
+    "JVM Reference Processing: The Mechanics of Soft, Weak, Phantom, and Final References"
   ],
   "Design a Real-time Chat System (WebSockets, Redis Pub/Sub)": [
     "Scalable Real-time Chat: WebSockets & Redis Pub/Sub",
