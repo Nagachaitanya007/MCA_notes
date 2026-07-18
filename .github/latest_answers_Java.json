@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
+  "topic": "Memory Management & Garbage Collection Tuning",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot application experiences a gradual increase in Metaspace usage, eventually throwing a `java.lang.OutOfMemoryError: Metaspace` after dynamic plugins are unloaded. The application uses a custom ClassLoader to load rule plugins dynamically. Below is the simplified component managing the lifecycle:",
-      "question": "What is the primary cause of this Metaspace memory leak?",
+      "scenario": "You are debugging a production issue where a high-throughput Spring Boot application deployed on Tomcat experiences a gradual degradation in performance, culminating in an `OutOfMemoryError: Java heap space` after several hours. The application processes transactions using a standard thread pool. You find the following snippet in a core service:\n\njava\n@Service\npublic class TransactionLogger {\n    private final ThreadLocal<byte[]> transactionBuffer = new ThreadLocal<>();\n\n    @Transactional\n    public void logTransaction(Transaction tx) {\n        byte[] data = preparePayload(tx);\n        transactionBuffer.set(data);\n        processPayload(data);\n        if (tx.hasErrors()) {\n            throw new TransactionException(\"Failed to process\");\n        }\n        transactionBuffer.remove();\n    }\n}\n\nHeap analysis indicates that millions of `byte[]` arrays are retained in memory, even though active concurrent requests are very low.",
+      "question": "What is the primary cause of this memory leak?",
       "options": [
-        "A) The `ByteArrayClassLoader` is registered in the Spring ApplicationContext, which retains a singleton proxy to the rules.",
-        "B) The `GlobalRegistry` retains a strong static reference to `ruleInstance`, which prevents its Class object, and consequently the `ByteArrayClassLoader`, from being garbage collected.",
-        "C) The JVM Metaspace does not support garbage collection of dynamically compiled bytearrays without explicit calls to `System.gc()`.",
-        "D) The `activeLoaders` map is a `ConcurrentHashMap` which internally keeps hard references to all class loader keys even after `.remove()` is executed."
+        "A) Spring's `@Transactional` proxy wraps the method and creates its own `ThreadLocal` variables that conflict with `transactionBuffer`, preventing GC from reaching the payload.",
+        "B) When a `TransactionException` is thrown, the execution flow bypasses `transactionBuffer.remove()`. Since Tomcat threads are pooled and reused across requests, the allocated `byte[]` remains bound to the thread indefinitely.",
+        "C) The dynamic CGLIB proxy generated for `TransactionLogger` retains a strong reference to the `transactionBuffer` on every transactional boundary, preventing garbage collection of the thread context.",
+        "D) JVM's escape analysis fails to optimize the `byte[] data` array because it is passed to a ThreadLocal, forcing it to be allocated directly in the Old Generation instead of Eden."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `GlobalRegistry` retains a strong static reference to `ruleInstance`, which prevents its Class object, and consequently the `ByteArrayClassLoader`, from being garbage collected.",
-      "explanation": "In Java, a ClassLoader can only be garbage collected if: (1) there are no references to the ClassLoader itself, (2) there are no references to any of the Class objects it loaded, and (3) there are no references to instances of any classes it loaded. Because the static `GlobalRegistry` retains a strong reference to `ruleInstance`, the instance remains alive. This keeps its class (`DynamicRule`) alive, which in turn holds a reference to its defining ClassLoader (`ByteArrayClassLoader`), preventing Metaspace from reclaiming the metadata space."
+      "correct_answer_text": "B) When a `TransactionException` is thrown, the execution flow bypasses `transactionBuffer.remove()`. Since Tomcat threads are reused across requests, the allocated `byte[]` remains bound to the thread indefinitely.",
+      "explanation": "In web applications running on servlet containers like Tomcat, threads are pooled and reused to handle incoming requests. When `logTransaction` throws a `TransactionException`, the execution path terminates abruptly, bypassing the `transactionBuffer.remove()` cleanup statement. Consequently, the `byte[]` payload remains linked to the thread's internal `ThreadLocalMap`. Because the thread is never destroyed, the memory is never reclaimed, leading to a severe memory leak in the Old Generation as threads process failing transactions."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a low-latency JVM application using the G1 Garbage Collector experiences sporadic Stop-The-World (STW) pauses of several seconds. Log analysis shows frequent occurrences of `to-space exhausted` (or `to-space overflow`) accompanied by evacuation failures. The application handles highly erratic bursts of incoming telemetry data.",
-      "question": "Which of the following is the direct mechanism causing these severe STW pauses and how should it be mitigated?",
+      "scenario": "You are debugging a production issue where a critical low-latency microservice utilizing the G1 Garbage Collector is encountering periodic latency spikes of up to 1200ms. Upon inspecting the GC logs, you observe numerous entries indicating `To-space exhausted` (or `Evacuation Failure`) followed immediately by a Full GC. The application's JVM heap is configured at 32GB, and there is a high rate of transient object allocation.",
+      "question": "Which of the following GC tuning actions is the most appropriate first step to resolve this issue?",
       "options": [
-        "A) The JVM fails to allocate space in the Survivor or Old regions to copy live objects during a Young/Mixed GC cycle, forcing G1 to fall back to a costly, single-threaded Full GC.",
-        "B) The TLAB (Thread Local Allocation Buffer) sizes are too small, causing CPU cache thrashing during concurrent marking phases.",
-        "C) The JVM's Card Table becomes saturated, causing G1 GC to lock all mutator threads while resetting dirty card references.",
-        "D) Humongous allocations have fragmented the Young generation, causing G1 GC to initiate immediate compacting Full GCs rather than concurrent mark sweeps."
+        "A) Increase the G1 region size using `-XX:G1HeapRegionSize=32m` to prevent Eden regions from splitting during fast allocations.",
+        "B) Decrease `-XX:InitiatingHeapOccupancyPercent` (IHOP) and increase `-XX:G1ReservePercent` to trigger the concurrent marking cycle earlier and reserve more free space for evacuations.",
+        "C) Increase `-XX:MaxGCPauseMillis` to allow the collector more time during minor GC cycles to process the transient objects in parallel.",
+        "D) Disable explicit garbage collection calls with `-XX:+DisableExplicitGC` to prevent System.gc() from interrupting G1's generational allocation cycles."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The JVM fails to allocate space in the Survivor or Old regions to copy live objects during a Young/Mixed GC cycle, forcing G1 to fall back to a costly, single-threaded Full GC.",
-      "explanation": "Evacuation failure (`to-space exhausted`) occurs when G1 GC is unable to find enough free space in the Survivor or Old regions to copy the remaining live objects from the regions currently being evacuated. When this occurs, G1 must fall back to a disruptive, often single-threaded, serial-like Full GC to reclaim space and compact the heap. This can be mitigated by increasing `-XX:G1ReservePercent`, decreasing `-XX:InitiatingHeapOccupancyPercent` (IHOP) to start mixed collections earlier, or increasing the overall heap size."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Decrease `-XX:InitiatingHeapOccupancyPercent` (IHOP) and increase `-XX:G1ReservePercent` to trigger the concurrent marking cycle earlier and reserve more free space for evacuations.",
+      "explanation": "A `To-space exhausted` or `Evacuation Failure` event in G1GC occurs when the survivor or tenured regions do not have enough free space to accommodate the copied live objects from the regions currently being collected. Lowering the `InitiatingHeapOccupancyPercent` (IHOP) threshold ensures that the concurrent marking cycle starts earlier, reclaiming old generation space before the heap becomes too full. Simultaneously, increasing `G1ReservePercent` (default is 10%) reserves a larger buffer of free regions specifically for evacuations, significantly reducing the probability of evacuation failures and subsequent Stop-the-World Full GCs."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a high-volume Spring Boot service begins exhibiting data cross-talk (users seeing other users' private profiles) and eventually runs out of heap memory under heavy load. The system processes report generation requests asynchronously using a thread pool. The context is managed via the following class:",
-      "question": "What is the subtle flaw in this design that leads to both data cross-talk and the memory leak?",
+      "scenario": "You are debugging a production issue where a cache manager using a `WeakHashMap` to cache database metadata leaks memory over time. The cache maps database connection metadata keys to value objects that contain diagnostic reports. Profiler analysis shows that entries are never garbage collected even after the database connections (the keys) are closed and dereferenced. The cache map is defined as:\n\n`private Map<ConnectionKey, DiagnosticReport> cache = new WeakHashMap<>();`\n\nEach `DiagnosticReport` holds a reference to a `DiagnosticContext` which has a back-reference back to its corresponding `ConnectionKey`.",
+      "question": "Why is `WeakHashMap` failing to garbage collect the stale keys in this scenario?",
       "options": [
-        "A) The `ThreadLocal` field is declared as static, which causes all threads in the JVM to share the exact same `UserContext` instance.",
-        "B) The `ReportTask` constructor accepts a `UserContext` directly, violating the Spring bean single-responsibility principle and triggering class unloading failures.",
-        "C) The thread pool threads are reused, and because the `ThreadLocal` value is not cleared in a `finally` block, subsequent tasks executed on the same thread inherit the dirty context of the previous run, while the thread's thread-locals map prevents the context from being GC'ed.",
-        "D) Concurrent executions of `generateReport()` bypass the `ThreadLocal` variable scope due to CPU cache incoherency, writing directly to the main thread's local stack frame."
+        "A) WeakHashMap uses weak references for values, not keys, so keys are strongly held until the value is dereferenced.",
+        "B) The strong reference from the value (`DiagnosticReport` -> `DiagnosticContext` -> `ConnectionKey`) back to the key prevents the weak key from ever becoming weakly reachable, keeping the entry alive.",
+        "C) The JVM prevents weak reference reclamation if the object has been proxy-wrapped by Spring's AOP framework.",
+        "D) The `ConnectionKey` class does not implement `Comparable`, which causes `WeakHashMap` to fall back to identity-based strong references internally."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The thread pool threads are reused, and because the `ThreadLocal` value is not cleared in a `finally` block, subsequent tasks executed on the same thread inherit the dirty context of the previous run, while the thread's thread-locals map prevents the context from being GC'ed.",
-      "explanation": "In an `ExecutorService` (thread pool), worker threads are reused continuously. If a thread sets a value in a `ThreadLocal` and fails to call `remove()`, that value remains bound to the thread. When the same thread is assigned to a different task, it reads the old `UserContext` (causing cross-talk). Moreover, because the worker thread remains alive indefinitely in the pool, it holds a strong reference to the `UserContext` (and any heavy objects attached to it) via its internal `ThreadLocalMap`, preventing the garbage collector from reclaiming that memory and causing a memory leak."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The strong reference from the value (`DiagnosticReport` -> `DiagnosticContext` -> `ConnectionKey`) back to the key prevents the weak key from ever becoming weakly reachable, keeping the entry alive.",
+      "explanation": "In a `WeakHashMap`, the entry's key is stored using a `WeakReference`. This means that if there are no other *strong* references to the key, the key is eligible for garbage collection, and the map eventually expunges the corresponding entry. However, if the value (`DiagnosticReport`) contains a strong reference chain back to the key (`ConnectionKey`), a strong reference path persists from the map's entry array, through the value, back to the key. This prevents the key from being weakly reachable, completely defeating the self-clearing mechanism of `WeakHashMap` and causing a persistent memory leak."
     }
   ]
 }
