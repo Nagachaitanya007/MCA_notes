@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
-  "mode": "Java",
+  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput microservice migrating to Java 21 Virtual Threads experiences severe latency spikes and thread starvation under heavy load. Thread dumps show that many virtual threads are in the `PARKED` state, but the underlying platform carrier threads (`ForkJoinPool-1-worker-*`) are also blocked and unable to run other runnable virtual threads. The thread dump reveals these threads are blocked on database calls nested inside legacy `synchronized` helper blocks.",
-      "question": "What is the primary cause of this carrier thread blocking and how should it be resolved?",
+      "scenario": "Real-world Industrial Problem Statement: A multinational fintech firm is deploying a deep neural network (DNN) for real-time transactional fraud detection on high-dimensional dataset containing user metadata, historical logs, and geographical features. The compliance department mandates that any transaction flagged as fraudulent must be explained to regulatory auditors with local feature attribution (e.g., explaining why a specific user transaction was blocked) within a strict latency SLA of 15 milliseconds. The engineering team is debating whether to use SHAP (Shapley Additive exPlanations) KernelExplainer, Integrated Gradients, or LIME (Local Interpretable Model-agnostic Explanations).",
+      "question": "Which explainability approach balances mathematical rigor (satisfying axioms like completeness and dummy player) with the strict 15ms real-time latency SLA for this deep learning model?",
       "options": [
-        "A) Virtual threads do not support I/O operations and pin the carrier thread whenever any database driver is executed, requiring a migration back to Platform Threads.",
-        "B) The JVM fails to scale ForkJoinPool dynamically. The solution is to increase the max pool size using the `-Djdk.virtualThreadScheduler.maxPoolSize` flag.",
-        "C) The virtual threads pin the carrier thread because a blocking operation is executed inside a `synchronized` block. The solution is to replace `synchronized` blocks with `ReentrantLock`.",
-        "D) The database driver is not thread-safe, forcing virtual threads to switch to a synchronized state. The solution is to wrap the driver calls in a `ThreadLocal` context."
+        "A) Deploy KernelExplainer directly on the deep neural network, utilizing a background dataset size of 100 to reduce computation time.",
+        "B) Apply LIME with a tabular perturbator, substituting the high-dimensional space with a low-dimensional PCA projection during perturbation.",
+        "C) Utilize Integrated Gradients, as its path-integral formulation computes feature attributions using a closed-form approximation over a small number of steps, bypassing exponential model evaluations.",
+        "D) Substitute the DNN with a Gradient Boosted Decision Tree (GBDT) and apply TreeExplainer, as tree-based shapley estimations run in polynomial time."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) The virtual threads pin the carrier thread because a blocking operation is executed inside a `synchronized` block. The solution is to replace `synchronized` blocks with `ReentrantLock`.",
-      "explanation": "In Java 21, a virtual thread is pinned to its carrier thread if it runs a blocking operation (such as I/O or sleeping) while inside a `synchronized` block or method. When pinned, the underlying platform thread cannot unmount the virtual thread to execute other virtual threads, leading to starvation. Replacing `synchronized` blocks with `java.util.concurrent.locks.ReentrantLock` allows the virtual thread to unmount smoothly when it encounters a blocking operation, avoiding carrier thread starvation."
+      "correct_answer_text": "C) Utilize Integrated Gradients, as its path-integral formulation computes feature attributions using a closed-form approximation over a small number of steps, bypassing exponential model evaluations.",
+      "explanation": "Integrated Gradients is a path-based attribution method designed specifically for differentiable neural networks. It satisfies two fundamental axioms: Completeness and Implementation Invariance. Unlike KernelSHAP (which requires solving a weighted linear regression over an exponential number of model evaluations based on the feature dimension, making it far too slow for a 15ms SLA) or TreeExplainer (which requires discarding the DNN entirely), Integrated Gradients computes the path integral of gradients along a straight line from a baseline to the input. With 50-100 steps, it provides mathematically rigorous local attribution within milliseconds, fitting the real-time inference constraint of the DNN."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a Spring Boot application's service method is silently failing to commit database transactions. The method is annotated with `@Transactional`, but data is not persisting to the database. The code is written as follows:\n\njava\n@Service\npublic class UserService {\n    @Autowired\n    private UserRepository userRepository;\n\n    @Transactional\n    public CompletableFuture<User> createUser(String name) {\n        return CompletableFuture.supplyAsync(() -> {\n            User user = new User(name);\n            return userRepository.save(user); \n        });\n    }\n}\n",
-      "question": "What is the primary cause of this transactional failure?",
+      "scenario": "Real-world Industrial Problem Statement: An automated human resource platform uses an NLP transformer-based model to screen and score resumes for software engineering roles. The training corpus consists of historical hiring data from the past decade, which contains an 82% gender imbalance favoring male candidates. During initial shadow deployments, the model shows a systemic bias, yielding a Disparate Impact ratio of 0.61 against female applicants. The engineering team must mitigate this bias during the model-training phase (in-processing) without significantly degrading the utility of the model or losing high-dimensional semantic relationships in the resume embeddings.",
+      "question": "Which mitigation strategy and evaluation metric should the team implement to directly address this bias in the latent space during the model's training phase?",
       "options": [
-        "A) Spring's `@Transactional` annotation does not support classes returning `CompletableFuture` types.",
-        "B) The lambda inside `CompletableFuture.supplyAsync` is executed on a different thread (by default from `ForkJoinPool.commonPool()`), which does not inherit the parent thread's `ThreadLocal` transactional context managed by Spring's proxy.",
-        "C) The Spring AOP proxy is bypassed because `CompletableFuture` executes its internal work using native JVM instructions that do not trigger proxy interceptors.",
-        "D) The database connection pool is depleted because `CompletableFuture` opens a new connection per thread that is never released."
+        "A) Implement Adversarial Debiasing during training by adding a gradient-reversal layer connected to a demographic discriminator network, while monitoring the Disparate Impact ratio.",
+        "B) Apply a pre-processing re-weighing algorithm to balance the demographic distribution in the training corpus and optimize the model for Equalized Odds.",
+        "C) Apply post-processing Reject Option Classification (ROC) to swap predictions near the decision boundary, optimizing for Demographical Parity.",
+        "D) Perform synthetic oversampling of female resumes using SMOTE in the token-embedding space and evaluate the model using macro-averaged F1 score."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The lambda inside `CompletableFuture.supplyAsync` is executed on a different thread (by default from `ForkJoinPool.commonPool()`), which does not inherit the parent thread's `ThreadLocal` transactional context managed by Spring's proxy.",
-      "explanation": "Spring's transaction management relies on a `ThreadLocal` storage model to bind the current database connection and transaction state to the active executing thread. When `CompletableFuture.supplyAsync()` is called, the database write (`userRepository.save()`) runs asynchronously on a separate thread from the common `ForkJoinPool`. This thread does not share the transaction context of the original thread where the `@Transactional` proxy intercepted the invocation, causing the database operations to execute outside of any transaction scope."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Implement Adversarial Debiasing during training by adding a gradient-reversal layer connected to a demographic discriminator network, while monitoring the Disparate Impact ratio.",
+      "explanation": "Adversarial debiasing is an in-processing technique that leverages generative adversarial networks (GANs) principles. By adding an adversarial discriminator that attempts to predict the protected attribute (gender) from the latent representations learned by the predictor, and using a gradient reversal layer, the predictor is forced to learn representations that are statistically independent of the protected attribute. This directly addresses bias in the high-dimensional embedding space without ruining semantic representations, unlike pre-processing methods (like re-weighing) which struggle with complex deep representations, or post-processing methods (like ROC) which only shift the decision boundary after the biased representation has already been learned."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where an asynchronous pipeline built using `CompletableFuture` occasionally swallows exceptions under heavy load, leaving API clients hanging indefinitely without any failure logs. The pipeline is constructed as follows:\n\njava\nCompletableFuture.supplyAsync(() -> fetchMetrics())\n    .thenApply(metrics -> processMetrics(metrics))\n    .thenAccept(result -> saveResult(result));\n",
-      "question": "What is the primary cause of the swallowed exceptions and hanging behavior?",
+      "scenario": "Real-world Industrial Problem Statement: A medical diagnostics startup has deployed an image classification system (Convolutional Neural Network) to detect skin abnormalities from dermoscopic images. In production, the system experiences concept drift and performance degradation because images from newer clinical sites are captured using different camera sensors, under varying illumination conditions (covariate shift). The system needs an Out-of-Distribution (OOD) detection algorithm that alerts clinicians when a test image deviates significantly from the training distribution, but must not run heavy, non-deterministic operations that exceed edge device hardware limitations.",
+      "question": "Which approach represents the most computationally efficient and robust OOD detection framework for this production computer vision pipeline?",
       "options": [
-        "A) The default `ForkJoinPool` automatically catches and silently discards all unchecked exceptions to prevent daemon thread death.",
-        "B) The `thenAccept` stage completes normally even if preceding stages throw an exception, preventing downstream propagation.",
-        "C) The pipeline lacks terminal exception handling (e.g., `exceptionally()` or `handle()`), and since the resulting `CompletableFuture` is never joined or queried via `.get()`, the exception remains unobserved inside the future.",
-        "D) `CompletableFuture` converts all runtime exceptions into checked exceptions, which must be caught using a standard try-catch block inside the lambda."
+        "A) Transform the CNN into a Bayesian Neural Network (BNN) with Monte Carlo Dropout at inference time, calculating the Shannon Entropy over 50 forward passes.",
+        "B) Train a Deep Generative Autoencoder on the clean training set, using the reconstruction loss threshold on incoming clinical images as the sole anomaly score.",
+        "C) Compute the Mahalanobis distance of the incoming sample's activations in the CNN's penultimate feature layer against class-conditional Gaussian distributions fitted on the training data.",
+        "D) Calculate the Kullback-Leibler (KL) divergence between the historical training target distributions and the softmax probability output of real-time clinical inferences over a 24-hour rolling window."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) The pipeline lacks terminal exception handling (e.g., `exceptionally()` or `handle()`), and since the resulting `CompletableFuture` is never joined or queried via `.get()`, the exception remains unobserved inside the future.",
-      "explanation": "In `CompletableFuture` pipelines, exceptions are propagated downstream. If any stage (e.g., `fetchMetrics`) throws an exception, all subsequent stages (such as `thenApply` and `thenAccept`) are bypassed, and the final returned `CompletableFuture` is completed exceptionally. If the application never attaches an exception-aware callback like `.exceptionally()` or `.handle()`, and does not block to read the result with `.join()` or `.get()`, the exception is entirely swallowed and will not be logged or thrown, leaving caller threads hanging or unaware of the failure."
+      "correct_answer_text": "C) Compute the Mahalanobis distance of the incoming sample's activations in the CNN's penultimate feature layer against class-conditional Gaussian distributions fitted on the training data.",
+      "explanation": "Computing the Mahalanobis distance of the activations in the penultimate layer (known as the Mahalanobis OOD detector) is highly effective and computationally efficient. It models the distribution of features learned by the CNN as a mixture of Gaussians. Because it only requires a single forward pass through the network and a relatively inexpensive vector-matrix multiplication, it meets edge constraints. In contrast, Monte Carlo Dropout (Option A) requires 50+ forward passes, which is computationally prohibitive. Reconstruction-based autoencoders (Option B) often fail on complex clinical images as they can reconstruct OOD samples surprisingly well. KL-divergence on softmax distributions (Option D) is a aggregate metric over time and cannot identify individual OOD images at the point-of-care."
     }
   ]
 }
