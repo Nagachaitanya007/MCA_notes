@@ -114,7 +114,8 @@
     "GC Barriers: Tuning Read and Write Barriers in Concurrent Garbage Collectors",
     "Object Pooling & Memory Recycling: Tuning GC Pressure out of the Hot Path",
     "GC Ergonomics & Adaptive Heap Sizing: Tuning Dynamic Memory Boundaries",
-    "Tuning GC Thread Dynamics: Balancing Parallel and Concurrent Workers to Avoid CPU Starvation"
+    "Tuning GC Thread Dynamics: Balancing Parallel and Concurrent Workers to Avoid CPU Starvation",
+    "Metaspace & Non-Heap Memory Tuning: Managing Runtime Class Metadata and Preventing Native OOMs"
   ],
   "Design a URL Shortener (Key Generation Service, Sharding)": [
     "URL Shortener: Key Generation Service (KGS) & Sharding",
