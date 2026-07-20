@@ -162,7 +162,8 @@
     "Leaderless Replication: Mastering Quorum Consensus & Active Anti-Entropy",
     "Cross-Shard Distributed Transactions: Two-Phase Commit (2PC) vs. The Saga Pattern",
     "Database Sharding & Replication Strategies",
-    "Read-After-Write Consistency: Mitigating Replication Lag in Primary-Replica Topologies"
+    "Read-After-Write Consistency: Mitigating Replication Lag in Primary-Replica Topologies",
+    "Dynamic Resharding & Consistent Hashing: How to Scale Shards Without Downtime"
   ],
   "Design a Notification System (Kafka + SQS + Webhooks)": [
     "Designing a Scalable Notification System (Kafka + SQS + Webhooks)",
