@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
-  "mode": "Java",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot application migrated to Java 21 Virtual Threads starts experiencing severe latency spikes and thread starvation under heavy load. Below is the suspect code snippet within a `@Service` bean:\n\njava\n@Service\npublic class CashService {\n    private final Map<String, String> cache = new HashMap<>();\n    \n    public synchronized String getOrFetch(String key, Supplier<String> loader) {\n        if (cache.containsKey(key)) {\n            return cache.get(key);\n        }\n        String val = loader.get(); // Performs a blocking HTTP call\n        cache.put(key, val);\n        return val;\n    }\n}\n",
-      "question": "What is the primary cause of this performance degradation under load when using Virtual Threads?",
+      "scenario": "Real-world Industrial Problem Statement: An autonomous Automated Guided Vehicle (AGV) routing system in a high-density, dynamic distribution center uses the A* algorithm with a Manhattan distance heuristic ($h_1$) to find optimal paths on a grid-based layout. Due to a sudden influx of physical inventory, the grid layout has become highly congested with complex obstacle patterns and dead-ends. Consequently, the A* algorithm is failing to compute paths within the required 50ms real-time control loop threshold. To mitigate this latency, a software engineer proposes using 'Weighted A*' by multiplying the heuristic value by a weight factor $w > 1$ (i.e., $f(n) = g(n) + w \\cdot h(n)$).",
+      "question": "What are the exact algorithmic trade-offs and mathematical implications of applying this weighted heuristic approach in this real-time routing environment?",
       "options": [
-        "A) The Spring `@Service` proxy intercepts the synchronized method, forcing the JVM to fall back to platform threads for all invocations.",
-        "B) The blocking HTTP call inside the `synchronized` method pins the virtual thread to its carrier platform thread, preventing the carrier thread from executing other virtual threads.",
-        "C) The non-thread-safe `HashMap` triggers a JVM internal safety check, halting the virtual thread executor to avoid memory corruption.",
-        "D) Virtual threads cannot run `Supplier` functional interfaces, causing them to block permanently on the thread scheduler."
+        "A) It preserves path optimality and consistency while reducing the search space size, guaranteeing the shortest path is always found in $O(V)$ time.",
+        "B) It violates heuristic admissibility, rendering the search suboptimal, but accelerates computation by directing the search search-frontier towards the goal faster, guaranteeing a path cost within a bounded factor of $w$ times the optimal cost.",
+        "C) It converts the A* search into a pure Depth-First Search (DFS), which guarantees completeness in cyclic graphs but increases spatial complexity exponentially.",
+        "D) It results in infinite looping because the non-admissible heuristic values cause the algorithm to continuously re-evaluate visited states without terminating."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The blocking HTTP call inside the `synchronized` method pins the virtual thread to its carrier platform thread, preventing the carrier thread from executing other virtual threads.",
-      "explanation": "When a virtual thread executes a blocking operation (like an HTTP request or I/O) inside a `synchronized` block or method, the virtual thread is unable to unmount from its carrier thread (a platform thread from the `ForkJoinPool`). This is known as thread pinning. Under heavy load, all carrier platform threads become pinned, leading to carrier thread starvation and severe application-wide latency spikes. To resolve this, `ReentrantLock` should be used instead of `synchronized`."
+      "correct_answer_text": "B) It violates heuristic admissibility, rendering the search suboptimal, but accelerates computation by directing the search search-frontier towards the goal faster, guaranteeing a path cost within a bounded factor of $w$ times the optimal cost.",
+      "explanation": "Weighted A* trades optimality for computational speed. When $w > 1$, the heuristic can overestimate the true cost to the goal, making it non-admissible. This causes the search to behave more like Greedy Best-First Search, focusing on expanding nodes closer to the goal and significantly reducing the number of evaluated states. Critically, it provides an upper bound on suboptimality: the cost of the generated path is guaranteed to be no worse than $w \\times C^*$ (where $C^*$ is the optimal path cost), which is highly desirable for real-time industrial constraints."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where customer orders are occasionally failing to trigger email notifications, and database updates seem to be inconsistently visible. The implementation looks like this:\n\njava\n@Service\npublic class OrderService {\n    @Autowired private OrderRepository repo;\n    @Autowired private NotificationService notifier;\n\n    @Transactional\n    public void processOrder(Order order) {\n        repo.save(order);\n        CompletableFuture.runAsync(() -> {\n            notifier.sendEmail(order); // Reads order status from DB and sends email\n        });\n    } \n}\n",
-      "question": "Why does `notifier.sendEmail(order)` periodically fail to read the correct database state?",
+      "scenario": "Real-world Industrial Problem Statement: A fintech company is deploying a high-frequency automated option-hedging bot modeled as a two-player zero-sum game. The bot uses a Min-Max search engine with Alpha-Beta pruning to evaluate market scenarios up to a search depth of 8. During high-volatility periods, the branching factor of the transaction state-tree expands drastically due to highly skewed asset price actions. The system is breaching its 10ms Service Level Agreement (SLA), and the current engine evaluates states in an arbitrary left-to-right order, which is limiting the pruning efficiency of the Alpha-Beta algorithm.",
+      "question": "Which optimization strategy should the development team implement to maximize pruning efficiency and keep the search latency within the SLA without reducing the search depth?",
       "options": [
-        "A) `CompletableFuture.runAsync` executes tasks on a separate thread pool concurrently, which may attempt to read the database before the main thread commits the Spring `@Transactional` transaction.",
-        "B) Spring `@Transactional` locks the entire table when `CompletableFuture` is invoked, causing a deadlock on the background thread.",
-        "C) The Spring proxy blocks any asynchronous execution of methods called inside a `@Transactional` boundary.",
-        "D) `CompletableFuture` automatically converts all downstream repository calls into read-only transactions, ignoring the parent context."
+        "A) Employ random node expansion to parallelize the search, ensuring that all threads execute symmetric branches of the Min-Max tree simultaneously.",
+        "B) Limit the evaluation function to binary outcomes (+1/-1) to simplify the mathematical range of the alpha and beta bounds.",
+        "C) Implement iterative deepening combined with a transposition table (Zobrist hashing) and a move-ordering heuristic (such as the history heuristic) to evaluate high-quality moves first.",
+        "D) Transition the engine from Alpha-Beta pruning to a pure Breadth-First Search (BFS) to guarantee a linear time complexity reduction across highly skewed branches."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) `CompletableFuture.runAsync` executes tasks on a separate thread pool concurrently, which may attempt to read the database before the main thread commits the Spring `@Transactional` transaction.",
-      "explanation": "Spring's `@Transactional` manages database transactions using a thread-local association. The transaction commits only after the `processOrder` method finishes successfully. However, `CompletableFuture.runAsync` immediately spawns a background task running in the `ForkJoinPool.commonPool()` (or another executor). Because this happens on a different thread, the transaction context does not propagate, and the background thread may attempt to read the order from the database before the transaction on the main thread has committed, resulting in a dirty read or a missing record error. A transaction synchronization listener (`TransactionSynchronizationManager`) should be used to trigger the async task post-commit."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Implement iterative deepening combined with a transposition table (Zobrist hashing) and a move-ordering heuristic (such as the history heuristic) to evaluate high-quality moves first.",
+      "explanation": "Alpha-Beta pruning's efficiency is highly dependent on the order in which nodes are evaluated. In the worst-case (poor ordering), the branching factor remains $b$, and no pruning occurs. In the best-case (perfect ordering), the effective branching factor is reduced to $\\sqrt{b}$, allowing twice the depth to be searched in the same time. Implementing iterative deepening paired with move-ordering heuristics (like the history or killer heuristic) ensures that promising moves are evaluated first, maximizing early pruning. Transposition tables prevent re-evaluating duplicate game states (transpositions), saving critical computation time."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a service utilizing Java 21 Virtual Threads and a custom carrier thread pool size completely freezes and hangs indefinitely. The service throttles parallel integration calls using a `Semaphore` of 10 permits. Thousands of virtual threads execute the following code block concurrently:\n\njava\npublic void callIntegration() {\n    try {\n        semaphore.acquire();\n        synchronized (lock) {\n            restClient.getForObject(\"https://api.thirdparty.com/v1/resource\", String.class);\n        }\n    } catch (InterruptedException e) {\n        Thread.currentThread().interrupt();\n    } finally {\n        semaphore.release();\n    } \n}\n",
-      "question": "What JVM scheduling behavior explains why this setup causes a complete and permanent freeze?",
+      "scenario": "Real-world Industrial Problem Statement: A high-precision semiconductor assembly line utilizes a 6-Degrees-of-Freedom (6-DOF) robotic arm for wafer placement. The state space of the robotic arm is high-dimensional ($D=6$) and contains highly restricted physical safety boundaries. Path planning using standard A* with an admissible Euclidean distance heuristic in joint space is failing due to Out-Of-Memory (OOM) errors. The open-list size grows exponentially because of the 'curse of dimensionality' and the presence of deep local minima (potential wells) caused by the physical structures of the manufacturing chamber.",
+      "question": "How should the engineering team adapt the search algorithm and heuristic design to eliminate the memory overhead while navigating the robot past local minima?",
       "options": [
-        "A) The JVM garbage collector prioritizes virtual threads waiting on semaphores, causing an OutOfMemoryError and halting the CPU scheduler.",
-        "B) The `synchronized` block pins the carrier thread during the HTTP call. When the number of pinned carrier threads reaches the carrier pool limit, no other virtual thread can run to execute `semaphore.release()`, creating a starvation deadlock.",
-        "C) `Semaphore` is explicitly incompatible with virtual threads and forces the JVM's ForkJoinPool to permanently discard task queues.",
-        "D) Virtual threads do not support the `InterruptedException` mechanism, causing the `try-catch` block to enter an infinite loop."
+        "A) Swap the search algorithm to Memory-Bounded A* (SMA*) or Iterative Deepening A* (IDA*) to enforce a strict memory cap, and use an inflated, non-admissible heuristic to escape local minima.",
+        "B) Replace the heuristic search with a Uniform Cost Search (Dijkstra's) and double the step size, as heuristics are mathematically ineffective in state spaces with dimensions $D > 3$.",
+        "C) Use standard Depth-First Search (DFS) with a zero-cost heuristic to guarantee completeness and optimality in high-dimensional continuous spaces.",
+        "D) Force a bidirectional Breadth-First Search (BFS) on the continuous joint space, which guarantees that memory growth remains strictly logarithmic relative to the dimensions."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `synchronized` block pins the carrier thread during the HTTP call. When the number of pinned carrier threads reaches the carrier pool limit, no other virtual thread can run to execute `semaphore.release()`, creating a starvation deadlock.",
-      "explanation": "Because of the `synchronized` block enclosing the blocking network call, virtual threads pin their underlying platform carrier threads. If the number of concurrent executions exceeds the size of the carrier pool (which defaults to the number of available CPU cores), all carrier threads become pinned. Consequently, no other virtual threads\u2014including those that have completed their database operations and are waiting to run `semaphore.release()`\u2014can be scheduled. This creates a state of carrier thread starvation, completely halting progress across the entire system."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Swap the search algorithm to Memory-Bounded A* (SMA*) or Iterative Deepening A* (IDA*) to enforce a strict memory cap, and use an inflated, non-admissible heuristic to escape local minima.",
+      "explanation": "Standard A* stores all generated nodes in memory (the Open/Closed lists), which leads to OOM errors in high-dimensional spaces ($D=6$). Memory-bounded search variants like SMA* (Simplified Memory-Bounded A*) or IDA* limit memory usage to a predefined threshold or reconstruct path nodes iteratively. Additionally, in complex environments with deep local minima (obstacles), using an inflated heuristic (giving more weight to the heuristic term) helps 'push' the search frontier aggressively toward the goal, bypassing local minima faster and reducing the number of node allocations in the first place."
     }
   ]
 }
