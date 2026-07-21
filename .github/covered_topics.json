@@ -43,7 +43,8 @@
     "Gray Failure Detection: Handling Silent Node Degradation",
     "Crash-Only Architecture: Managing Failures via Supervisor Trees",
     "The Saga Dead-End: Resolving Failures inside Compensating Transactions",
-    "Distributed Cooperative Cancellation: Taming Zombie Execution After Client Timeouts"
+    "Distributed Cooperative Cancellation: Taming Zombie Execution After Client Timeouts",
+    "Distributed Deadline Propagation: Managing Timeout Budgets across Microservice Chains"
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections",
