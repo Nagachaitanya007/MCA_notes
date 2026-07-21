@@ -152,7 +152,8 @@
     "Scale-Out Prefix Partitioning and Hotspot Management",
     "Designing a Scalable File Storage System",
     "CDN Cache Stampede Prevention and Origin Shielding for Massive-Scale Object Delivery",
-    "Securing and Optimizing Direct Client Uploads: Presigned URLs and Token-Based Access Control"
+    "Securing and Optimizing Direct Client Uploads: Presigned URLs and Token-Based Access Control",
+    "Data Integrity Verification: End-to-End Checksums and Bit Rot Detection"
   ],
   "Database Sharding & Replication Strategies": [
     "Horizontal Sharding: Scaling Out Your Data",
