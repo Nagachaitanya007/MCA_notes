@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
-  "mode": "Java",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput microservice intermittently experiences CPU spikes to 100% and becomes unresponsive. Thread dumps indicate multiple worker threads are permanently stuck in `RUNNABLE` state inside the `put` method of a custom, non-blocking open-addressing hash map. Below is the simplified code snippet:\n\njava\npublic class CustomConcurrentMap<K, V> {\n    private static class Entry<K, V> {\n        final K key;\n        volatile V value;\n        Entry(K key, V value) { this.key = key; this.value = value; }\n    }\n    private final AtomicReferenceArray<Entry<K, V>> table = new AtomicReferenceArray<>(1024);\n\n    public void put(K key, V value) {\n        int h = Math.abs(key.hashCode());\n        int idx = h % table.length();\n        while (true) {\n            Entry<K, V> current = table.get(idx);\n            if (current == null) {\n                if (table.compareAndSet(idx, null, new Entry<>(key, value))) {\n                    return;\n                }\n            } else if (current.key.equals(key)) {\n                current.value = value;\n                return;\n            }\n            idx = (idx + 1) % table.length();\n        }\n    }\n}\n",
-      "question": "What is the primary cause of this CPU spike under high concurrency and high load?",
+      "scenario": "Real-world Industrial Problem Statement: An e-commerce platform's recommendation engine is training a gradient boosting model on transaction history. The target variable and several key features (such as 'total spend' and 'session duration') are highly right-skewed and contain numerous zero values (for users who browsed but didn't buy) as well as negative values (representing promo discounts and refunds). Standard logarithmic transformation cannot handle these negative and zero values directly.",
+      "question": "Which transformation strategy is mathematically valid and most effective for stabilizing variance and reducing skewness in this dataset without discarding negative/zero values?",
       "options": [
-        "A) The volatile write `current.value = value` triggers a cache-coherence storm (MESI invalidation) that blocks the JIT compiler from optimizing the execution path.",
-        "B) The absence of a size-tracking threshold and resizing logic allows the map to reach 100% capacity; once full, `put` calls for non-existent keys probe the `AtomicReferenceArray` infinitely in a CPU-bound `while (true)` loop.",
-        "C) If `key.hashCode()` returns `Integer.MIN_VALUE`, `Math.abs()` returns a negative value, causing `idx` to be negative and triggering a JVM-level safe-point pause loop.",
-        "D) The lack of a `volatile` modifier on the `table` reference prevents threads from seeing updates to the array elements, leading to stale reads and infinite loop cycles."
+        "A) Apply a standard Logarithmic Transformation (log(x)) after adding a tiny epsilon value (e.g., 1e-5) to all features.",
+        "B) Use the Box-Cox transformation directly on the raw features to automatically determine the optimal lambda parameter.",
+        "C) Apply the Yeo-Johnson transformation directly to the features to accommodate zero and negative values while stabilizing variance.",
+        "D) Utilize a RobustScaler to scale features based on the interquartile range (IQR) to completely eliminate skewness."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The absence of a size-tracking threshold and resizing logic allows the map to reach 100% capacity; once full, `put` calls for non-existent keys probe the `AtomicReferenceArray` infinitely in a CPU-bound `while (true)` loop.",
-      "explanation": "Because this custom map uses open addressing (linear probing) without any load factor thresholds, capacity checks, or resizing logic, it will eventually fill up. When the map is completely full (no `null` slots), any attempt to insert (`put`) a new key will result in an infinite loop. The `current == null` check will always evaluate to false, and the `current.key.equals(key)` check will also evaluate to false (since it is a new key). Consequently, the code will continuously increment and wrap around the index (`(idx + 1) % table.length()`) in an infinite loop, starving the CPU."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Apply the Yeo-Johnson transformation directly to the features to accommodate zero and negative values while stabilizing variance.",
+      "explanation": "The Yeo-Johnson transformation is a modification of the Box-Cox transformation that allows for zero and negative values. Box-Cox requires strictly positive values (x > 0). While adding an arbitrary constant shift can allow Box-Cox or standard log transforms to run, it distorts the underlying distribution, especially when zero/negative densities are high. RobustScaler only rescales the range using IQR to mitigate outlier influence but does not alter the underlying skewness or shape of the distribution."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where an in-memory caching service experiences severe `OutOfMemoryError` (OOM) errors under high write load. The service implements a custom cache designed to keep heavy metadata objects using `SoftReference` values, allowing the JVM to reclaim them when heap pressure is high. The underlying storage is a `ConcurrentHashMap`:\n\njava\npublic class CustomSoftCache<K, V> {\n    private final Map<K, SoftReference<V>> cache = new ConcurrentHashMap<>();\n    private final ReferenceQueue<V> queue = new ReferenceQueue<>();\n    // Background thread polls 'queue' to clean up stale entries from the 'cache' map\n}\n\nEven under high GC activity, the JVM crashes with an OOM before reclaiming memory.",
-      "question": "Why does this custom `SoftReference` implementation fail to prevent an `OutOfMemoryError`?",
+      "scenario": "Real-world Industrial Problem Statement: A cybersecurity firm is deploying an inline network Intrusion Detection System (IDS) that processes high-dimensional network packet metadata (120+ continuous and categorical features) in real-time. The processing pipeline must meet an ultra-low latency threshold of less than 5ms per packet. Outliers, which represent potential zero-day exploits, must be detected immediately on streaming data.",
+      "question": "Which outlier detection algorithm balances high-dimensional complexity and real-time execution constraints best?",
       "options": [
-        "A) The JVM garbage collector prioritizes freeing `WeakReference` objects over `SoftReference` objects, leaving soft references completely untouched during young and old generation sweeps.",
-        "B) While the garbage collector reclaims the referent `V` (leaving the `SoftReference` containing `null`), the `SoftReference` wrapper objects themselves and their associated keys `K` remain strongly reachable in the `ConcurrentHashMap` and continue to consume memory.",
-        "C) The `ReferenceQueue` mechanism is synchronous and blocks GC worker threads until the background cleanup thread invokes `ReferenceQueue.poll()`, preventing object reclamation.",
-        "D) The `ConcurrentHashMap` internally locks segments when GC attempts to clear `SoftReference` references, resulting in thread deadlocks and rapid heap exhaustion."
+        "A) Local Outlier Factor (LOF) using Euclidean distance across all 120 features to locate local density anomalies.",
+        "B) Isolation Forest (iForest) built with a limited number of estimators and sub-sampling, applied to the high-dimensional space.",
+        "C) Running t-Distributed Stochastic Neighbor Embedding (t-SNE) to compress features to 2 dimensions, followed by Mahalanobis distance calculation.",
+        "D) An RBF-kernel One-Class Support Vector Machine (OC-SVM) fitted dynamically on each incoming mini-batch of packet streams."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) While the garbage collector reclaims the referent `V` (leaving the `SoftReference` containing `null`), the `SoftReference` wrapper objects themselves and their associated keys `K` remain strongly reachable in the `ConcurrentHashMap` and continue to consume memory.",
-      "explanation": "When garbage collection triggers under memory pressure, the GC reclaims the values (`V`) wrapped inside the `SoftReference` instances, setting their internal referent field to `null`. However, the `SoftReference` wrapper objects themselves, along with the strong references to the map keys (`K`) and the internal map nodes, are still strongly referenced by the `ConcurrentHashMap` structure. Under heavy write loads, if the background cleanup thread cannot keep up or if entries are added continuously, millions of 'empty' `SoftReference` wrappers (holding `null`) and keys will build up in the heap, eventually causing an `OutOfMemoryError`."
+      "correct_answer_text": "B) Isolation Forest (iForest) built with a limited number of estimators and sub-sampling, applied to the high-dimensional space.",
+      "explanation": "Isolation Forest isolating anomalies rather than profiling normal points is highly efficient. It has a training complexity of O(t * psi * log(psi)) and a prediction complexity of O(t * d) where d is the depth, making it incredibly fast for real-time inference on high-dimensional data. LOF is computationally expensive (O(n^2)) due to nearest neighbor searches. t-SNE is non-parametric, extremely slow, and cannot project new out-of-sample points in real-time. Fitting an RBF-kernel OC-SVM dynamically per mini-batch introduces unacceptable computational overhead for a <5ms latency budget."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Spring-managed transactional service is experiencing silent data loss. The application uses a custom in-memory doubly-linked list wrapper called `PendingTaskQueue` to buffer outgoing tasks. This custom collection is injected as a bean into a `@Service` component:\n\njava\n@Service\npublic class TaskProcessor {\n    @Autowired\n    private PendingTaskQueue taskQueue;\n\n    @Transactional\n    public void processBatch() {\n        Task task = taskQueue.poll();\n        if (task != null) {\n            executeAndPersist(task); // Interacts with database\n        }\n    }\n}\n\nDuring database connection drops, Spring successfully rolls back the transaction, but the tasks that were polled from `taskQueue` are lost forever.",
-      "question": "What is the primary cause of this state inconsistency during a transaction rollback?",
+      "scenario": "Real-world Industrial Problem Statement: A healthcare provider is building a predictive diagnostic model for cardiovascular risk. Clinical records have high rates of missing values: 'Income Status' is Missing Not at Random (MNAR) because low-income patients systematically omit this information, while 'Serum Cholesterol' is Missing at Random (MAR) because a clinician forgot to order the lab test. The downstream classifier is a sensitive, regularized logistic regression model.",
+      "question": "Which data preprocessing pipeline handles these distinct missingness mechanisms most effectively without introducing systematic bias?",
       "options": [
-        "A) Spring's transactional proxy only tracks JDK Collection implementations (like `ArrayList` or `LinkedList`) and cannot track mutations on user-defined custom collection types.",
-        "B) Since `PendingTaskQueue` is a singleton Spring bean, its internal state modifications are executed in a JVM-isolated thread context that bypasses JDBC/JPA rollback interceptors.",
-        "C) Spring's `@Transactional` mechanism operates entirely at the database connection / transaction resource level; it has no awareness or control over standard JVM heap modifications, meaning changes to in-memory collections cannot be rolled back.",
-        "D) The JTA transaction coordinator fails to register the custom collection as an `XAResource`, preventing the 2-Phase Commit protocol from executing the rollback phase on the heap."
+        "A) Apply Listwise Deletion to remove all records with any missing fields to guarantee only pristine clinical records are used for training.",
+        "B) Perform Mean Imputation for 'Serum Cholesterol' and Median Imputation for 'Income Status' to preserve sample size and minimize structural variance changes.",
+        "C) Use Multiple Imputation by Chained Equations (MICE) for 'Serum Cholesterol', and create a binary missingness indicator column alongside a placeholder imputation for 'Income Status'.",
+        "D) Apply K-Nearest Neighbors (KNN) imputation using Euclidean distance across all features globally to impute both variables simultaneously."
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) Spring's `@Transactional` mechanism operates entirely at the database connection / transaction resource level; it has no awareness or control over standard JVM heap modifications, meaning changes to in-memory collections cannot be rolled back.",
-      "explanation": "Spring's transaction management abstraction (`PlatformTransactionManager`) manages transactional resources, typically database connections (via JDBC, JPA, Hibernate) or message queues (JMS, AMQP). It has no awareness of, or control over, the standard JVM heap and Java objects. When `taskQueue.poll()` is executed, the item is removed from the in-memory queue. If the database transaction later rolls back due to a failure in `executeAndPersist`, Spring rolls back the database state, but cannot revert the state of the JVM heap collection. To solve this, developers must use transactional resources (like database tables or transactional message brokers) or manually register a `TransactionSynchronization` to re-enqueue the item on rollback."
+      "correct_answer_text": "C) Use Multiple Imputation by Chained Equations (MICE) for 'Serum Cholesterol', and create a binary missingness indicator column alongside a placeholder imputation for 'Income Status'.",
+      "explanation": "MICE is highly effective for MAR ('Serum Cholesterol') as it models each feature with missing values as a function of other features in a semi-parametric way. However, for MNAR ('Income Status'), the missingness itself contains valuable predictive signals (systematic omission). Simply imputing it would destroy this pattern. By introducing a binary missingness indicator variable, the model can capture the unobserved relationship associated with the missing values, preserving both statistical validity and predictive power."
     }
   ]
 }

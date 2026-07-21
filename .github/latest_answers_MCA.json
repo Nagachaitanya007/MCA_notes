@@ -1,48 +1,48 @@
 {
-  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "Real-world Industrial Problem Statement: An autonomous Automated Guided Vehicle (AGV) routing system in a high-density, dynamic distribution center uses the A* algorithm with a Manhattan distance heuristic ($h_1$) to find optimal paths on a grid-based layout. Due to a sudden influx of physical inventory, the grid layout has become highly congested with complex obstacle patterns and dead-ends. Consequently, the A* algorithm is failing to compute paths within the required 50ms real-time control loop threshold. To mitigate this latency, a software engineer proposes using 'Weighted A*' by multiplying the heuristic value by a weight factor $w > 1$ (i.e., $f(n) = g(n) + w \\cdot h(n)$).",
-      "question": "What are the exact algorithmic trade-offs and mathematical implications of applying this weighted heuristic approach in this real-time routing environment?",
+      "scenario": "Real-world Industrial Problem Statement: An e-commerce platform's recommendation engine is training a gradient boosting model on transaction history. The target variable and several key features (such as 'total spend' and 'session duration') are highly right-skewed and contain numerous zero values (for users who browsed but didn't buy) as well as negative values (representing promo discounts and refunds). Standard logarithmic transformation cannot handle these negative and zero values directly.",
+      "question": "Which transformation strategy is mathematically valid and most effective for stabilizing variance and reducing skewness in this dataset without discarding negative/zero values?",
       "options": [
-        "A) It preserves path optimality and consistency while reducing the search space size, guaranteeing the shortest path is always found in $O(V)$ time.",
-        "B) It violates heuristic admissibility, rendering the search suboptimal, but accelerates computation by directing the search search-frontier towards the goal faster, guaranteeing a path cost within a bounded factor of $w$ times the optimal cost.",
-        "C) It converts the A* search into a pure Depth-First Search (DFS), which guarantees completeness in cyclic graphs but increases spatial complexity exponentially.",
-        "D) It results in infinite looping because the non-admissible heuristic values cause the algorithm to continuously re-evaluate visited states without terminating."
+        "A) Apply a standard Logarithmic Transformation (log(x)) after adding a tiny epsilon value (e.g., 1e-5) to all features.",
+        "B) Use the Box-Cox transformation directly on the raw features to automatically determine the optimal lambda parameter.",
+        "C) Apply the Yeo-Johnson transformation directly to the features to accommodate zero and negative values while stabilizing variance.",
+        "D) Utilize a RobustScaler to scale features based on the interquartile range (IQR) to completely eliminate skewness."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) It violates heuristic admissibility, rendering the search suboptimal, but accelerates computation by directing the search search-frontier towards the goal faster, guaranteeing a path cost within a bounded factor of $w$ times the optimal cost.",
-      "explanation": "Weighted A* trades optimality for computational speed. When $w > 1$, the heuristic can overestimate the true cost to the goal, making it non-admissible. This causes the search to behave more like Greedy Best-First Search, focusing on expanding nodes closer to the goal and significantly reducing the number of evaluated states. Critically, it provides an upper bound on suboptimality: the cost of the generated path is guaranteed to be no worse than $w \\times C^*$ (where $C^*$ is the optimal path cost), which is highly desirable for real-time industrial constraints."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Apply the Yeo-Johnson transformation directly to the features to accommodate zero and negative values while stabilizing variance.",
+      "explanation": "The Yeo-Johnson transformation is a modification of the Box-Cox transformation that allows for zero and negative values. Box-Cox requires strictly positive values (x > 0). While adding an arbitrary constant shift can allow Box-Cox or standard log transforms to run, it distorts the underlying distribution, especially when zero/negative densities are high. RobustScaler only rescales the range using IQR to mitigate outlier influence but does not alter the underlying skewness or shape of the distribution."
     },
     {
       "id": 2,
-      "scenario": "Real-world Industrial Problem Statement: A fintech company is deploying a high-frequency automated option-hedging bot modeled as a two-player zero-sum game. The bot uses a Min-Max search engine with Alpha-Beta pruning to evaluate market scenarios up to a search depth of 8. During high-volatility periods, the branching factor of the transaction state-tree expands drastically due to highly skewed asset price actions. The system is breaching its 10ms Service Level Agreement (SLA), and the current engine evaluates states in an arbitrary left-to-right order, which is limiting the pruning efficiency of the Alpha-Beta algorithm.",
-      "question": "Which optimization strategy should the development team implement to maximize pruning efficiency and keep the search latency within the SLA without reducing the search depth?",
+      "scenario": "Real-world Industrial Problem Statement: A cybersecurity firm is deploying an inline network Intrusion Detection System (IDS) that processes high-dimensional network packet metadata (120+ continuous and categorical features) in real-time. The processing pipeline must meet an ultra-low latency threshold of less than 5ms per packet. Outliers, which represent potential zero-day exploits, must be detected immediately on streaming data.",
+      "question": "Which outlier detection algorithm balances high-dimensional complexity and real-time execution constraints best?",
       "options": [
-        "A) Employ random node expansion to parallelize the search, ensuring that all threads execute symmetric branches of the Min-Max tree simultaneously.",
-        "B) Limit the evaluation function to binary outcomes (+1/-1) to simplify the mathematical range of the alpha and beta bounds.",
-        "C) Implement iterative deepening combined with a transposition table (Zobrist hashing) and a move-ordering heuristic (such as the history heuristic) to evaluate high-quality moves first.",
-        "D) Transition the engine from Alpha-Beta pruning to a pure Breadth-First Search (BFS) to guarantee a linear time complexity reduction across highly skewed branches."
+        "A) Local Outlier Factor (LOF) using Euclidean distance across all 120 features to locate local density anomalies.",
+        "B) Isolation Forest (iForest) built with a limited number of estimators and sub-sampling, applied to the high-dimensional space.",
+        "C) Running t-Distributed Stochastic Neighbor Embedding (t-SNE) to compress features to 2 dimensions, followed by Mahalanobis distance calculation.",
+        "D) An RBF-kernel One-Class Support Vector Machine (OC-SVM) fitted dynamically on each incoming mini-batch of packet streams."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Implement iterative deepening combined with a transposition table (Zobrist hashing) and a move-ordering heuristic (such as the history heuristic) to evaluate high-quality moves first.",
-      "explanation": "Alpha-Beta pruning's efficiency is highly dependent on the order in which nodes are evaluated. In the worst-case (poor ordering), the branching factor remains $b$, and no pruning occurs. In the best-case (perfect ordering), the effective branching factor is reduced to $\\sqrt{b}$, allowing twice the depth to be searched in the same time. Implementing iterative deepening paired with move-ordering heuristics (like the history or killer heuristic) ensures that promising moves are evaluated first, maximizing early pruning. Transposition tables prevent re-evaluating duplicate game states (transpositions), saving critical computation time."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Isolation Forest (iForest) built with a limited number of estimators and sub-sampling, applied to the high-dimensional space.",
+      "explanation": "Isolation Forest isolating anomalies rather than profiling normal points is highly efficient. It has a training complexity of O(t * psi * log(psi)) and a prediction complexity of O(t * d) where d is the depth, making it incredibly fast for real-time inference on high-dimensional data. LOF is computationally expensive (O(n^2)) due to nearest neighbor searches. t-SNE is non-parametric, extremely slow, and cannot project new out-of-sample points in real-time. Fitting an RBF-kernel OC-SVM dynamically per mini-batch introduces unacceptable computational overhead for a <5ms latency budget."
     },
     {
       "id": 3,
-      "scenario": "Real-world Industrial Problem Statement: A high-precision semiconductor assembly line utilizes a 6-Degrees-of-Freedom (6-DOF) robotic arm for wafer placement. The state space of the robotic arm is high-dimensional ($D=6$) and contains highly restricted physical safety boundaries. Path planning using standard A* with an admissible Euclidean distance heuristic in joint space is failing due to Out-Of-Memory (OOM) errors. The open-list size grows exponentially because of the 'curse of dimensionality' and the presence of deep local minima (potential wells) caused by the physical structures of the manufacturing chamber.",
-      "question": "How should the engineering team adapt the search algorithm and heuristic design to eliminate the memory overhead while navigating the robot past local minima?",
+      "scenario": "Real-world Industrial Problem Statement: A healthcare provider is building a predictive diagnostic model for cardiovascular risk. Clinical records have high rates of missing values: 'Income Status' is Missing Not at Random (MNAR) because low-income patients systematically omit this information, while 'Serum Cholesterol' is Missing at Random (MAR) because a clinician forgot to order the lab test. The downstream classifier is a sensitive, regularized logistic regression model.",
+      "question": "Which data preprocessing pipeline handles these distinct missingness mechanisms most effectively without introducing systematic bias?",
       "options": [
-        "A) Swap the search algorithm to Memory-Bounded A* (SMA*) or Iterative Deepening A* (IDA*) to enforce a strict memory cap, and use an inflated, non-admissible heuristic to escape local minima.",
-        "B) Replace the heuristic search with a Uniform Cost Search (Dijkstra's) and double the step size, as heuristics are mathematically ineffective in state spaces with dimensions $D > 3$.",
-        "C) Use standard Depth-First Search (DFS) with a zero-cost heuristic to guarantee completeness and optimality in high-dimensional continuous spaces.",
-        "D) Force a bidirectional Breadth-First Search (BFS) on the continuous joint space, which guarantees that memory growth remains strictly logarithmic relative to the dimensions."
+        "A) Apply Listwise Deletion to remove all records with any missing fields to guarantee only pristine clinical records are used for training.",
+        "B) Perform Mean Imputation for 'Serum Cholesterol' and Median Imputation for 'Income Status' to preserve sample size and minimize structural variance changes.",
+        "C) Use Multiple Imputation by Chained Equations (MICE) for 'Serum Cholesterol', and create a binary missingness indicator column alongside a placeholder imputation for 'Income Status'.",
+        "D) Apply K-Nearest Neighbors (KNN) imputation using Euclidean distance across all features globally to impute both variables simultaneously."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Swap the search algorithm to Memory-Bounded A* (SMA*) or Iterative Deepening A* (IDA*) to enforce a strict memory cap, and use an inflated, non-admissible heuristic to escape local minima.",
-      "explanation": "Standard A* stores all generated nodes in memory (the Open/Closed lists), which leads to OOM errors in high-dimensional spaces ($D=6$). Memory-bounded search variants like SMA* (Simplified Memory-Bounded A*) or IDA* limit memory usage to a predefined threshold or reconstruct path nodes iteratively. Additionally, in complex environments with deep local minima (obstacles), using an inflated heuristic (giving more weight to the heuristic term) helps 'push' the search frontier aggressively toward the goal, bypassing local minima faster and reducing the number of node allocations in the first place."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Use Multiple Imputation by Chained Equations (MICE) for 'Serum Cholesterol', and create a binary missingness indicator column alongside a placeholder imputation for 'Income Status'.",
+      "explanation": "MICE is highly effective for MAR ('Serum Cholesterol') as it models each feature with missing values as a function of other features in a semi-parametric way. However, for MNAR ('Income Status'), the missingness itself contains valuable predictive signals (systematic omission). Simply imputing it would destroy this pattern. By introducing a binary missingness indicator variable, the model can capture the unobserved relationship associated with the missing values, preserving both statistical validity and predictive power."
     }
   ]
 }
