@@ -1,48 +1,48 @@
 {
-  "topic": "Exception Handling Strategies in Distributed Systems",
-  "mode": "Java",
+  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `@Transactional` method in your Spring application occasionally throws a `javax.persistence.PersistenceException` with a message indicating a 'deadlock detected'. The relevant code snippet involves a `@Repository` class using `@Query` to fetch data from the database, like `List<String>` returned from a `JpaRepository`",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "An enterprise healthcare platform deploys a pre-trained BERT model utilizing standard WordPiece tokenization (trained on general corpora like Wikipedia) to extract diagnostic information from Electronic Health Records (EHR). During production, the system experiences severe memory spikes and latency degradation when processing complex clinical notes containing heavy medical terminology (e.g., 'subarachnoid', 'hypercholesterolemia'). Profiling reveals that single medical words are being hyper-fragmented into 10\u201315 subword tokens, hitting sequence length limits (L=512) and exponentially increasing attention computation.",
+      "question": "Which strategy best addresses both the sequence length inflation and processing latency without changing the base model architecture?",
       "options": [
-        "A) Improper transaction isolation level",
-        "B) Database query optimization issue",
-        "C) Misconfigured `@Transactional` propagation",
-        "D) Inadequate connection pool size"
+        "A) Adapt the vocabulary using domain-specific tokenization (e.g., BioBERT/ClinicalBERT vocabularies) and perform vocabulary adaptation/fine-tuning.",
+        "B) Replace WordPiece with Byte-Level Byte-Pair Encoding (BBPE) and strictly truncate input sequences to the first 256 subwords.",
+        "C) Increase the maximum sequence length limit to 2048 tokens and enable multi-GPU parallel processing to handle quadratic complexity.",
+        "D) Re-tokenize the text using character-level tokenization to eliminate Out-Of-Vocabulary (OOV) tokens entirely."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Misconfigured `@Transactional` propagation",
-      "explanation": "In Spring, the `@Transactional` annotation controls transaction management. If propagation is misconfigured, especially with nested transactions, it can lead to unexpected transaction behavior, such as deadlock scenarios. This is because Spring uses a proxy-based AOP mechanism to manage transactions, which can introduce complexities when not properly understood or configured, such as when using `REQUIRES_NEW` or `NESTED` propagation types without adequate consideration for the underlying database transaction management."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Adapt the vocabulary using domain-specific tokenization (e.g., BioBERT/ClinicalBERT vocabularies) and perform vocabulary adaptation/fine-tuning.",
+      "explanation": "Standard subword tokenizers trained on general text over-fragment rare domain-specific terms into excessive subwords. This inflates sequence length L, leading to O(L^2) attention overhead and contextual fragmentation. Adapting the vocabulary with a domain-specific tokenizer merges specialized medical terms back into single/few tokens, significantly shortening sequence length, reducing attention computation, and improving semantic preservation."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a `ThreadPoolTaskExecutor` in your application is not properly handling exceptions thrown by tasks it executes. The tasks are submitted using the `execute()` method, and an example task involves calling a method on a Spring `@Service` bean that throws a custom `BusinessException` extending `RuntimeException`. Relevant code snippet: `@Service public class MyService { public void myMethod() throws BusinessException { throw new BusinessException('Error message'); } }`",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A financial media group runs a real-time event extraction engine processing continuous streams of long-form quarterly reports (averaging 3,000+ tokens per report). The latency target is sub-100ms per batch. The team uses standard Multi-Head Self-Attention, but runtime performance scales quadratically with document length (O(N^2)), causing frequent SLA breaches.",
+      "question": "To achieve sub-100ms latency on long sequences while maintaining global contextual dependencies across the document, which architectural shift represents the optimal performance-complexity trade-off?",
       "options": [
-        "A) Missing `try-catch` block in task submission",
-        "B) Incorrect `ThreadPoolTaskExecutor` configuration",
-        "C) Insufficient error handling in the `@Service` bean",
-        "D) Incompatible `ThreadPoolTaskExecutor` with Spring's task execution"
+        "A) Implement a sparse or linear attention mechanism (such as Longformer's sliding window with global attention or Linformer) to lower complexity to O(N).",
+        "B) Truncate all documents to 512 tokens using standard dot-product attention to guarantee fixed latency.",
+        "C) Replace the self-attention layer with a Bidirectional LSTM layer featuring additive attention to eliminate the sequence length bottleneck.",
+        "D) Double the number of attention heads while halving the per-head projection dimension (d_k) to maintain constant total parameters."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Missing `try-catch` block in task submission",
-      "explanation": "When using `ThreadPoolTaskExecutor` to execute tasks asynchronously, if the task throws an exception and there is no `try-catch` block around the task submission, the exception can be swallowed or not properly propagated. This is because the executor handles task execution in a separate thread, and without proper error handling, exceptions may not be visible or may cause the thread to terminate unexpectedly. Proper error handling, such as using a `try-catch` block or implementing a `Thread.UncaughtExceptionHandler`, is necessary to manage exceptions thrown by tasks executed by the `ThreadPoolTaskExecutor`."
+      "correct_answer_text": "A) Implement a sparse or linear attention mechanism (such as Longformer's sliding window with global attention or Linformer) to lower complexity to O(N).",
+      "explanation": "Standard Scaled Dot-Product Attention has quadratic O(N^2) time and memory complexity relative to sequence length N. Linear/Sparse attention models like Longformer combine local windowed attention with targeted global attention, dropping complexity to O(N). This permits the processing of full 3,000+ token documents within tight real-time latency budgets without resorting to information loss via severe truncation."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue in a distributed system where a bug is causing a `java.lang.ClassCastException` when attempting to cast an object of type `$Proxy123` to an interface `MyServiceInterface`, which is annotated with `@Transactional`. The bug is subtle and involves how Spring creates proxies for transactional beans. Given the following code snippet: `@Service @Transactional public class MyServiceImpl implements MyServiceInterface { /* implementation */ }`, and the application context configuration uses component scanning to detect and configure Spring beans.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "An AI engineering team deploys a 7-billion parameter auto-regressive Decoder-only Transformer model for automated customer support chat. During token-by-token generation, latency increases linearly with each generated token, severely lowering throughput. Profiling shows that at step 't', the model redundant-computes Key (K) and Value (V) projections for all preceding tokens (1 to t-1).",
+      "question": "Which inference optimization technique directly eliminates this redundant tensor computation across auto-regressive generation steps?",
       "options": [
-        "A) Incompatible JDK version for proxy creation",
-        "B) Misconfigured component scanning in Spring context",
-        "C) Incorrect proxy mode for transactional beans",
-        "D) Classloader issue affecting proxy class loading"
+        "A) Implement Key-Value (KV) Caching with dynamic memory management like PagedAttention.",
+        "B) Convert the Decoder dynamic attention mask into a static bidirectional attention mask.",
+        "C) Apply INT8 dynamic weight quantization exclusively to the Query (Q) projection matrices.",
+        "D) Replace standard scaled dot-product attention with FlashAttention during the prefill phase only."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Incorrect proxy mode for transactional beans",
-      "explanation": "Spring uses proxies to implement transaction management for `@Transactional` beans. If the proxy mode is incorrectly configured (e.g., using `TARGET_CLASS` instead of `INTERFACE` for interface-based proxies), it can lead to issues when attempting to cast the proxy to the target interface. The `$Proxy123` naming convention indicates a dynamically created proxy class by the JDK's `java.lang.reflect.Proxy` class, which is used by Spring for interface-based proxies. Ensuring the correct proxy mode is used for transactional beans is crucial to avoid class cast exceptions due to mismatched proxy types."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Implement Key-Value (KV) Caching with dynamic memory management like PagedAttention.",
+      "explanation": "In auto-regressive generation, computing token 't' requires Keys and Values of all previous tokens. Without KV Caching, K and V matrices for tokens 1..t-1 are recomputed at every step, creating O(T^2) cumulative work. KV Caching stores pre-computed K and V tensors in memory so that only K_t and V_t are calculated at step t. Coupled with PagedAttention, memory fragmentation is minimized, resolving the throughput bottleneck."
     }
   ]
 }

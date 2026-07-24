@@ -1,48 +1,48 @@
 {
-  "topic": "Clustering Scenarios: K-Means vs DBSCAN vs Hierarchical",
+  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A smart city logistics platform needs to process high-frequency GPS ping data to dynamically define delivery zones along intricate highway corridors and urban alleyways. The dataset contains irregular, continuous spatial formations (non-spherical shapes) mixed with a high volume of sensor noise and isolated GPS drift errors. The engineering team initially deployed K-Means clustering, but the resulting clusters incorrectly grouped distant points across natural geographic barriers and force-assigned GPS noise into valid delivery zones.",
-      "question": "Which clustering approach and parameter strategy should the lead AI architect implement to accurately discover these arbitrarily shaped delivery corridors while isolating spatial noise?",
+      "scenario": "An enterprise healthcare platform deploys a pre-trained BERT model utilizing standard WordPiece tokenization (trained on general corpora like Wikipedia) to extract diagnostic information from Electronic Health Records (EHR). During production, the system experiences severe memory spikes and latency degradation when processing complex clinical notes containing heavy medical terminology (e.g., 'subarachnoid', 'hypercholesterolemia'). Profiling reveals that single medical words are being hyper-fragmented into 10\u201315 subword tokens, hitting sequence length limits (L=512) and exponentially increasing attention computation.",
+      "question": "Which strategy best addresses both the sequence length inflation and processing latency without changing the base model architecture?",
       "options": [
-        "A) Hierarchical Agglomerative Clustering using Ward's linkage method, setting a strict distance cutoff threshold on the dendrogram.",
-        "B) DBSCAN using Haversine distance, tuning 'eps' via a k-distance graph elbow plot and setting 'min_samples' based on domain spatial density.",
-        "C) K-Means++ initialized with K determined by maximum Silhouette Score calculated on 2D PCA-projected spatial coordinates.",
-        "D) Gaussian Mixture Models (GMM) with full covariance matrices initialized via expectation-maximization to map complex spatial boundaries."
+        "A) Adapt the vocabulary using domain-specific tokenization (e.g., BioBERT/ClinicalBERT vocabularies) and perform vocabulary adaptation/fine-tuning.",
+        "B) Replace WordPiece with Byte-Level Byte-Pair Encoding (BBPE) and strictly truncate input sequences to the first 256 subwords.",
+        "C) Increase the maximum sequence length limit to 2048 tokens and enable multi-GPU parallel processing to handle quadratic complexity.",
+        "D) Re-tokenize the text using character-level tokenization to eliminate Out-Of-Vocabulary (OOV) tokens entirely."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) DBSCAN using Haversine distance, tuning 'eps' via a k-distance graph elbow plot and setting 'min_samples' based on domain spatial density.",
-      "explanation": "DBSCAN is a density-based algorithm designed specifically to discover clusters of arbitrary shapes (such as long, serpentine highway corridors) by connecting transitively dense regions. Unlike K-Means (which assumes convex/spherical clusters and assigns every point to a cluster), DBSCAN explicitly identifies low-density regions as noise (labeled as -1). Using Haversine distance accounts for geographical curvature, and a k-distance graph helps determine the optimal 'eps' boundary threshold."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Adapt the vocabulary using domain-specific tokenization (e.g., BioBERT/ClinicalBERT vocabularies) and perform vocabulary adaptation/fine-tuning.",
+      "explanation": "Standard subword tokenizers trained on general text over-fragment rare domain-specific terms into excessive subwords. This inflates sequence length L, leading to O(L^2) attention overhead and contextual fragmentation. Adapting the vocabulary with a domain-specific tokenizer merges specialized medical terms back into single/few tokens, significantly shortening sequence length, reducing attention computation, and improving semantic preservation."
     },
     {
       "id": 2,
-      "scenario": "An e-commerce analytics team wants to build an explicit multi-tier taxonomy of 500,000 active customer profiles based on spending behavior. A data scientist attempts to run Agglomerative Hierarchical Clustering with complete linkage directly on the 500,000 x 20 feature matrix using a cloud instance with 64 GB of RAM. Before the dendrogram can be constructed, the process terminates unexpectedly with an Out-Of-Memory (OOM) error.",
-      "question": "What is the primary computational bottleneck causing this failure, and how can the system architecture be refactored to achieve the target hierarchical output at scale?",
+      "scenario": "A financial media group runs a real-time event extraction engine processing continuous streams of long-form quarterly reports (averaging 3,000+ tokens per report). The latency target is sub-100ms per batch. The team uses standard Multi-Head Self-Attention, but runtime performance scales quadratically with document length (O(N^2)), causing frequent SLA breaches.",
+      "question": "To achieve sub-100ms latency on long sequences while maintaining global contextual dependencies across the document, which architectural shift represents the optimal performance-complexity trade-off?",
       "options": [
-        "A) Standard Agglomerative Clustering requires precomputing an O(N^2) pairwise distance matrix requiring ~1 TB RAM; refactor by summarizing data using BIRCH or Mini-Batch K-Means before performing Agglomerative Clustering on the centroids.",
-        "B) Complete linkage requires O(N^3) memory allocation for pointer trees; refactor by switching to Single linkage which optimizes memory footprint down to O(N).",
-        "C) High dimensionality (20 features) triggers exponential memory scaling in recursive linkage computations; refactor by applying t-SNE dimensionality reduction to 2 dimensions prior to clustering.",
-        "D) The recursive function call stack exceeded the maximum depth supported by the OS runtime; refactor by converting the dense matrix to a scipy CSR sparse matrix."
+        "A) Implement a sparse or linear attention mechanism (such as Longformer's sliding window with global attention or Linformer) to lower complexity to O(N).",
+        "B) Truncate all documents to 512 tokens using standard dot-product attention to guarantee fixed latency.",
+        "C) Replace the self-attention layer with a Bidirectional LSTM layer featuring additive attention to eliminate the sequence length bottleneck.",
+        "D) Double the number of attention heads while halving the per-head projection dimension (d_k) to maintain constant total parameters."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Standard Agglomerative Clustering requires precomputing an O(N^2) pairwise distance matrix requiring ~1 TB RAM; refactor by summarizing data using BIRCH or Mini-Batch K-Means before performing Agglomerative Clustering on the centroids.",
-      "explanation": "Standard Agglomerative Hierarchical Clustering requires storing a full $N \\times N$ pairwise distance matrix in memory ($O(N^2)$ space complexity). For $N = 500,000$, an $N \\times N$ double-precision matrix requires $(500,000)^2 \\times 8$ bytes $\\approx 2$ TB of RAM, leading directly to an OOM crash regardless of the linkage criteria. The standard industrial solution is to perform hybrid clustering: use BIRCH (Balanced Iterative Reducing and Clustering using Hierarchies) or Mini-Batch K-Means to reduce the dataset into $k$ micro-clusters/centroids ($O(N)$ space), and then apply Agglomerative Clustering on those micro-clusters."
+      "correct_answer_text": "A) Implement a sparse or linear attention mechanism (such as Longformer's sliding window with global attention or Linformer) to lower complexity to O(N).",
+      "explanation": "Standard Scaled Dot-Product Attention has quadratic O(N^2) time and memory complexity relative to sequence length N. Linear/Sparse attention models like Longformer combine local windowed attention with targeted global attention, dropping complexity to O(N). This permits the processing of full 3,000+ token documents within tight real-time latency budgets without resorting to information loss via severe truncation."
     },
     {
       "id": 3,
-      "scenario": "A FinTech fraud detection platform monitors real-time transaction streams transformed into a 128-dimensional feature space. The data contains dense clusters corresponding to legitimate user behavior patterns alongside sparse, low-density clusters representing sophisticated, distributed fraud ring operations. The data science team applied standard DBSCAN with Euclidean distance, but found that any single 'eps' value either merged sparse fraud rings into adjacent dense legitimate clusters or fragmented dense legitimate clusters into hundreds of noisy sub-clusters.",
-      "question": "Why does standard DBSCAN fail in this scenario, and which clustering algorithm is best engineered to resolve these constraints?",
+      "scenario": "An AI engineering team deploys a 7-billion parameter auto-regressive Decoder-only Transformer model for automated customer support chat. During token-by-token generation, latency increases linearly with each generated token, severely lowering throughput. Profiling shows that at step 't', the model redundant-computes Key (K) and Value (V) projections for all preceding tokens (1 to t-1).",
+      "question": "Which inference optimization technique directly eliminates this redundant tensor computation across auto-regressive generation steps?",
       "options": [
-        "A) DBSCAN cannot operate on feature spaces exceeding 50 dimensions due to distance metric failure; use standard K-Means with Cosine distance after L1-regularization.",
-        "B) DBSCAN relies on a single global density threshold ('eps'); switch to HDBSCAN or OPTICS, which construct a hierarchy of density representations to handle varying cluster densities.",
-        "C) High-dimensional core-point search destabilizes the neighborhood query execution graph; apply Mahalanobis distance inside a Medoid-based PAM algorithm.",
-        "D) Dense clusters overload the spatial index search structures (R-tree/KD-tree); switch to Divisive Hierarchical Clustering with bisecting K-Means."
+        "A) Implement Key-Value (KV) Caching with dynamic memory management like PagedAttention.",
+        "B) Convert the Decoder dynamic attention mask into a static bidirectional attention mask.",
+        "C) Apply INT8 dynamic weight quantization exclusively to the Query (Q) projection matrices.",
+        "D) Replace standard scaled dot-product attention with FlashAttention during the prefill phase only."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) DBSCAN relies on a single global density threshold ('eps'); switch to HDBSCAN or OPTICS, which construct a hierarchy of density representations to handle varying cluster densities.",
-      "explanation": "Standard DBSCAN uses a single global radius parameter (`eps`) and minimum points threshold (`min_samples`), assuming all clusters share a uniform density. When datasets exhibit varying densities\u2014such as dense core legitimate user activity alongside sparse fraud rings\u2014a single global `eps` cannot capture both dynamic density levels simultaneously. OPTICS (Ordering Points To Identify the Clustering Structure) and HDBSCAN (Hierarchical DBSCAN) overcome this limitation by computing a reachability distance hierarchy, allowing the discovery of variable-density clusters across multiple spatial scales."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Implement Key-Value (KV) Caching with dynamic memory management like PagedAttention.",
+      "explanation": "In auto-regressive generation, computing token 't' requires Keys and Values of all previous tokens. Without KV Caching, K and V matrices for tokens 1..t-1 are recomputed at every step, creating O(T^2) cumulative work. KV Caching stores pre-computed K and V tensors in memory so that only K_t and V_t are calculated at step t. Coupled with PagedAttention, memory fragmentation is minimized, resolving the throughput bottleneck."
     }
   ]
 }
