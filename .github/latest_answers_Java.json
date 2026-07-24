@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
+  "topic": "Exception Handling Strategies in Distributed Systems",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a custom caching component built on top of `ConcurrentHashMap` fails to retrieve stored entries after updates, causing orphan entries and eventual `OutOfMemoryError` heap exhaustion. The following method is invoked during high concurrent traffic:\n\njava\npublic class MetricsCache {\n    private final Map<MetricKey, MetricValue> cache = new ConcurrentHashMap<>();\n\n    public void updateMetric(MetricKey key, double val) {\n        MetricValue value = cache.computeIfAbsent(key, k -> new MetricValue());\n        value.addSample(val);\n        key.setTimestamp(System.currentTimeMillis());\n    }\n}\n",
-      "question": "What is the primary cause of this memory leak and lookup failure?",
+      "scenario": "You are debugging a production issue where a `@Transactional` method in your Spring application occasionally throws a `javax.persistence.PersistenceException` with a message indicating a 'deadlock detected'. The relevant code snippet involves a `@Repository` class using `@Query` to fetch data from the database, like `List<String>` returned from a `JpaRepository`",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) `ConcurrentHashMap.computeIfAbsent` locks the target bucket during computation, causing worker thread deadlocks when updating `MetricKey`.",
-        "B) Mutating `key.setTimestamp(...)` alters the result of `MetricKey.hashCode()`, making the key unfindable in its original bucket during subsequent lookups.",
-        "C) The `MetricValue` object updated inside `computeIfAbsent` is not declared `volatile`, preventing cross-thread visibility.",
-        "D) `ConcurrentHashMap` throws a `NullPointerException` when mutating key objects after insertion into a synchronized bucket."
+        "A) Improper transaction isolation level",
+        "B) Database query optimization issue",
+        "C) Misconfigured `@Transactional` propagation",
+        "D) Inadequate connection pool size"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Mutating `key.setTimestamp(...)` alters the result of `MetricKey.hashCode()`, making the key unfindable in its original bucket during subsequent lookups.",
-      "explanation": "In hash-based collections like `ConcurrentHashMap` and `HashMap`, an object's bucket index is calculated using its `hashCode()`. If a key object is mutated after insertion in a way that changes its `hashCode()`, future lookup calls (`get`, `containsKey`, `remove`) will hash the key to a different bucket index. As a result, the collection fails to find the entry, treating it as missing while the old entry remains permanently stuck in the original bucket, causing a memory leak."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Misconfigured `@Transactional` propagation",
+      "explanation": "In Spring, the `@Transactional` annotation controls transaction management. If propagation is misconfigured, especially with nested transactions, it can lead to unexpected transaction behavior, such as deadlock scenarios. This is because Spring uses a proxy-based AOP mechanism to manage transactions, which can introduce complexities when not properly understood or configured, such as when using `REQUIRES_NEW` or `NESTED` propagation types without adequate consideration for the underlying database transaction management."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a low-latency microservice utilizes a synchronized LRU cache configured as `Map<String, CustomData> cache = Collections.synchronizedMap(new LinkedHashMap<String, CustomData>(16, 0.75f, true))`. During heavy batch reads, worker threads iterating over `cache.keySet()` repeatedly encounter `ConcurrentModificationException`, even though all write operations go through the thread-safe wrapper.",
-      "question": "What is the underlying cause of this exception during read operations?",
+      "scenario": "You are debugging a production issue where a `ThreadPoolTaskExecutor` in your application is not properly handling exceptions thrown by tasks it executes. The tasks are submitted using the `execute()` method, and an example task involves calling a method on a Spring `@Service` bean that throws a custom `BusinessException` extending `RuntimeException`. Relevant code snippet: `@Service public class MyService { public void myMethod() throws BusinessException { throw new BusinessException('Error message'); } }`",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) In access-order mode (`accessOrder = true`), calling `LinkedHashMap.get()` performs structural modifications by moving the accessed node to the end of the doubly-linked list, incrementing `modCount`.",
-        "B) `Collections.synchronizedMap` does not synchronize read methods such as `get()` or `containsKey()`, causing race conditions on internal entry pointers.",
-        "C) The load factor of `0.75f` triggers array rehashing during concurrent read accesses, invalidating active iterators.",
-        "D) `LinkedHashMap` uses non-atomic node pointers that become corrupted when accessed concurrently without explicit volatile read locks."
+        "A) Missing `try-catch` block in task submission",
+        "B) Incorrect `ThreadPoolTaskExecutor` configuration",
+        "C) Insufficient error handling in the `@Service` bean",
+        "D) Incompatible `ThreadPoolTaskExecutor` with Spring's task execution"
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) In access-order mode (`accessOrder = true`), calling `LinkedHashMap.get()` performs structural modifications by moving the accessed node to the end of the doubly-linked list, incrementing `modCount`.",
-      "explanation": "When `LinkedHashMap` is instantiated with `accessOrder = true`, any read invocation such as `get()` or `getOrDefault()` alters the ordering of the underlying doubly-linked list to maintain LRU order. This structural modification increments `modCount`. If another thread iterates over `keySet()`, `values()`, or `entrySet()` without manually acquiring a explicit synchronization block on the map instance (`synchronized(cache)`), the iterator detects the mutated `modCount` and throws a `ConcurrentModificationException`."
+      "correct_answer_text": "A) Missing `try-catch` block in task submission",
+      "explanation": "When using `ThreadPoolTaskExecutor` to execute tasks asynchronously, if the task throws an exception and there is no `try-catch` block around the task submission, the exception can be swallowed or not properly propagated. This is because the executor handles task execution in a separate thread, and without proper error handling, exceptions may not be visible or may cause the thread to terminate unexpectedly. Proper error handling, such as using a `try-catch` block or implementing a `Thread.UncaughtExceptionHandler`, is necessary to manage exceptions thrown by tasks executed by the `ThreadPoolTaskExecutor`."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Spring Boot application processes large datasets using a custom collection iterator `PaginatedResultIterable<T>`. The orchestration service calls a method `processData()` annotated with `@Transactional`. Inside `processData()`, the service executes `this.fetchNextBatch()` to fetch pages lazily. During iteration over child JPA entities inside the returned custom collection, worker threads throw a `LazyInitializationException` stating that no session is present.",
-      "question": "What is the root cause of the lost transaction context during entity iteration?",
+      "scenario": "You are debugging a production issue in a distributed system where a bug is causing a `java.lang.ClassCastException` when attempting to cast an object of type `$Proxy123` to an interface `MyServiceInterface`, which is annotated with `@Transactional`. The bug is subtle and involves how Spring creates proxies for transactional beans. Given the following code snippet: `@Service @Transactional public class MyServiceImpl implements MyServiceInterface { /* implementation */ }`, and the application context configuration uses component scanning to detect and configure Spring beans.",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) `@Transactional` automatically closes the `EntityManager` session immediately upon returning any custom `Iterable` type.",
-        "B) Self-invocation of `this.fetchNextBatch()` bypasses the Spring AOP proxy wrapper, preventing transaction interceptors from keeping the Hibernate session open during lazy collection loading.",
-        "C) `PaginatedResultIterable` automatically delegates batch fetching to `ForkJoinPool.commonPool()`, which strips ThreadLocal transaction variables.",
-        "D) Spring Transaction Management requires custom collection classes to implement `TransactionalCollection` to maintain active persistence contexts."
+        "A) Incompatible JDK version for proxy creation",
+        "B) Misconfigured component scanning in Spring context",
+        "C) Incorrect proxy mode for transactional beans",
+        "D) Classloader issue affecting proxy class loading"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Self-invocation of `this.fetchNextBatch()` bypasses the Spring AOP proxy wrapper, preventing transaction interceptors from keeping the Hibernate session open during lazy collection loading.",
-      "explanation": "Spring's declarative transaction management relies on CGLIB or JDK dynamic proxies. When a method calls another `@Transactional` method within the same class using `this` (self-invocation), the call bypasses the Spring AOP proxy. Consequently, no transactional aspect is invoked around `fetchNextBatch()`. If the outer transaction completes or if iteration happens lazily outside an active proxy-managed method boundary, the underlying Hibernate `Session`/`EntityManager` closes, throwing `LazyInitializationException` when uninitialized entity collections are accessed."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Incorrect proxy mode for transactional beans",
+      "explanation": "Spring uses proxies to implement transaction management for `@Transactional` beans. If the proxy mode is incorrectly configured (e.g., using `TARGET_CLASS` instead of `INTERFACE` for interface-based proxies), it can lead to issues when attempting to cast the proxy to the target interface. The `$Proxy123` naming convention indicates a dynamically created proxy class by the JDK's `java.lang.reflect.Proxy` class, which is used by Spring for interface-based proxies. Ensuring the correct proxy mode is used for transactional beans is crucial to avoid class cast exceptions due to mismatched proxy types."
     }
   ]
 }
