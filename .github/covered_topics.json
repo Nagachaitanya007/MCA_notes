@@ -183,7 +183,8 @@
     "Multi-Tenant Fair-Share Scheduling in a Kafka-to-SQS Notification System",
     "Designing a Notification System with Kafka, SQS, and Webhooks",
     "Handling Downstream Backpressure: Dynamic Rate-Limiting in SQS-to-Webhook Dispatching",
-    "Distributed Tracing and Latency Budgets in a Kafka-SQS-Webhook Notification System"
+    "Distributed Tracing and Latency Budgets in a Kafka-SQS-Webhook Notification System",
+    "Dead-Letter Queue (DLQ) Remediation and Poison Pill Isolation in Kafka-SQS Systems"
   ],
   "Design a Rate Limiter (Token Bucket vs Leaky Bucket)": [
     "Rate Limiting: The Token Bucket vs. The Leaky Bucket",
