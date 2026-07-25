@@ -1,48 +1,48 @@
 {
-  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
+  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "An enterprise healthcare platform deploys a pre-trained BERT model utilizing standard WordPiece tokenization (trained on general corpora like Wikipedia) to extract diagnostic information from Electronic Health Records (EHR). During production, the system experiences severe memory spikes and latency degradation when processing complex clinical notes containing heavy medical terminology (e.g., 'subarachnoid', 'hypercholesterolemia'). Profiling reveals that single medical words are being hyper-fragmented into 10\u201315 subword tokens, hitting sequence length limits (L=512) and exponentially increasing attention computation.",
-      "question": "Which strategy best addresses both the sequence length inflation and processing latency without changing the base model architecture?",
+      "scenario": "Real-world Industrial Problem Statement: An automated visual inspection system on a high-speed automotive assembly line processes high-resolution (2048x2048) metallic surface images to detect microscopic micro-cracks (representing less than 0.1% of total surface area). The current baseline model uses standard strided convolutions and Max Pooling layers to reduce spatial dimensions quickly and meet the strictly enforced inference latency limit (< 15ms). However, while macro-defects are correctly classified, microscopic micro-cracks are consistently missed, resulting in a high false-negative rate.",
+      "question": "Which architectural modification best preserves the spatial resolution required to detect microscopic cracks while staying within the strict real-time latency constraints?",
       "options": [
-        "A) Adapt the vocabulary using domain-specific tokenization (e.g., BioBERT/ClinicalBERT vocabularies) and perform vocabulary adaptation/fine-tuning.",
-        "B) Replace WordPiece with Byte-Level Byte-Pair Encoding (BBPE) and strictly truncate input sequences to the first 256 subwords.",
-        "C) Increase the maximum sequence length limit to 2048 tokens and enable multi-GPU parallel processing to handle quadratic complexity.",
-        "D) Re-tokenize the text using character-level tokenization to eliminate Out-Of-Vocabulary (OOV) tokens entirely."
+        "A) Replace standard pooling and stride operations with Dilated (Atrous) Convolutions in the feature extraction layers.",
+        "B) Increase the receptive field by stacking deeper 7x7 convolutional kernels and replacing ReLU activation functions with LeakyReLU.",
+        "C) Apply Global Average Pooling immediately after the second convolutional block to collapse spatial dimensions early in the pipeline.",
+        "D) Transition the architecture to a standard 3D-CNN to process spatial variations across consecutive camera exposure frames."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Adapt the vocabulary using domain-specific tokenization (e.g., BioBERT/ClinicalBERT vocabularies) and perform vocabulary adaptation/fine-tuning.",
-      "explanation": "Standard subword tokenizers trained on general text over-fragment rare domain-specific terms into excessive subwords. This inflates sequence length L, leading to O(L^2) attention overhead and contextual fragmentation. Adapting the vocabulary with a domain-specific tokenizer merges specialized medical terms back into single/few tokens, significantly shortening sequence length, reducing attention computation, and improving semantic preservation."
+      "correct_answer_text": "A) Replace standard pooling and stride operations with Dilated (Atrous) Convolutions in the feature extraction layers.",
+      "explanation": "Dilated (Atrous) convolutions allow the network to expand its receptive field and capture context without aggressive spatial downsampling (pooling/striding) or a massive increase in parameter count and computational load. This preserves high-resolution fine-grained spatial details necessary to spot micro-cracks while keeping inference latency low enough for real-time edge processing."
     },
     {
       "id": 2,
-      "scenario": "A financial media group runs a real-time event extraction engine processing continuous streams of long-form quarterly reports (averaging 3,000+ tokens per report). The latency target is sub-100ms per batch. The team uses standard Multi-Head Self-Attention, but runtime performance scales quadratically with document length (O(N^2)), causing frequent SLA breaches.",
-      "question": "To achieve sub-100ms latency on long sequences while maintaining global contextual dependencies across the document, which architectural shift represents the optimal performance-complexity trade-off?",
+      "scenario": "Real-world Industrial Problem Statement: A medical technology enterprise is developing an edge wearable device that monitors continuous 24-hour electrocardiogram (ECG) sensor streams sampled at 250 Hz to predict sudden cardiac arrhythmias. A standard Vanilla Recurrent Neural Network (Vanilla RNN) deployed on the low-power microcontroller suffers from severe vanishing gradients during Backpropagation Through Time (BPTT) across continuous sequences (over 5,000 time steps). Conversely, standard LSTMs exceed the microcontroller's limited SRAM memory and power budgets.",
+      "question": "Which optimization strategy provides the optimal trade-off between modeling long-term temporal dependencies and adhering to edge microcontroller constraints?",
       "options": [
-        "A) Implement a sparse or linear attention mechanism (such as Longformer's sliding window with global attention or Linformer) to lower complexity to O(N).",
-        "B) Truncate all documents to 512 tokens using standard dot-product attention to guarantee fixed latency.",
-        "C) Replace the self-attention layer with a Bidirectional LSTM layer featuring additive attention to eliminate the sequence length bottleneck.",
-        "D) Double the number of attention heads while halving the per-head projection dimension (d_k) to maintain constant total parameters."
+        "A) Replace the Vanilla RNN with Gated Recurrent Units (GRUs) combined with Truncated BPTT and strided signal downsampling.",
+        "B) Increase the hidden state dimensions of the Vanilla RNN and apply gradient clipping with an excessively high threshold.",
+        "C) Implement a Bidirectional LSTM (BiLSTM) with full sequence unrolling across the complete continuous 24-hour signal window.",
+        "D) Transition to a Transformer Encoder architecture with full self-attention across the 5,000-time-step sequence without positional encoding."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Implement a sparse or linear attention mechanism (such as Longformer's sliding window with global attention or Linformer) to lower complexity to O(N).",
-      "explanation": "Standard Scaled Dot-Product Attention has quadratic O(N^2) time and memory complexity relative to sequence length N. Linear/Sparse attention models like Longformer combine local windowed attention with targeted global attention, dropping complexity to O(N). This permits the processing of full 3,000+ token documents within tight real-time latency budgets without resorting to information loss via severe truncation."
+      "correct_answer_text": "A) Replace the Vanilla RNN with Gated Recurrent Units (GRUs) combined with Truncated BPTT and strided signal downsampling.",
+      "explanation": "GRUs solve the vanishing gradient issue using gating mechanisms (reset and update gates) similar to LSTMs, but require approximately 25% fewer parameters and memory operations due to having one less gate and no separate cell state. Combining GRUs with Truncated BPTT and input downsampling reduces the sequence length and computational footprint to fit strictly within low-power microcontroller SRAM limits while maintaining long-term context awareness."
     },
     {
       "id": 3,
-      "scenario": "An AI engineering team deploys a 7-billion parameter auto-regressive Decoder-only Transformer model for automated customer support chat. During token-by-token generation, latency increases linearly with each generated token, severely lowering throughput. Profiling shows that at step 't', the model redundant-computes Key (K) and Value (V) projections for all preceding tokens (1 to t-1).",
-      "question": "Which inference optimization technique directly eliminates this redundant tensor computation across auto-regressive generation steps?",
+      "scenario": "Real-world Industrial Problem Statement: A smart logistics enterprise deploys surveillance camera feeds to detect rapid safety violations (e.g., workers dropping fragile packages) within multi-hour continuous video feeds. The training dataset exhibits extreme class imbalance: 99.5% of temporal segments represent normal operations and only 0.5% contain safety violations lasting less than 0.5 seconds. A standard Convolutional Recurrent Neural Network (2D-CNN feature extractor + LSTM) achieves high overall accuracy but completely fails to detect short-duration safety violations, yielding near-zero Recall for the minority class.",
+      "question": "Which comprehensive modification to the architecture and training pipeline will most effectively improve sensitivity to transient violations under this extreme class imbalance?",
       "options": [
-        "A) Implement Key-Value (KV) Caching with dynamic memory management like PagedAttention.",
-        "B) Convert the Decoder dynamic attention mask into a static bidirectional attention mask.",
-        "C) Apply INT8 dynamic weight quantization exclusively to the Query (Q) projection matrices.",
-        "D) Replace standard scaled dot-product attention with FlashAttention during the prefill phase only."
+        "A) Integrate Spatial-Temporal Convolutions (3D-CNN / ConvLSTM) with Focal Loss and Temporal Feature Pyramids.",
+        "B) Replace Cross-Entropy Loss with Mean Squared Error (MSE) loss and increase the temporal frame extraction stride to 50 frames.",
+        "C) Apply Random Upsampling to the normal operations class and decrease the CNN feature extractor depth to a single layer.",
+        "D) Remove the RNN layer entirely and rely on Softmax classification outputs from a 2D-CNN applied to every 100th static frame."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Implement Key-Value (KV) Caching with dynamic memory management like PagedAttention.",
-      "explanation": "In auto-regressive generation, computing token 't' requires Keys and Values of all previous tokens. Without KV Caching, K and V matrices for tokens 1..t-1 are recomputed at every step, creating O(T^2) cumulative work. KV Caching stores pre-computed K and V tensors in memory so that only K_t and V_t are calculated at step t. Coupled with PagedAttention, memory fragmentation is minimized, resolving the throughput bottleneck."
+      "correct_answer_text": "A) Integrate Spatial-Temporal Convolutions (3D-CNN / ConvLSTM) with Focal Loss and Temporal Feature Pyramids.",
+      "explanation": "Spatial-temporal models (3D-CNN or ConvLSTM) preserve joint spatial motion patterns essential for capturing fast, transient actions (0.5s duration). Temporal Feature Pyramids capture events at multiple temporal scales. Paired with Focal Loss (or Weighted Cross-Entropy), the training dynamically down-weights easy negative background frames (99.5% class) and focuses gradients on hard positive violation events, mitigating the extreme class imbalance."
     }
   ]
 }
