@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
+  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput microservice suffers from both memory leaks and failed lookup operations inside a custom caching layer. The microservice uses `ConcurrentHashMap<CacheKey, Value>` to store dynamic cache entries. You discover the following implementation of the `CacheKey` class:\n\njava\npublic class CacheKey {\n    private final String id;\n    private List<String> permissions;\n\n    public CacheKey(String id, List<String> permissions) {\n        this.id = id;\n        this.permissions = permissions;\n    }\n\n    public void addPermission(String permission) {\n        this.permissions.add(permission);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(id, permissions);\n    }\n\n    @Override\n    public boolean equals(Object o) {\n        if (this == o) return true;\n        if (!(o instanceof CacheKey)) return false;\n        CacheKey key = (CacheKey) o;\n        return Objects.equals(id, key.id) && Objects.equals(permissions, key.permissions);\n    }\n}\n",
-      "question": "What is the primary cause of the memory leak and lookup failures in `ConcurrentHashMap`?",
+      "scenario": "You are debugging a production issue where a high-throughput microservice was recently upgraded to Java 21 Virtual Threads. Under load testing, thread dump logs indicate severe latency spikes and carrier thread starvation. Upon reviewing the codebase, you find the following snippet used for fetching cached API response tokens:\n\njava\n@Component\npublic class AuthTokenCache {\n    private final Map<String, String> cache = new HashMap<>();\n\n    public synchronized String getToken(String clientId) {\n        if (!cache.containsKey(clientId)) {\n            cache.put(clientId, fetchTokenFromRemoteAuthServer(clientId)); // Blocking Network I/O\n        }\n        return cache.get(clientId);\n    }\n}\n",
+      "question": "What is the primary cause of the carrier thread starvation observed during load testing?",
       "options": [
-        "A) Mutating `permissions` changes the `hashCode()` output after insertion, causing entries to be assigned to wrong hash buckets during lookup and rendering old entries un-removable by Garbage Collection.",
-        "B) `ConcurrentHashMap` locks bucket segments during `Objects.hash()` evaluation, leading to thread starvation and memory accumulation in request queues.",
-        "C) Non-thread-safe modifications to `permissions` cause `ConcurrentModificationException`, which interrupts `ConcurrentHashMap` internal cleanups.",
-        "D) The `equals()` method fails type safety check due to generic type erasure of `List<String>`, resulting in internal key mismatch exceptions."
+        "A) `HashMap` is not thread-safe, leading to infinite loops in garbage collection when accessed concurrently by virtual threads.",
+        "B) The `synchronized` keyword pins the virtual thread to its underlying OS carrier thread during the blocking I/O operation, preventing the carrier thread from mounting other virtual threads.",
+        "C) Virtual threads do not support network I/O operations and automatically fall back to creating native OS threads.",
+        "D) The default executor for virtual threads uses a single-threaded pool, causing all requests to serialize behind the first blocking call."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Mutating `permissions` changes the `hashCode()` output after insertion, causing entries to be assigned to wrong hash buckets during lookup and rendering old entries un-removable by Garbage Collection.",
-      "explanation": "In Java collections using hashing (such as `HashMap`, `HashSet`, or `ConcurrentHashMap`), map keys MUST be immutable regarding fields used in `hashCode()` and `equals()`. When `addPermission()` is invoked on an existing `CacheKey`, its `hashCode()` changes. Subsequent `get()` or `remove()` operations re-evaluate the hash, targeting a different bucket index. The entry remains trapped in the original bucket, unreachable by business logic, causing both data lookup failures and a progressive memory leak."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The `synchronized` keyword pins the virtual thread to its underlying OS carrier thread during the blocking I/O operation, preventing the carrier thread from mounting other virtual threads.",
+      "explanation": "In Java 21, when a virtual thread executes a blocking operation inside a `synchronized` block or method, it becomes 'pinned' to its underlying carrier thread (a ForkJoinPool OS thread). This prevents the JVM from unmounting the virtual thread, blocking the carrier thread from executing other virtual threads. To fix this issue, `ReentrantLock` should be used instead of `synchronized`, as `ReentrantLock` allows virtual threads to unmount safely during blocking I/O operations."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a low-latency trading engine using a custom lock-free ring buffer collection (`CustomRingBuffer<T>`) experiences race conditions, stale reads, and index corruption under multi-threaded producer-consumer workloads:\n\njava\npublic class CustomRingBuffer<T> {\n    private final T[] buffer;\n    private long head = 0;\n    private long tail = 0;\n\n    @SuppressWarnings(\"unchecked\")\n    public CustomRingBuffer(int capacity) {\n        this.buffer = (T[]) new Object[capacity];\n    }\n\n    public boolean offer(T item) {\n        if (tail - head >= buffer.length) return false;\n        buffer[(int) (tail & (buffer.length - 1))] = item;\n        tail++;\n        return true;\n    }\n\n    public T poll() {\n        if (head == tail) return null;\n        T item = buffer[(int) (head & (buffer.length - 1))];\n        head++;\n        return item;\n    }\n}\n",
-      "question": "What is the primary JVM-level cause for the stale reads and memory consistency errors observed in this custom collection?",
+      "scenario": "You are debugging a production issue where an order fulfillment microservice leaves orphaned records in the database. When an order fails during async notification processing, the primary database changes executed in the outer method are not rolling back as expected.\n\njava\n@Service\npublic class OrderService {\n    @Autowired private OrderRepository orderRepo;\n    @Autowired private NotificationService notificationService;\n\n    @Transactional\n    public CompletableFuture<Void> processOrder(Order order) {\n        orderRepo.save(order);\n        return CompletableFuture.runAsync(() -> {\n            notificationService.sendConfirmation(order);\n            if (order.isHighPriority()) {\n                throw new RuntimeException(\"Failed to send priority notification\");\n            }\n        });\n    }\n}\n",
+      "question": "What is the primary cause of the transaction failure to roll back when an exception occurs inside `runAsync`?",
       "options": [
-        "A) The generic type cast `(T[]) new Object[capacity]` causes a `ClassCastException` inside `poll()` at runtime when accessed by worker threads.",
-        "B) Lack of `volatile` modifiers or `VarHandle`/`AtomicLong` memory fences on `head` and `tail` permits CPU instruction reordering and missing cache-coherency flushes across CPU cores.",
-        "C) Using bitwise AND operator `&` for array index calculation causes out-of-bound array access if capacity is a power of two.",
-        "D) Modifying `head` and `tail` concurrently causes a CAS instruction lock loop that permanently blocks JVM execution threads."
+        "A) Spring `@Transactional` context relies on `ThreadLocal` storage, so the task executed asynchronously via `runAsync` runs on a different thread outside the transactional context.",
+        "B) Spring `@Transactional` proxies cannot intercept public methods that return a `CompletableFuture` object.",
+        "C) `CompletableFuture.runAsync()` automatically catches all `RuntimeException` instances and converts them to successful completions unless `.get()` is explicitly invoked.",
+        "D) The `OrderRepository.save()` method operates lazily and flushes changes to the database only after the method returns, bypassing transaction control."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Lack of `volatile` modifiers or `VarHandle`/`AtomicLong` memory fences on `head` and `tail` permits CPU instruction reordering and missing cache-coherency flushes across CPU cores.",
-      "explanation": "Without `volatile` sematics or explicit memory barriers (e.g., via `VarHandle` or `AtomicLong`), updates to `head` and `tail` are subject to compiler and CPU instruction reordering. Furthermore, updates remain in local CPU registers/L1 caches without generating memory write barriers (happens-before relationship). A consumer thread may observe updated `tail` pointers before the element write to `buffer` is flushed to shared memory, returning stale or null objects."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Spring `@Transactional` context relies on `ThreadLocal` storage, so the task executed asynchronously via `runAsync` runs on a different thread outside the transactional context.",
+      "explanation": "Spring's declarative transaction management (`@Transactional`) uses `ThreadLocal` variables (such as `TransactionSynchronizationManager`) to bind the database connection and transaction state to the current thread. When `CompletableFuture.runAsync()` executes, it runs the task on a worker thread from `ForkJoinPool.commonPool()` (or a supplied executor). This worker thread does not inherit the parent thread's `ThreadLocal` transaction context, so exceptions thrown inside `runAsync` do not trigger a rollback on the original transaction."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where long-running batch processes using a Spring `@Service` lose contextual metadata. The service tracks batch step progress using a `WeakHashMap<JobContext, StepState>` cache within a Spring `@Transactional` execution context. During long-running tasks that trigger Garbage Collection, active step states spontaneously vanish from the cache.",
-      "question": "What is the primary cause of data loss in this custom `WeakHashMap` state management implementation?",
+      "scenario": "You are debugging a production issue where a Spring Boot API returns generic 500 Internal Server Errors instead of specific 402 Payment Required status codes. The global exception handler (`@ControllerAdvice`) is designed to catch `PaymentFailedException`, but logs reveal that the exception handler is receiving an unhandled exception wrapper instead.\n\njava\npublic CompletableFuture<PaymentResult> processPayment(PaymentRequest request) {\n    return CompletableFuture.supplyAsync(() -> paymentGateway.charge(request))\n        .thenApply(res -> {\n            if (!res.isSuccessful()) {\n                throw new PaymentFailedException(\"Insufficient funds\");\n            }\n            return res;\n        });\n}\n\n// In controller endpoint:\nPaymentResult result = paymentService.processPayment(request).join();\n",
+      "question": "What is the primary cause of this exception handling issue when unwrapping the `CompletableFuture`?",
       "options": [
-        "A) Spring's CGLIB transactional proxy wraps `WeakHashMap` calls inside a transaction-local copy, discarding modifications when the transaction flushes.",
-        "B) `WeakHashMap` references its keys via `WeakReference`. Since transient `JobContext` objects are generated dynamically and not strongly referenced outside the map, GC reclaims them and purges map entries.",
-        "C) The `WeakHashMap` reference queue thread conflicts with Spring's `ThreadLocal` `TransactionSynchronizationManager`, causing state clearing.",
-        "D) `WeakHashMap` clears entries automatically whenever the JVM heap memory usage exceeds the soft-reference threshold set by the Spring container."
+        "A) `CompletableFuture.join()` wraps any unhandled runtime exceptions thrown inside asynchronous stages in a `CompletionException`, hiding the root `PaymentFailedException` from top-level Spring `@ExceptionHandler` methods unless unwrapped.",
+        "B) Global `@ControllerAdvice` handlers cannot process exceptions originated from `CompletableFuture` pipelines unless annotated with `@AsyncExceptionHandler`.",
+        "C) Throwing exceptions inside `thenApply` cancels the `CompletableFuture` execution and converts the result into an `InterruptedException`.",
+        "D) Virtual threads and `CompletableFuture` pipelines automatically rethrow checked exceptions as `ExecutionException` regardless of whether `.join()` or `.get()` is called."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) `WeakHashMap` references its keys via `WeakReference`. Since transient `JobContext` objects are generated dynamically and not strongly referenced outside the map, GC reclaims them and purges map entries.",
-      "explanation": "In a `WeakHashMap`, keys are stored using `WeakReference`. If a key object (`JobContext`) has no strong references elsewhere in the application, it becomes eligible for Garbage Collection. During GC, the weak reference is cleared, and `WeakHashMap` removes the corresponding key-value entry upon its next internal lookup or poll of the reference queue. To prevent premature eviction, keys must be held by a strong reference elsewhere, or a non-weak map structure should be used."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) `CompletableFuture.join()` wraps any unhandled runtime exceptions thrown inside asynchronous stages in a `CompletionException`, hiding the root `PaymentFailedException` from top-level Spring `@ExceptionHandler` methods unless unwrapped.",
+      "explanation": "When an exception is thrown inside a `CompletableFuture` execution stage, the future completes exceptionally. Calling `.join()` (or `.get()`) throws a `CompletionException` (or `ExecutionException` for `.get()`) wrapping the actual cause. Spring's `@ExceptionHandler(PaymentFailedException.class)` matches against the thrown top-level exception class (`CompletionException`), thereby missing the target unless the application explicitly handles `CompletionException` or uses `.exceptionally()` / `.handle()` within the pipeline to extract `.getCause()`."
     }
   ]
 }
