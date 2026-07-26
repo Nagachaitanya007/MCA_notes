@@ -45,7 +45,8 @@
     "Crash-Only Architecture: Managing Failures via Supervisor Trees",
     "The Saga Dead-End: Resolving Failures inside Compensating Transactions",
     "Distributed Cooperative Cancellation: Taming Zombie Execution After Client Timeouts",
-    "Distributed Deadline Propagation: Managing Timeout Budgets across Microservice Chains"
+    "Distributed Deadline Propagation: Managing Timeout Budgets across Microservice Chains",
+    "Server-Driven Load Shedding & Adaptive Throttling: Defending Against Exception-Induced Retry Storms"
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections",
