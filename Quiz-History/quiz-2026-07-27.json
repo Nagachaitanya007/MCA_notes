@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
-  "mode": "Java",
+  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput transactional service experiences unbounded heap usage and intermittent cache misses. The team implemented a custom key class for a `ConcurrentHashMap` used as an in-memory cache:\n\njava\npublic class TransactionKey {\n    private String transactionId;\n    private List<String> metadataTags;\n\n    public TransactionKey(String transactionId, List<String> metadataTags) {\n        this.transactionId = transactionId;\n        this.metadataTags = metadataTags;\n    }\n\n    public void addTag(String tag) {\n        this.metadataTags.add(tag);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(transactionId, metadataTags);\n    }\n\n    @Override\n    public boolean equals(Object o) {\n        if (this == o) return true;\n        if (!(o instanceof TransactionKey)) return false;\n        TransactionKey that = (TransactionKey) o;\n        return Objects.equals(transactionId, that.transactionId) &&\n               Objects.equals(metadataTags, that.metadataTags);\n    }\n}\n\n\nDuring transaction processing, worker threads retrieve existing keys and execute `key.addTag(\"PROCESSED\")` to update execution state.",
-      "question": "What is the primary cause of the memory leak and cache misses in this system?",
+      "scenario": "A fintech company deploys an NLP model for real-time fraud detection on streaming financial transaction logs. They notice that the pre-trained Byte-Pair Encoding (BPE) tokenizer splits unseen structured alphanumeric transaction codes (e.g., 'TXN_99823_XF') into extremely fine-grained subwords (e.g., 'T', 'X', 'N', '_', '99', '82', '3', '_', 'X', 'F'). This drastically bloats input sequence length N, causing a latency spike in the multi-head self-attention layer due to its O(N^2) computational and spatial complexity.",
+      "question": "Which strategy best addresses the latency bottleneck while preserving context representation for domain-specific tokens without completely retraining the base Transformer model from scratch?",
       "options": [
-        "A) `ConcurrentHashMap` does not synchronize on `hashCode()` execution, leading to race conditions during bucket index calculations.",
-        "B) Mutating `metadataTags` alters the key's `hashCode()`, rendering the existing entry unreachable in its original bucket and preventing removal or cache hits.",
-        "C) The `Objects.hash()` implementation creates strong object references in the JVM string pool that prevent Garbage Collection of `TransactionKey`.",
-        "D) Concurrent modification of `metadataTags` throws `ConcurrentModificationException` inside `ConcurrentHashMap.put()`, leaving phantom references."
+        "A) Replace BPE with WordPiece tokenization and double the maximum sequence truncation length to 1024 tokens.",
+        "B) Add domain-specific transaction patterns to the tokenizer vocabulary as dedicated tokens, resize the model's token embedding matrix, and fine-tune the model.",
+        "C) Switch from absolute positional embeddings to Rotary Position Embedding (RoPE) to bypass sequence length limits without vocabulary modification.",
+        "D) Convert all alphanumeric string identifiers into character-level embeddings and bypass the subword tokenization phase entirely."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Mutating `metadataTags` alters the key's `hashCode()`, rendering the existing entry unreachable in its original bucket and preventing removal or cache hits.",
-      "explanation": "In Java collections like `HashMap` and `ConcurrentHashMap`, an object's bucket location is determined by its `hashCode()` at the moment of insertion. `TransactionKey` uses mutable state (`metadataTags`) to compute its `hashCode()`. When `addTag()` modifies `metadataTags`, the hash code of the key changes. Future calls to `get()` or `remove()` compute a new hash code corresponding to a different bucket, making the original entry unreachable and un-removable. This causes both cache misses and a severe memory leak as orphaned entries remain in the map."
+      "correct_answer_text": "B) Add domain-specific transaction patterns to the tokenizer vocabulary as dedicated tokens, resize the model's token embedding matrix, and fine-tune the model.",
+      "explanation": "Over-segmentation of domain-specific strings into granular subwords increases sequence length N, which exponentially scales attention computation (O(N^2)). Adding specific tokens to the vocabulary condenses these sequences back to single/fewer tokens per entity, drastically reducing N and mitigating self-attention latency while retaining semantic representation through targeted fine-tuning."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where an in-memory cache implemented by extending `LinkedHashMap` occasionally throws `NullPointerException` or hangs threads during concurrent read traffic. The class is implemented as follows:\n\njava\npublic class BoundedCache<K, V> extends LinkedHashMap<K, V> {\n    private final int maxCapacity;\n\n    public BoundedCache(int maxCapacity) {\n        super(16, 0.75f, true);\n        this.maxCapacity = maxCapacity;\n    }\n\n    @Override\n    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {\n        return size() > maxCapacity;\n    }\n}\n",
-      "question": "Why does calling `get()` concurrently on this `BoundedCache` instance cause structural corruption and exceptions despite performing read-only operations from the caller's perspective?",
+      "scenario": "A healthcare analytics platform processes medical records averaging 8,000 tokens per patient document using a standard Transformer model with scaled dot-product attention. During peak batch processing, GPU Out-Of-Memory (OOM) errors frequently occur. Profiling shows that the memory bottleneck is caused by storing the intermediate N x N attention weight matrix in High Bandwidth Memory (HBM) during the backward pass.",
+      "question": "Which attention optimization technique is most effective at eliminating the OOM error without sacrificing exact attention output precision or model accuracy?",
       "options": [
-        "A) Setting the third constructor argument (`accessOrder`) to `true` causes read operations like `get()` to modify internal `before` and `after` pointers of the doubly-linked list, making reads structural mutations that require external synchronization.",
-        "B) Overriding `removeEldestEntry` without `synchronized` key-words causes race conditions when calculating `size()`, corrupting the underlying `HashMap.Node[]` table.",
-        "C) `LinkedHashMap` is inherently lock-free for `get()` calls, but concurrent rehash operations corrupt node references when capacity exceeds 16.",
-        "D) The load factor of `0.75f` leads to un-aligned bucket sizes during multi-threaded access, resulting in corrupt pointer traversals."
+        "A) Implement FlashAttention to compute exact attention by tiling key, query, and value blocks in GPU SRAM to eliminate storing the intermediate N x N matrix in HBM.",
+        "B) Apply global max-pooling across the sequence dimension prior to projecting Key and Query matrices.",
+        "C) Increase the softmax scaling factor sqrt(d_k) to reduce the dynamic range and bit-width of intermediate tensors.",
+        "D) Replace query and key projections with fixed strided convolutional filters to reduce matrix operations."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Setting the third constructor argument (`accessOrder`) to `true` causes read operations like `get()` to modify internal `before` and `after` pointers of the doubly-linked list, making reads structural mutations that require external synchronization.",
-      "explanation": "When `LinkedHashMap` is initialized with `accessOrder = true`, calls to `get(key)` trigger internal re-ordering of nodes to maintain access order (moving the accessed node to the end of the doubly-linked list via `afterNodeAccess`). Therefore, read operations perform structural mutations on the underlying doubly-linked list pointers (`before` and `after`). When executed concurrently without synchronization, these pointer manipulations suffer from race conditions, resulting in broken links, infinite loops, or `NullPointerException`."
+      "correct_answer_text": "A) Implement FlashAttention to compute exact attention by tiling key, query, and value blocks in GPU SRAM to eliminate storing the intermediate N x N matrix in HBM.",
+      "explanation": "Standard scaled dot-product attention materializes an N x N matrix in GPU HBM, requiring O(N^2) memory. FlashAttention reorganizes computation using SRAM tiling and online softmax normalization. This computes mathematically exact attention while reducing HBM memory overhead from quadratic O(N^2) to linear O(N) relative to sequence length."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Spring `@Service` uses asynchronous worker threads to populate a custom thread-safe collection buffer before writing to a database within a transaction scope:\n\njava\n@Service\npublic class OrderBatchProcessor {\n\n    @Autowired\n    private OrderRepository orderRepository;\n\n    @Transactional\n    public void processBatchAsync(List<OrderRequest> requests) {\n        List<Order> synchronizedBuffer = Collections.synchronizedList(new ArrayList<>());\n        \n        List<CompletableFuture<Void>> futures = requests.stream()\n            .map(req -> CompletableFuture.runAsync(() -> {\n                Order order = buildOrder(req);\n                synchronizedBuffer.add(order);\n            }))\n            .collect(Collectors.toList());\n            \n        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();\n        orderRepository.saveAll(synchronizedBuffer);\n    }\n}\n\n\nDuring worker thread execution, database locks and unexpected partial commits occur when secondary transactional services are invoked inside `buildOrder()`.",
-      "question": "What fundamental issue occurs regarding Spring's transaction propagation when `buildOrder()` is invoked inside `CompletableFuture.runAsync()`?",
+      "scenario": "An e-commerce company operates in a region where customer reviews are written in a mix of high-resource (English) and low-resource, morphologically rich languages (e.g., Kannada, Marathi). Using a standard pre-trained Multilingual BERT (mBERT) model, reviews in low-resource languages suffer from significantly higher latency and lower accuracy compared to English reviews of identical byte size.",
+      "question": "What is the primary architectural/tokenization root cause of this performance disparity, and what is the optimal remedy?",
       "options": [
-        "A) `Collections.synchronizedList` locks the thread context, blocking Spring's `PlatformTransactionManager` from committing the outer transaction.",
-        "B) Spring transaction contexts are bound to specific threads using `ThreadLocal`; asynchronous threads spawned by `CompletableFuture` do not inherit the parent thread's transactional context, causing nested DB calls inside `buildOrder()` to run outside the parent transaction.",
-        "C) `@Transactional` methods cannot process dynamic collections like `ArrayList` across worker threads without explicit `@Async` annotations on the repository.",
-        "D) `CompletableFuture.join()` strips Spring AOP transaction proxy wrappers from injected `@Autowired` beans."
+        "A) Root Cause: Sinusoidal positional encodings fail on non-Latin scripts; Solution: Implement learned absolute positional embeddings.",
+        "B) Root Cause: Vocabulary imbalance leading to excessive subword fragmentation (over-segmentation) in low-resource languages; Solution: Re-tokenize using a balanced sampling strategy (e.g., Unigram/BPE trained with temperature-scaled corpus frequencies).",
+        "C) Root Cause: Gradient explosion in multi-head attention projections for non-ASCII characters; Solution: Apply layer normalization before the token embedding layer.",
+        "D) Root Cause: Softmax distribution saturation in low-resource token logits; Solution: Apply dynamic temperature scaling to output logits during inference."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Spring transaction contexts are bound to specific threads using `ThreadLocal`; asynchronous threads spawned by `CompletableFuture` do not inherit the parent thread's transactional context, causing nested DB calls inside `buildOrder()` to run outside the parent transaction.",
-      "explanation": "Spring's declarative transaction management (`@Transactional`) relies on `ThreadLocal` storage (`TransactionSynchronizationManager`) to bind the active database connection and transaction status to the current thread. When asynchronous tasks are dispatched via `CompletableFuture.runAsync()`, they execute on separate threads in the `ForkJoinPool.commonPool()`. These background threads do not share the parent thread's `ThreadLocal` context, causing any transactional operations or nested bean methods executed within `buildOrder()` to execute in independent, non-transactional, or auto-committed database connections."
+      "correct_answer_text": "B) Root Cause: Vocabulary imbalance leading to excessive subword fragmentation (over-segmentation) in low-resource languages; Solution: Re-tokenize using a balanced sampling strategy (e.g., Unigram/BPE trained with temperature-scaled corpus frequencies).",
+      "explanation": "Multilingual tokenizers trained on unweighted multi-lingual corpora allocate a disproportionately large share of vocabulary slots to high-resource languages. Consequently, morphologically rich low-resource text gets heavily over-segmented into tiny subwords or character-level tokens. This inflates sequence length, degrades semantic representation, and increases inference latency. Using temperature-based corpus sampling during tokenizer training balances vocabulary representation across languages."
     }
   ]
 }

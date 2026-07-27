@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "A global fintech company deploys a multilingual customer support chatbot using a Transformer-based pipeline. During peak operational hours, the system experiences high memory overhead and out-of-vocabulary (OOV) handling failures when encountering domain-specific financial jargon, mixed-code languages, and user typos. The existing Word-level tokenization strategy expands sequence lengths uncontrollably or causes excessive unknown token ([UNK]) replacements, severely degrading response quality and failing real-time processing SLAs (latency < 100ms).",
-      "question": "Which tokenization strategy and architectural trade-off should the AI engineering team adopt to eliminate [UNK] tokens, control sequence length inflation, and maintain high throughput under strict real-time constraints?",
+      "scenario": "A fintech company deploys an NLP model for real-time fraud detection on streaming financial transaction logs. They notice that the pre-trained Byte-Pair Encoding (BPE) tokenizer splits unseen structured alphanumeric transaction codes (e.g., 'TXN_99823_XF') into extremely fine-grained subwords (e.g., 'T', 'X', 'N', '_', '99', '82', '3', '_', 'X', 'F'). This drastically bloats input sequence length N, causing a latency spike in the multi-head self-attention layer due to its O(N^2) computational and spatial complexity.",
+      "question": "Which strategy best addresses the latency bottleneck while preserving context representation for domain-specific tokens without completely retraining the base Transformer model from scratch?",
       "options": [
-        "A) Transition to Byte-Pair Encoding (BPE) or WordPiece with a byte-fallback mechanism, retaining a moderately sized subword vocabulary to balance sequence length and fine-grained representation.",
-        "B) Switch entirely to pure character-level tokenization to guarantee zero [UNK] tokens, accepting the quadratic increase in self-attention memory overhead relative to sequence length.",
-        "C) Implement strict word-level tokenization with a dynamic dictionary lookup table cached in Redis, expanding vocabulary size to 1 million tokens.",
-        "D) Utilize SentencePiece with unigram language modeling while disabling subword regularization, setting maximum sequence length to a fixed 512 tokens for all inputs."
+        "A) Replace BPE with WordPiece tokenization and double the maximum sequence truncation length to 1024 tokens.",
+        "B) Add domain-specific transaction patterns to the tokenizer vocabulary as dedicated tokens, resize the model's token embedding matrix, and fine-tune the model.",
+        "C) Switch from absolute positional embeddings to Rotary Position Embedding (RoPE) to bypass sequence length limits without vocabulary modification.",
+        "D) Convert all alphanumeric string identifiers into character-level embeddings and bypass the subword tokenization phase entirely."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Transition to Byte-Pair Encoding (BPE) or WordPiece with a byte-fallback mechanism, retaining a moderately sized subword vocabulary to balance sequence length and fine-grained representation.",
-      "explanation": "Subword tokenization algorithms (like BPE or WordPiece with byte-fallback) split rare words and jargon into meaningful sub-units or raw bytes. This ensures 0% [UNK] generation for unexpected domain-specific terms or typos while maintaining compact sequence lengths. Character-level tokenization (Option B) eliminates [UNK] but drastically increases sequence length N, causing self-attention memory and computation to explode quadratically O(N^2), violating latency constraints."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Add domain-specific transaction patterns to the tokenizer vocabulary as dedicated tokens, resize the model's token embedding matrix, and fine-tune the model.",
+      "explanation": "Over-segmentation of domain-specific strings into granular subwords increases sequence length N, which exponentially scales attention computation (O(N^2)). Adding specific tokens to the vocabulary condenses these sequences back to single/fewer tokens per entity, drastically reducing N and mitigating self-attention latency while retaining semantic representation through targeted fine-tuning."
     },
     {
       "id": 2,
-      "scenario": "An enterprise legal tech platform uses a Transformer-based model to analyze long-form contracts averaging 25,000 tokens per document for risk compliance. During load testing, the system suffers severe GPU Out-Of-Memory (OOM) errors. Profiling indicates that the standard Scaled Dot-Product Self-Attention mechanism requires memory allocation that scales quadratically O(N^2) with input sequence length N, making full document processing in a single pass computationally unfeasible.",
-      "question": "To process these long legal documents efficiently while preserving global contextual dependencies across distant clauses, which architectural modification provides the optimal balance between computational complexity and long-range context retention?",
+      "scenario": "A healthcare analytics platform processes medical records averaging 8,000 tokens per patient document using a standard Transformer model with scaled dot-product attention. During peak batch processing, GPU Out-Of-Memory (OOM) errors frequently occur. Profiling shows that the memory bottleneck is caused by storing the intermediate N x N attention weight matrix in High Bandwidth Memory (HBM) during the backward pass.",
+      "question": "Which attention optimization technique is most effective at eliminating the OOM error without sacrificing exact attention output precision or model accuracy?",
       "options": [
-        "A) Replace Self-Attention with Cross-Attention, mapping document segments directly to fixed target query vectors to reduce space complexity to O(N).",
-        "B) Truncate documents into isolated 512-token chunks, process them independently through BERT, and average the final layer embeddings for downstream classification.",
-        "C) Implement a sparse attention mechanism (e.g., Longformer/BigBird combining local sliding window attention with global attention) or I/O-aware attention optimization (FlashAttention) to reduce memory complexity.",
-        "D) Increase the number of multi-head attention heads while proportionally decreasing the hidden dimension size (d_model) to reduce matrix multiplication overhead."
+        "A) Implement FlashAttention to compute exact attention by tiling key, query, and value blocks in GPU SRAM to eliminate storing the intermediate N x N matrix in HBM.",
+        "B) Apply global max-pooling across the sequence dimension prior to projecting Key and Query matrices.",
+        "C) Increase the softmax scaling factor sqrt(d_k) to reduce the dynamic range and bit-width of intermediate tensors.",
+        "D) Replace query and key projections with fixed strided convolutional filters to reduce matrix operations."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Implement a sparse attention mechanism (e.g., Longformer/BigBird combining local sliding window attention with global attention) or I/O-aware attention optimization (FlashAttention) to reduce memory complexity.",
-      "explanation": "Standard self-attention computes an N x N attention matrix, leading to O(N^2) memory and time complexity. Sparse attention architectures like Longformer or BigBird combine local sliding-window attention with global attention on critical tokens, reducing complexity to O(N). FlashAttention optimizes memory reads/writes between GPU SRAM and HBM without sacrificing full attention semantics. Truncating into isolated chunks (Option B) destroys long-range cross-clause context needed in legal contracts."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Implement FlashAttention to compute exact attention by tiling key, query, and value blocks in GPU SRAM to eliminate storing the intermediate N x N matrix in HBM.",
+      "explanation": "Standard scaled dot-product attention materializes an N x N matrix in GPU HBM, requiring O(N^2) memory. FlashAttention reorganizes computation using SRAM tiling and online softmax normalization. This computes mathematically exact attention while reducing HBM memory overhead from quadratic O(N^2) to linear O(N) relative to sequence length."
     },
     {
       "id": 3,
-      "scenario": "An e-commerce log analytics engine processes user clickstream event sequences to predict session abandonments. The training data exhibits high sequence-length skew: 90% of sessions contain fewer than 20 events, but 10% of sessions contain over 2,000 events. The engine relies on a vanilla Transformer model with absolute sinusoidal positional encodings. During deployment, the model performs well on short sequences but fails catastrophically on long sequences, failing to generalize to positional indices beyond those predominantly seen during training.",
-      "question": "What is the primary cause of this failure on long sequences, and which positional encoding design fixes the issue?",
+      "scenario": "An e-commerce company operates in a region where customer reviews are written in a mix of high-resource (English) and low-resource, morphologically rich languages (e.g., Kannada, Marathi). Using a standard pre-trained Multilingual BERT (mBERT) model, reviews in low-resource languages suffer from significantly higher latency and lower accuracy compared to English reviews of identical byte size.",
+      "question": "What is the primary architectural/tokenization root cause of this performance disparity, and what is the optimal remedy?",
       "options": [
-        "A) Absolute sinusoidal encodings lack trainable parameters; replacing them with learned absolute positional embeddings allows the model to dynamically scale to arbitrary sequence lengths.",
-        "B) Absolute positional encodings fail to extrapolate to token indices outside the range trained upon; switching to Relative Positional Encodings, Rotary Position Embeddings (RoPE), or ALiBi enables robust length extrapolation.",
-        "C) Multi-Head Attention collapses when processing variable-length batches; applying Layer Normalization before Multi-Head Attention (Pre-LN) resolves position-based length bias.",
-        "D) Sinusoidal functions introduce high-frequency noise in long sequences; replacing them with learned scalar indices scaled by event frequency prevents attention weight saturation."
+        "A) Root Cause: Sinusoidal positional encodings fail on non-Latin scripts; Solution: Implement learned absolute positional embeddings.",
+        "B) Root Cause: Vocabulary imbalance leading to excessive subword fragmentation (over-segmentation) in low-resource languages; Solution: Re-tokenize using a balanced sampling strategy (e.g., Unigram/BPE trained with temperature-scaled corpus frequencies).",
+        "C) Root Cause: Gradient explosion in multi-head attention projections for non-ASCII characters; Solution: Apply layer normalization before the token embedding layer.",
+        "D) Root Cause: Softmax distribution saturation in low-resource token logits; Solution: Apply dynamic temperature scaling to output logits during inference."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Absolute positional encodings fail to extrapolate to token indices outside the range trained upon; switching to Relative Positional Encodings, Rotary Position Embeddings (RoPE), or ALiBi enables robust length extrapolation.",
-      "explanation": "Absolute positional encodings assign fixed or learned representations based on absolute positions (0, 1, ..., N). When evaluated on sequences significantly longer than those encountered during training, the model cannot extrapolate to unseen absolute positions. Relative Positional Encodings, RoPE, or ALiBi (Attention with Linear Biases) model relative distances between tokens rather than absolute coordinates, allowing seamless extrapolation to arbitrarily long sequences at inference time."
+      "correct_answer_text": "B) Root Cause: Vocabulary imbalance leading to excessive subword fragmentation (over-segmentation) in low-resource languages; Solution: Re-tokenize using a balanced sampling strategy (e.g., Unigram/BPE trained with temperature-scaled corpus frequencies).",
+      "explanation": "Multilingual tokenizers trained on unweighted multi-lingual corpora allocate a disproportionately large share of vocabulary slots to high-resource languages. Consequently, morphologically rich low-resource text gets heavily over-segmented into tiny subwords or character-level tokens. This inflates sequence length, degrades semantic representation, and increases inference latency. Using temperature-based corpus sampling during tokenizer training balances vocabulary representation across languages."
     }
   ]
 }
