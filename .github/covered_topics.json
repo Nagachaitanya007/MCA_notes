@@ -24,7 +24,8 @@
     "Latency Budgets & Timeout Orchestration: Managing Deadlines with CompletableFuture and Virtual Threads",
     "The Virtual Thread Scheduler: ForkJoinPool Work-Stealing, Queue Mechanics, and Task Scheduling",
     "Exception Propagation and Resilience: Managing Failures in CompletableFuture Pipelines vs. Virtual Threads",
-    "Scatter-Gather Aggregation: CompletableFuture Pipelines vs. Virtual Thread Parallel Streams"
+    "Scatter-Gather Aggregation: CompletableFuture Pipelines vs. Virtual Thread Parallel Streams",
+    "Task Cancellation Mechanics: Clean Teardowns across Virtual Threads and CompletableFuture"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
