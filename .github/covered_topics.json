@@ -223,6 +223,7 @@
     "Mastering Distributed ID Generation: Designing Twitter's Snowflake Algorithm",
     "Architectural Blueprint: Designing a Highly Concurrent Distributed ID Generator (Snowflake ID)",
     "Coordinate-Free Scaling: Designing a Distributed ID Generator (Snowflake ID)",
-    "Chronological Scaling: Designing a Fault-Tolerant Distributed Snowflake ID Generator"
+    "Chronological Scaling: Designing a Fault-Tolerant Distributed Snowflake ID Generator",
+    "Zero-Coordination Unique Identifiers: Designing a Distributed Snowflake ID System"
   ]
 }
