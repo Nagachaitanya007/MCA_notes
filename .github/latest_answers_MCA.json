@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "A fintech company deploys an NLP model for real-time fraud detection on streaming financial transaction logs. They notice that the pre-trained Byte-Pair Encoding (BPE) tokenizer splits unseen structured alphanumeric transaction codes (e.g., 'TXN_99823_XF') into extremely fine-grained subwords (e.g., 'T', 'X', 'N', '_', '99', '82', '3', '_', 'X', 'F'). This drastically bloats input sequence length N, causing a latency spike in the multi-head self-attention layer due to its O(N^2) computational and spatial complexity.",
-      "question": "Which strategy best addresses the latency bottleneck while preserving context representation for domain-specific tokens without completely retraining the base Transformer model from scratch?",
+      "scenario": "A legal tech company is building an automated contract analysis system processing long-form documents averaging 16,000 tokens. Using a standard Transformer architecture with standard Multi-Head Attention, the team observes quadratic memory footprint growth (O(N^2)) leading to Out-Of-Memory (OOM) errors on 80GB A100 GPUs during inference. The system requires maintaining long-range context dependencies across multi-page agreements without simply truncating the text.",
+      "question": "Which architectural attention modification effectively addresses the O(N^2) time and memory complexity while retaining global document context?",
       "options": [
-        "A) Replace BPE with WordPiece tokenization and double the maximum sequence truncation length to 1024 tokens.",
-        "B) Add domain-specific transaction patterns to the tokenizer vocabulary as dedicated tokens, resize the model's token embedding matrix, and fine-tune the model.",
-        "C) Switch from absolute positional embeddings to Rotary Position Embedding (RoPE) to bypass sequence length limits without vocabulary modification.",
-        "D) Convert all alphanumeric string identifiers into character-level embeddings and bypass the subword tokenization phase entirely."
+        "A) Replace Multi-Head Attention with Grouped-Query Attention (GQA) and truncate sequences strictly at 4,096 tokens.",
+        "B) Implement a combination of Sliding Window Attention and task-specific Global Attention (e.g., Longformer architecture).",
+        "C) Increase the hidden dimension size (d_model) while proportionally reducing the number of total attention heads.",
+        "D) Transition from Post-Layer Normalization (Post-LN) to Pre-Layer Normalization (Pre-LN) in the Transformer encoder blocks."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Add domain-specific transaction patterns to the tokenizer vocabulary as dedicated tokens, resize the model's token embedding matrix, and fine-tune the model.",
-      "explanation": "Over-segmentation of domain-specific strings into granular subwords increases sequence length N, which exponentially scales attention computation (O(N^2)). Adding specific tokens to the vocabulary condenses these sequences back to single/fewer tokens per entity, drastically reducing N and mitigating self-attention latency while retaining semantic representation through targeted fine-tuning."
+      "correct_answer_text": "B) Implement a combination of Sliding Window Attention and task-specific Global Attention (e.g., Longformer architecture).",
+      "explanation": "Standard self-attention computes dot products between all pairs of tokens, resulting in O(N^2) memory and compute complexity with respect to sequence length N. Longformer reduces this complexity to O(N) by combining local sliding window attention (capturing local context) with selected global attention on specified tokens (e.g., document headers or key classification tokens), enabling the processing of 16k+ token documents without OOM errors."
     },
     {
       "id": 2,
-      "scenario": "A healthcare analytics platform processes medical records averaging 8,000 tokens per patient document using a standard Transformer model with scaled dot-product attention. During peak batch processing, GPU Out-Of-Memory (OOM) errors frequently occur. Profiling shows that the memory bottleneck is caused by storing the intermediate N x N attention weight matrix in High Bandwidth Memory (HBM) during the backward pass.",
-      "question": "Which attention optimization technique is most effective at eliminating the OOM error without sacrificing exact attention output precision or model accuracy?",
+      "scenario": "An enterprise e-commerce platform in India deploys a customer support chatbot to parse code-mixed Hinglish (Hindi-English) user queries containing frequent colloquialisms, slang, and typographical errors. The pre-trained WordPiece tokenizer trained primarily on formal English and standard Hindi splits short queries into excessively fragmented subword token sequences (e.g., a 6-word sentence gets fragmented into 26 subword tokens), causing severe inference latency and degraded downstream intent classification.",
+      "question": "Which strategy directly mitigates this over-segmentation issue and improves computational efficiency without retraining the core Transformer model from scratch?",
       "options": [
-        "A) Implement FlashAttention to compute exact attention by tiling key, query, and value blocks in GPU SRAM to eliminate storing the intermediate N x N matrix in HBM.",
-        "B) Apply global max-pooling across the sequence dimension prior to projecting Key and Query matrices.",
-        "C) Increase the softmax scaling factor sqrt(d_k) to reduce the dynamic range and bit-width of intermediate tensors.",
-        "D) Replace query and key projections with fixed strided convolutional filters to reduce matrix operations."
+        "A) Switch completely to character-level tokenization to eliminate unknown token [UNK] flags.",
+        "B) Extend the vocabulary with domain-specific Hinglish subword units using Byte-Fallback BPE and fine-tune the model's token embeddings.",
+        "C) Increase the maximum positional encoding capacity parameter (max_position_embeddings) from 512 to 2048.",
+        "D) Apply strict greedy decoding on character sequences prior to passing tokens to the embedding layer."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Implement FlashAttention to compute exact attention by tiling key, query, and value blocks in GPU SRAM to eliminate storing the intermediate N x N matrix in HBM.",
-      "explanation": "Standard scaled dot-product attention materializes an N x N matrix in GPU HBM, requiring O(N^2) memory. FlashAttention reorganizes computation using SRAM tiling and online softmax normalization. This computes mathematically exact attention while reducing HBM memory overhead from quadratic O(N^2) to linear O(N) relative to sequence length."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Extend the vocabulary with domain-specific Hinglish subword units using Byte-Fallback BPE and fine-tune the model's token embeddings.",
+      "explanation": "Subword over-segmentation occurs when a tokenizer encounters out-of-distribution morphology or code-mixed text, breaking words into tiny, non-semantic fragments and inflating sequence length. By expanding the tokenizer's vocabulary with frequent domain/Hinglish subword tokens (using Byte-Fallback to handle rare characters gracefully) and fine-tuning the newly added token embeddings, the average sequence length decreases, directly reducing Transformer forward pass latency and preserving context."
     },
     {
       "id": 3,
-      "scenario": "An e-commerce company operates in a region where customer reviews are written in a mix of high-resource (English) and low-resource, morphologically rich languages (e.g., Kannada, Marathi). Using a standard pre-trained Multilingual BERT (mBERT) model, reviews in low-resource languages suffer from significantly higher latency and lower accuracy compared to English reviews of identical byte size.",
-      "question": "What is the primary architectural/tokenization root cause of this performance disparity, and what is the optimal remedy?",
+      "scenario": "A financial news aggregator serving real-time market updates uses a 70B parameter Decoder-only Transformer model. During high-concurrency peak trading hours, GPU memory bandwidth becomes the primary bottleneck during autoregressive text generation due to the massive dynamic Key-Value (KV) cache allocation required for every active request thread, leading to SLA breaches in Time-To-First-Token (TTFT) and Time-Per-Output-Token (TPOT).",
+      "question": "Which structural attention optimization specifically targets and reduces the memory footprint and bandwidth bottleneck of the KV Cache during autoregressive decoding?",
       "options": [
-        "A) Root Cause: Sinusoidal positional encodings fail on non-Latin scripts; Solution: Implement learned absolute positional embeddings.",
-        "B) Root Cause: Vocabulary imbalance leading to excessive subword fragmentation (over-segmentation) in low-resource languages; Solution: Re-tokenize using a balanced sampling strategy (e.g., Unigram/BPE trained with temperature-scaled corpus frequencies).",
-        "C) Root Cause: Gradient explosion in multi-head attention projections for non-ASCII characters; Solution: Apply layer normalization before the token embedding layer.",
-        "D) Root Cause: Softmax distribution saturation in low-resource token logits; Solution: Apply dynamic temperature scaling to output logits during inference."
+        "A) Grouped-Query Attention (GQA), which shares single key/value projection heads across groups of query heads.",
+        "B) Replacing Multi-Head Attention with Softmax-free Additive Attention (Bahdanau Attention) in decoder layers.",
+        "C) Switching from Absolute Learned Positional Embeddings to Rotary Position Embeddings (RoPE).",
+        "D) Applying FlashAttention-2 algorithms exclusively during offline model training."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Root Cause: Vocabulary imbalance leading to excessive subword fragmentation (over-segmentation) in low-resource languages; Solution: Re-tokenize using a balanced sampling strategy (e.g., Unigram/BPE trained with temperature-scaled corpus frequencies).",
-      "explanation": "Multilingual tokenizers trained on unweighted multi-lingual corpora allocate a disproportionately large share of vocabulary slots to high-resource languages. Consequently, morphologically rich low-resource text gets heavily over-segmented into tiny subwords or character-level tokens. This inflates sequence length, degrades semantic representation, and increases inference latency. Using temperature-based corpus sampling during tokenizer training balances vocabulary representation across languages."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Grouped-Query Attention (GQA), which shares single key/value projection heads across groups of query heads.",
+      "explanation": "In standard Multi-Head Attention (MHA), every query head has its own key and value head, creating a massive memory footprint for the KV cache retained per token in memory during autoregressive generation. Grouped-Query Attention (GQA) groups multiple query heads to share a single key/value head. This significantly reduces KV cache size (by 4x to 8x typically), relieving memory bandwidth constraints during inference and allowing significantly higher concurrency and lower latency."
     }
   ]
 }
