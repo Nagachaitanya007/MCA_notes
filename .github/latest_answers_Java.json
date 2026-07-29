@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
+  "topic": "Exception Handling Strategies in Distributed Systems",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot microservice running on Java 21 experiences severe performance degradation and high request latency under load. Monitoring shows carrier thread starvation in the JVM's `ForkJoinPool`. The team recently enabled Virtual Threads. You locate the following service method called during every HTTP request:\n\njava\n@Service\npublic class PaymentProcessingService {\n    \n    @Autowired\n    private AuditLogger auditLogger;\n\n    public void processPayment(PaymentRequest request) {\n        synchronized (this) {\n            auditLogger.logPaymentStart(request);\n            byte[] signature = signPayloadRemote(request.getPayload()); // Remote HTTP REST Call\n            auditLogger.logPaymentEnd(request, signature);\n        }\n    }\n}\n",
-      "question": "What is the primary cause of the carrier thread starvation under high load?",
+      "scenario": "You are debugging a production issue where a distributed order service fails to persist audit logs when an external payment gateway call throws a `PaymentTimeoutException`. The developer implemented the following Spring `@Service` bean to ensure audit logs are written in a separate, isolated transaction regardless of main transaction failure:\n\njava\n@Service\npublic class OrderProcessingService {\n\n    @Autowired\n    private OrderRepository orderRepository;\n    @Autowired\n    private AuditRepository auditRepository;\n\n    @Transactional\n    public void processOrder(OrderRequest request) {\n        Order order = orderRepository.save(new Order(request));\n        try {\n            callPaymentGateway(request);\n        } catch (PaymentTimeoutException ex) {\n            this.logAuditFailure(order.getId(), ex.getMessage());\n            throw ex;\n        }\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void logAuditFailure(Long orderId, String error) {\n        auditRepository.save(new AuditLog(orderId, error));\n    }\n}\n\n\nDespite `logAuditFailure` being annotated with `Propagation.REQUIRES_NEW`, the `AuditLog` entry is never saved to the database when `PaymentTimeoutException` is rethrown.",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) `auditLogger` creates a thread memory leak because `VirtualThread` contexts do not clean up `ThreadLocal` references automatically.",
-        "B) Executing a blocking network call inside a `synchronized` block pins the virtual thread to its underlying carrier thread, preventing unmounting.",
-        "C) The JVM's `ForkJoinPool` carrier pool size shrinks dynamically to 1 when virtual threads invoke Spring-managed dynamic proxies.",
-        "D) Virtual threads cannot acquire intrinsic object locks (`synchronized`), causing an implicit fallback to platform threads with standard OS blocking."
+        "A) `PaymentTimeoutException` is a checked exception, which prevents Spring's transaction manager from initiating a new physical transaction.",
+        "B) Direct self-invocation (`this.logAuditFailure(...)`) bypasses the Spring AOP proxy, executing `logAuditFailure` within the caller's transaction context which is subsequently rolled back.",
+        "C) The underlying JDBC driver cannot open two physical connections on the same thread without an active XA transaction manager.",
+        "D) Hibernate automatically marks parent and nested transactions as `rollback-only` whenever an exception is caught and rethrown."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Executing a blocking network call inside a `synchronized` block pins the virtual thread to its underlying carrier thread, preventing unmounting.",
-      "explanation": "In Java 21, when a virtual thread enters a `synchronized` block/method or executes a native method, it becomes **pinned** to its underlying OS carrier thread (`ForkJoinPool` worker). If a blocking I/O operation (like `signPayloadRemote`) occurs while pinned, the virtual thread cannot unmount. Under high throughput, all available carrier threads become pinned and blocked, causing carrier thread starvation and destroying virtual thread scalability. Replacing `synchronized` with `java.util.concurrent.locks.ReentrantLock` allows the virtual thread to unmount safely during blocking I/O."
+      "correct_answer_text": "B) Direct self-invocation (`this.logAuditFailure(...)`) bypasses the Spring AOP proxy, executing `logAuditFailure` within the caller's transaction context which is subsequently rolled back.",
+      "explanation": "In Spring AOP, transactional behavior is enforced by intercepting calls through a dynamic proxy object (CGLIB or JDK Dynamic Proxy). When `processOrder` invokes `this.logAuditFailure(...)`, it is a direct internal call on the target instance (`this`), completely bypassing the proxy interceptor chain. Consequently, `@Transactional(propagation = Propagation.REQUIRES_NEW)` is ignored, and `logAuditFailure` executes inside the parent transaction context. When `PaymentTimeoutException` is rethrown, the entire parent transaction rolls back, reverting both the `Order` save and the `AuditLog` save."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where an asynchronous order processing pipeline loses tenant context and database transactions unexpectedly. The service method uses `CompletableFuture` within a Spring managed `@Transactional` method:\n\njava\n@Service\npublic class OrderService {\n    \n    @Autowired\n    private OrderRepository orderRepository;\n\n    @Transactional\n    public void processOrder(Order order) {\n        orderRepository.save(order);\n        \n        CompletableFuture.supplyAsync(() -> {\n            // Database read requiring active transaction context\n            return orderRepository.findById(order.getId()).orElseThrow();\n        }).thenAccept(updatedOrder -> {\n            sendNotification(updatedOrder);\n        });\n    }\n}\n\n\nDuring execution, `orderRepository.findById(...)` fails with `TransactionRequiredException` or yields stale data because the context is missing.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "You are debugging a production issue where a reactive microservice processing distributed telemetry logs suffers from continuous `OutOfMemoryError: Java heap space` under heavy downstream latency. Heap dumps show millions of uncollected context objects retained by `java.lang.ThreadLocal$ThreadLocalMap`. The service processes requests asynchronously using `CompletableFuture` and delegates exception recovery via `.exceptionally()` back to a shared worker pool.",
+      "question": "Why is exception handling across thread boundaries in this asynchronous pipeline causing a `ThreadLocal` memory leak?",
       "options": [
-        "A) `CompletableFuture` bypasses Spring CGLIB proxies, disabling all annotations on repository beans called within lambdas.",
-        "B) Spring's `@Transactional` context is bound to `ThreadLocal` storage, which is not propagated to the `ForkJoinPool.commonPool()` threads used by `supplyAsync()`.",
-        "C) The `@Transactional` proxy intercepts `CompletableFuture` and automatically aborts the main thread's database commit.",
-        "D) `supplyAsync()` runs synchronously by default unless an explicit `Executor` with `@Async` is configured."
+        "A) `CompletableFuture.exceptionally()` spawns a un-pooled platform thread per exception, overloading the JVM heap with thread stack frames.",
+        "B) `ThreadLocal` variables set on initial request threads are not automatically cleared or propagated across execution boundaries in `CompletableFuture` stages, leaving stale entries in long-lived thread pool worker threads.",
+        "C) The Garbage Collector cannot clear `ThreadLocalMap` entries if the exception thrown extends `RuntimeException`.",
+        "D) Exception stack traces retain hard references to the `Thread` object that originated the error until the thread pool is shutdown."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Spring's `@Transactional` context is bound to `ThreadLocal` storage, which is not propagated to the `ForkJoinPool.commonPool()` threads used by `supplyAsync()`.",
-      "explanation": "Spring's transaction management (and `SecurityContextHolder`) relies on `ThreadLocal` variables to bind the active database transaction/session to the current executing thread. Calling `CompletableFuture.supplyAsync()` without an explicit executor submits the work to `ForkJoinPool.commonPool()`, running it on a different worker thread that lacks the `ThreadLocal` state of the caller. Consequently, the async task executes outside the database transaction, leading to missing transaction exceptions or reading uncommitted state."
+      "correct_answer_text": "B) `ThreadLocal` variables set on initial request threads are not automatically cleared or propagated across execution boundaries in `CompletableFuture` stages, leaving stale entries in long-lived thread pool worker threads.",
+      "explanation": "In Java thread pools (`ForkJoinPool` or `ThreadPoolExecutor`), worker threads are recycled long-term. `ThreadLocal` storage (e.g., MDC diagnostic context or SecurityContext) is attached directly to the `Thread` instance. When asynchronous pipelines shift execution across threads via `CompletableFuture` or reactive operators, `ThreadLocal` values set during initial task execution or exception handling are not automatically cleaned up unless explicitly wrapped (e.g., using context-propagating wrappers) or cleared inside a `finally` block on that specific thread. Stale references remain pinned in the worker thread's `ThreadLocalMap`, preventing GC cleanup and leading to heap exhaustion."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where migrating a Spring Boot 3.2 application to Virtual Threads (`spring.threads.virtual.enabled=true`) caused sudden HikariCP connection pool timeouts (`SQLTransientConnectionException: Connection is not available, request timed out after 30000ms`) under heavy traffic bursts, despite CPU and Memory utilization staying low.",
-      "question": "What is the primary cause of database connection pool exhaustion after enabling Virtual Threads without modifying connection pool configurations?",
+      "scenario": "You are debugging a production issue where a Spring Kafka consumer processing financial transfers enters an infinite retry loop when an invalid payload triggers a `IllegalArgumentException`. The message error handler was explicitly configured with `DefaultErrorHandler` to treat `IllegalArgumentException` as a non-retryable fatal exception, yet the container continuously re-polls and re-executes the bad message, exhausting partition throughput.",
+      "question": "What is the primary cause of this infinite retry behavior?",
       "options": [
-        "A) Virtual Threads create one HikariCP connection per thread, exceeding PostgreSQL's maximum connections instantly.",
-        "B) Virtual Threads disable HikariCP's connection leak detection mechanism, causing leaked connections to linger indefinitely.",
-        "C) Unbounded virtual thread creation allows thousands of tasks to concurrently request DB connections, overwhelming the fixed-size connection pool.",
-        "D) Virtual Threads automatically disable HikariCP connection pooling and fall back to `DriverManagerDataSource` non-pooled connections."
+        "A) Spring's `@KafkaListener` wraps business logic exceptions inside a `ListenerExecutionFailedException`, causing the `DefaultErrorHandler` exception classification check to miss the underlying `IllegalArgumentException` unless cause-traversing is enabled.",
+        "B) Kafka consumer offset auto-commit overrides the container error handler and forces log position rewinds whenever any unchecked exception escapes.",
+        "C) `DefaultErrorHandler` only accepts checked exceptions for fatal classification; all instances of `RuntimeException` default to infinite retries.",
+        "D) Spring's `@Transactional` annotation on the listener method disables all Kafka `ContainerCustomizer` error handler configurations."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Unbounded virtual thread creation allows thousands of tasks to concurrently request DB connections, overwhelming the fixed-size connection pool.",
-      "explanation": "With platform threads, operating system thread limits (e.g., 200 worker threads) naturally throttle the maximum number of concurrent requests attempting to acquire database connections. When switching to Virtual Threads, hundreds of thousands of concurrent requests can run simultaneously. If these virtual threads all attempt to acquire a connection from a fixed-size pool (e.g., 10 connections), the pool queue becomes massively oversaturated, leading to widespread connection timeouts. To fix this, developers must decouple concurrency limits using concurrency primitives like `Semaphore` or dedicated rate limiters for pool-bound resources."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Spring's `@KafkaListener` wraps business logic exceptions inside a `ListenerExecutionFailedException`, causing the `DefaultErrorHandler` exception classification check to miss the underlying `IllegalArgumentException` unless cause-traversing is enabled.",
+      "explanation": "When an exception is thrown within a `@KafkaListener` method, Spring Kafka catches it and wraps it inside a `ListenerExecutionFailedException`. By default, if `DefaultErrorHandler` is configured to exclude specific exceptions (e.g., `notRetryableExceptions.add(IllegalArgumentException.class)`), it checks the top-level exception type (`ListenerExecutionFailedException`) unless `isTraverseCauses()` is set to `true` or root-cause classification is explicitly enabled. Because `ListenerExecutionFailedException` does not match the non-retryable rule, the error handler applies its default retry policy, resulting in an infinite retry loop."
     }
   ]
 }
