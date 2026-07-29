@@ -69,7 +69,8 @@
     "The Indexed Priority Queue: Mastering Constant-Time Lookups and O(log N) Updates in Custom Heaps",
     "The Bitmapped Vector Trie: Custom Persistent Immutable Lists",
     "The Segment Tree: Mastering Custom Range-Query & Point-Update Collections",
-    "The Roaring Bitmap: Custom Compressed Sets for Massive Integer Collections"
+    "The Roaring Bitmap: Custom Compressed Sets for Massive Integer Collections",
+    "The QuadTree: Custom Spatial Indexing Collection"
   ],
   "JVM Internals (Memory Model, G1/ZGC, Class Loading)": [
     "JVM Internals: The Lifecycle of a Java Object",
