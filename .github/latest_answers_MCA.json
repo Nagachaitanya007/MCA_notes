@@ -1,48 +1,48 @@
 {
-  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
+  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A legal tech company is building an automated contract analysis system processing long-form documents averaging 16,000 tokens. Using a standard Transformer architecture with standard Multi-Head Attention, the team observes quadratic memory footprint growth (O(N^2)) leading to Out-Of-Memory (OOM) errors on 80GB A100 GPUs during inference. The system requires maintaining long-range context dependencies across multi-page agreements without simply truncating the text.",
-      "question": "Which architectural attention modification effectively addresses the O(N^2) time and memory complexity while retaining global document context?",
+      "scenario": "Real-world Industrial Problem Statement: An autonomous edge-robotics company is deploying a Convolutional Neural Network (CNN) for real-time obstacle detection on a low-power NVIDIA Jetson micro-controller. The cloud-trained baseline model using standard 3x3 2D convolutions achieves high mAP (94%), but inference latency on the edge device is 85ms per frame, exceeding the strict safety SLA of under 20ms per frame. The team must optimize the network architecture to cut floating-point operations (FLOPs) without altering spatial resolution or drastically dropping accuracy.",
+      "question": "Which architectural structural modification to the CNN backbone provides the highest reduction in computational complexity (FLOPs) while maintaining spatial feature representation capacity?",
       "options": [
-        "A) Replace Multi-Head Attention with Grouped-Query Attention (GQA) and truncate sequences strictly at 4,096 tokens.",
-        "B) Implement a combination of Sliding Window Attention and task-specific Global Attention (e.g., Longformer architecture).",
-        "C) Increase the hidden dimension size (d_model) while proportionally reducing the number of total attention heads.",
-        "D) Transition from Post-Layer Normalization (Post-LN) to Pre-Layer Normalization (Pre-LN) in the Transformer encoder blocks."
+        "A) Replace standard 2D convolutions with Depthwise Separable Convolutions.",
+        "B) Replace all 3x3 convolution kernels strictly with 1x1 convolutions across all layers.",
+        "C) Apply Max Pooling with a stride of 4 immediately after the input layer to reduce spatial dimensions.",
+        "D) Replace the CNN backbone with a Vanilla Recurrent Neural Network (RNN) that processes pixels sequentially."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Implement a combination of Sliding Window Attention and task-specific Global Attention (e.g., Longformer architecture).",
-      "explanation": "Standard self-attention computes dot products between all pairs of tokens, resulting in O(N^2) memory and compute complexity with respect to sequence length N. Longformer reduces this complexity to O(N) by combining local sliding window attention (capturing local context) with selected global attention on specified tokens (e.g., document headers or key classification tokens), enabling the processing of 16k+ token documents without OOM errors."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Replace standard 2D convolutions with Depthwise Separable Convolutions.",
+      "explanation": "Depthwise Separable Convolutions split standard convolution into two steps: a depthwise spatial convolution (per channel) and a pointwise 1x1 convolution (across channels). For a 3x3 kernel, this reduces computation and parameter count by approximately 8 to 9 times with negligible loss in feature extraction capabilities, directly addressing the strict real-time SLA on edge hardware."
     },
     {
       "id": 2,
-      "scenario": "An enterprise e-commerce platform in India deploys a customer support chatbot to parse code-mixed Hinglish (Hindi-English) user queries containing frequent colloquialisms, slang, and typographical errors. The pre-trained WordPiece tokenizer trained primarily on formal English and standard Hindi splits short queries into excessively fragmented subword token sequences (e.g., a 6-word sentence gets fragmented into 26 subword tokens), causing severe inference latency and degraded downstream intent classification.",
-      "question": "Which strategy directly mitigates this over-segmentation issue and improves computational efficiency without retraining the core Transformer model from scratch?",
+      "scenario": "Real-world Industrial Problem Statement: A quantitative finance firm models high-frequency trading logs containing continuous sequences of over 2,500 time steps per trading session. Using a standard Vanilla Recurrent Neural Network (RNN) to predict sudden price volatility spikes, the engineering team notices that validation loss plateaus very early during epoch 2. Gradient analysis reveals that backpropagated gradients for weights associated with the initial 500 time steps approach numerical zero (under 1e-8).",
+      "question": "What is the primary cause of this failure, and which architectural change directly resolves it while capturing long-range historical temporal dependencies?",
       "options": [
-        "A) Switch completely to character-level tokenization to eliminate unknown token [UNK] flags.",
-        "B) Extend the vocabulary with domain-specific Hinglish subword units using Byte-Fallback BPE and fine-tune the model's token embeddings.",
-        "C) Increase the maximum positional encoding capacity parameter (max_position_embeddings) from 512 to 2048.",
-        "D) Apply strict greedy decoding on character sequences prior to passing tokens to the embedding layer."
+        "A) Overfitting due to high feature dimensionality; resolve by adding L1 regularization to hidden state matrices.",
+        "B) Vanishing gradient problem caused by repeated matrix multiplication in backpropagation through time (BPTT); resolve by switching to an LSTM or GRU architecture.",
+        "C) Internal Covariate Shift in temporal dimension; resolve by applying standard Spatial Batch Normalization across time steps.",
+        "D) Exploding gradient problem; resolve by scaling the input sequence values down by a factor equal to the sequence length."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Extend the vocabulary with domain-specific Hinglish subword units using Byte-Fallback BPE and fine-tune the model's token embeddings.",
-      "explanation": "Subword over-segmentation occurs when a tokenizer encounters out-of-distribution morphology or code-mixed text, breaking words into tiny, non-semantic fragments and inflating sequence length. By expanding the tokenizer's vocabulary with frequent domain/Hinglish subword tokens (using Byte-Fallback to handle rare characters gracefully) and fine-tuning the newly added token embeddings, the average sequence length decreases, directly reducing Transformer forward pass latency and preserving context."
+      "correct_answer_text": "B) Vanishing gradient problem caused by repeated matrix multiplication in backpropagation through time (BPTT); resolve by switching to an LSTM or GRU architecture.",
+      "explanation": "Vanilla RNNs suffer from vanishing gradients over long sequences (2,500 steps) during Backpropagation Through Time (BPTT) because repeated multiplication by weight matrices with eigenvalues smaller than 1 causes gradients to decay exponentially toward zero. Long Short-Term Memory (LSTM) or Gated Recurrent Unit (GRU) networks resolve this by introducing constant error carousels via gating mechanisms (input, forget, output gates) that allow additive gradient flow over long time horizons."
     },
     {
       "id": 3,
-      "scenario": "A financial news aggregator serving real-time market updates uses a 70B parameter Decoder-only Transformer model. During high-concurrency peak trading hours, GPU memory bandwidth becomes the primary bottleneck during autoregressive text generation due to the massive dynamic Key-Value (KV) cache allocation required for every active request thread, leading to SLA breaches in Time-To-First-Token (TTFT) and Time-Per-Output-Token (TPOT).",
-      "question": "Which structural attention optimization specifically targets and reduces the memory footprint and bandwidth bottleneck of the KV Cache during autoregressive decoding?",
+      "scenario": "Real-world Industrial Problem Statement: A smart manufacturing facility runs an automated visual quality control pipeline on continuous high-speed assembly line video streams (30 fps). To detect transient visual defects, the ML pipeline processes video clips using a CNN spatial extractor followed by a Bidirectional LSTM (Bi-LSTM). However, during operational testing, the system exhibits an unacceptable frame-processing delay equal to the full video window length (2 seconds / 60 frames), making real-time inline ejection of defective items impossible.",
+      "question": "Why does the current architecture introduce this inherent latency delay, and how should the temporal modeling component be altered for real-time streaming inference?",
       "options": [
-        "A) Grouped-Query Attention (GQA), which shares single key/value projection heads across groups of query heads.",
-        "B) Replacing Multi-Head Attention with Softmax-free Additive Attention (Bahdanau Attention) in decoder layers.",
-        "C) Switching from Absolute Learned Positional Embeddings to Rotary Position Embeddings (RoPE).",
-        "D) Applying FlashAttention-2 algorithms exclusively during offline model training."
+        "A) The CNN backbone is too slow; replace it with a fully connected deep autoencoder.",
+        "B) Bi-LSTMs require future frames in the sequence to compute backward hidden states, creating systemic delay; replace with a Unidirectional LSTM/GRU or a Temporal Convolutional Network (TCN) with causal convolutions.",
+        "C) The Bi-LSTM recurrent units lack sufficient memory capacity; increase the hidden state dimensions by a factor of 4.",
+        "D) Frame rate is too low; increase camera capture to 120 fps so that 60 frames process 4 times faster."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Grouped-Query Attention (GQA), which shares single key/value projection heads across groups of query heads.",
-      "explanation": "In standard Multi-Head Attention (MHA), every query head has its own key and value head, creating a massive memory footprint for the KV cache retained per token in memory during autoregressive generation. Grouped-Query Attention (GQA) groups multiple query heads to share a single key/value head. This significantly reduces KV cache size (by 4x to 8x typically), relieving memory bandwidth constraints during inference and allowing significantly higher concurrency and lower latency."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Bi-LSTMs require future frames in the sequence to compute backward hidden states, creating systemic delay; replace with a Unidirectional LSTM/GRU or a Temporal Convolutional Network (TCN) with causal convolutions.",
+      "explanation": "A Bidirectional LSTM processes sequences in both forward and backward directions, meaning it cannot produce an output for frame t until the entire sequence up to frame t + N (the end of the window) has arrived. This introduces an unpreventable latency equal to the duration of the future frame buffer. Replacing it with a Unidirectional LSTM/GRU or a Causal Temporal Convolutional Network (TCN) enables true streaming real-time prediction frame-by-frame without lookahead buffer constraints."
     }
   ]
 }
