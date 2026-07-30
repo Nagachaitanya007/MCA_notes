@@ -1,48 +1,48 @@
 {
-  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
+  "topic": "Machine Learning: Classification vs Regression Scenarios",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "Real-world Industrial Problem Statement: An autonomous edge-robotics company is deploying a Convolutional Neural Network (CNN) for real-time obstacle detection on a low-power NVIDIA Jetson micro-controller. The cloud-trained baseline model using standard 3x3 2D convolutions achieves high mAP (94%), but inference latency on the edge device is 85ms per frame, exceeding the strict safety SLA of under 20ms per frame. The team must optimize the network architecture to cut floating-point operations (FLOPs) without altering spatial resolution or drastically dropping accuracy.",
-      "question": "Which architectural structural modification to the CNN backbone provides the highest reduction in computational complexity (FLOPs) while maintaining spatial feature representation capacity?",
+      "scenario": "A fintech enterprise is building a credit card limit assignment system. 85% of existing customers fall into lower credit limits (< $2,000), while a small tail of high-net-worth applicants requires continuous predictions up to $100,000. The data science team initially framed this as a unified regression problem using Mean Squared Error (MSE). However, the model consistently severe-underpredicts high-value limits due to extreme right-skewness and the dominance of low-value modes in gradient updates.",
+      "question": "Which framing shift optimally resolves the prediction bias across both common low-value modes and rare continuous high-value tails?",
       "options": [
-        "A) Replace standard 2D convolutions with Depthwise Separable Convolutions.",
-        "B) Replace all 3x3 convolution kernels strictly with 1x1 convolutions across all layers.",
-        "C) Apply Max Pooling with a stride of 4 immediately after the input layer to reduce spatial dimensions.",
-        "D) Replace the CNN backbone with a Vanilla Recurrent Neural Network (RNN) that processes pixels sequentially."
+        "A) Reformulate the architecture into a two-stage hybrid pipeline: a binary classification model (High vs. Low Limit) followed by a specialized log-transformed regression model for the high-value segment.",
+        "B) Apply Huber Loss on the unified regression model to enforce quadratic penalties on small errors and ignore large extreme tail errors.",
+        "C) Convert the regression task into a multi-class classification problem using 10,000 uniform categorical bins of $10 increments trained via Cross-Entropy Loss.",
+        "D) Apply SMOTE-R to oversample high-value records and retain standard Mean Squared Error loss on scaled inputs without changing the target representation."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Replace standard 2D convolutions with Depthwise Separable Convolutions.",
-      "explanation": "Depthwise Separable Convolutions split standard convolution into two steps: a depthwise spatial convolution (per channel) and a pointwise 1x1 convolution (across channels). For a 3x3 kernel, this reduces computation and parameter count by approximately 8 to 9 times with negligible loss in feature extraction capabilities, directly addressing the strict real-time SLA on edge hardware."
+      "correct_answer_text": "A) Reformulate the architecture into a two-stage hybrid pipeline: a binary classification model (High vs. Low Limit) followed by a specialized log-transformed regression model for the high-value segment.",
+      "explanation": "Extremely skewed target distributions with dense point-masses (e.g., $2,000) cause single-stage MSE regression models to collapse towards the majority mode. Disentangling the task into a discrete Classification stage (gating decision) and a log-transformed Regression stage (for continuous tail estimation) isolates high variance and prevents MSE gradients from being dominated by zero/low-value mode density."
     },
     {
       "id": 2,
-      "scenario": "Real-world Industrial Problem Statement: A quantitative finance firm models high-frequency trading logs containing continuous sequences of over 2,500 time steps per trading session. Using a standard Vanilla Recurrent Neural Network (RNN) to predict sudden price volatility spikes, the engineering team notices that validation loss plateaus very early during epoch 2. Gradient analysis reveals that backpropagated gradients for weights associated with the initial 500 time steps approach numerical zero (under 1e-8).",
-      "question": "What is the primary cause of this failure, and which architectural change directly resolves it while capturing long-range historical temporal dependencies?",
+      "scenario": "An IoT healthcare provider streams 128-channel EEG continuous signals (high-dimensional, 500 Hz sampling rate) to detect focal epileptic seizure onset within 100 milliseconds. The engineering team deployed a Support Vector Regression (SVR) model with a non-linear Radial Basis Function (RBF) kernel to output a continuous 'Seizure Severity Score' (0.0 to 1.0). In production on edge devices, computing the kernel matrix against thousands of support vectors causes inference latency to hit 450 ms per window, breaching safety bounds.",
+      "question": "How should the engineering team re-architect the ML task and model selection to satisfy strict edge latency bounds (<100ms) without sacrificing sensitivity?",
       "options": [
-        "A) Overfitting due to high feature dimensionality; resolve by adding L1 regularization to hidden state matrices.",
-        "B) Vanishing gradient problem caused by repeated matrix multiplication in backpropagation through time (BPTT); resolve by switching to an LSTM or GRU architecture.",
-        "C) Internal Covariate Shift in temporal dimension; resolve by applying standard Spatial Batch Normalization across time steps.",
-        "D) Exploding gradient problem; resolve by scaling the input sequence values down by a factor equal to the sequence length."
+        "A) Re-frame the task as binary classification using Logistic Regression with L1 regularization (Lasso) on extracted spectral domain features.",
+        "B) Replace SVR with a k-Nearest Neighbors Regression (k-NN, k=1) to instantly lookup raw signal similarity without kernel transformations.",
+        "C) Retain the non-linear SVR model but increase the penalty parameter C and RBF gamma hyperparameter to force a sparser decision space.",
+        "D) Keep the SVR pipeline but downsample the streaming signal from 500 Hz to 10 Hz without applying anti-aliasing low-pass filtering."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Vanishing gradient problem caused by repeated matrix multiplication in backpropagation through time (BPTT); resolve by switching to an LSTM or GRU architecture.",
-      "explanation": "Vanilla RNNs suffer from vanishing gradients over long sequences (2,500 steps) during Backpropagation Through Time (BPTT) because repeated multiplication by weight matrices with eigenvalues smaller than 1 causes gradients to decay exponentially toward zero. Long Short-Term Memory (LSTM) or Gated Recurrent Unit (GRU) networks resolve this by introducing constant error carousels via gating mechanisms (input, forget, output gates) that allow additive gradient flow over long time horizons."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Re-frame the task as binary classification using Logistic Regression with L1 regularization (Lasso) on extracted spectral domain features.",
+      "explanation": "Non-linear kernel SVR requires $O(N_{sv} \\cdot d)$ inner product calculations per sample at test time, where $N_{sv}$ can be huge in high-dimensional continuous streaming. Re-framing the problem to binary classification allows using linear models like Logistic Regression with L1 regularization. L1 zeros out irrelevant feature weights, turning real-time prediction into a simple, ultra-fast sparse vector dot-product $O(d_{sparse})$, executed well under 100ms."
     },
     {
       "id": 3,
-      "scenario": "Real-world Industrial Problem Statement: A smart manufacturing facility runs an automated visual quality control pipeline on continuous high-speed assembly line video streams (30 fps). To detect transient visual defects, the ML pipeline processes video clips using a CNN spatial extractor followed by a Bidirectional LSTM (Bi-LSTM). However, during operational testing, the system exhibits an unacceptable frame-processing delay equal to the full video window length (2 seconds / 60 frames), making real-time inline ejection of defective items impossible.",
-      "question": "Why does the current architecture introduce this inherent latency delay, and how should the temporal modeling component be altered for real-time streaming inference?",
+      "scenario": "An e-commerce platform wants to optimize customer retention. They deployed a continuous regression model predicting 'Days Until Churn' optimized with Mean Absolute Error (MAE). Business ops discovered that overestimating churn time (e.g., predicting 30 days remaining when true value is 3 days) leads to lost intervention windows and high revenue loss. Conversely, underestimating churn time (predicting 3 days when true value is 30) causes negligible loss due to a low-cost automated email campaign.",
+      "question": "Why is the current framing failing business objectives, and what is the mathematically sound remedy?",
       "options": [
-        "A) The CNN backbone is too slow; replace it with a fully connected deep autoencoder.",
-        "B) Bi-LSTMs require future frames in the sequence to compute backward hidden states, creating systemic delay; replace with a Unidirectional LSTM/GRU or a Temporal Convolutional Network (TCN) with causal convolutions.",
-        "C) The Bi-LSTM recurrent units lack sufficient memory capacity; increase the hidden state dimensions by a factor of 4.",
-        "D) Frame rate is too low; increase camera capture to 120 fps so that 60 frames process 4 times faster."
+        "A) Symmetric regression loss functions like MAE penalize over-prediction and under-prediction identically; the task should be re-framed into discrete probabilistic risk buckets with cost-sensitive decision thresholds.",
+        "B) MAE is overly sensitive to outliers; replacing it with Mean Squared Error (RMSE) naturally imposes non-symmetric penalties favoring under-predictions.",
+        "C) Continuous target values are non-stationary; applying Z-score normalization directly to the target variable eliminates asymmetric operational costs.",
+        "D) The model must switch from supervised regression to unsupervised K-Means clustering to discover natural unlabelled churn cohorts without loss functions."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Bi-LSTMs require future frames in the sequence to compute backward hidden states, creating systemic delay; replace with a Unidirectional LSTM/GRU or a Temporal Convolutional Network (TCN) with causal convolutions.",
-      "explanation": "A Bidirectional LSTM processes sequences in both forward and backward directions, meaning it cannot produce an output for frame t until the entire sequence up to frame t + N (the end of the window) has arrived. This introduces an unpreventable latency equal to the duration of the future frame buffer. Replacing it with a Unidirectional LSTM/GRU or a Causal Temporal Convolutional Network (TCN) enables true streaming real-time prediction frame-by-frame without lookahead buffer constraints."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Symmetric regression loss functions like MAE penalize over-prediction and under-prediction identically; the task should be re-framed into discrete probabilistic risk buckets with cost-sensitive decision thresholds.",
+      "explanation": "Standard regression loss functions (MAE/MSE) assume symmetric penalty structures ($L(y, \\hat{y}) = L(\\hat{y}, y)$). When business costs of error are heavily asymmetric (False Negatives >> False Positives), framing the task as probabilistic classification (e.g., 'Will Churn in <7 days?') permits applying Custom Cost Matrices or adjusting class decision thresholds (Bayes Risk Minimization) to align model outputs with operational financial risk."
     }
   ]
 }

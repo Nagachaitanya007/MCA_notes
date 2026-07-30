@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
-  "mode": "Java",
+  "topic": "Machine Learning: Classification vs Regression Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot service suffers from progressive memory growth and frequent `java.lang.OutOfMemoryError: Java heap space` under sustained load. A heap dump reveals millions of `byte[]` arrays retained inside thread pools. Inspecting the code reveals the following component:\n\njava\n@Service\npublic class DataExportService {\n    private static final ThreadLocal<byte[]> PROCESSING_BUFFER = new ThreadLocal<>();\n\n    @Async\n    @Transactional(readOnly = true)\n    public CompletableFuture<ExportResult> exportData(ExportRequest request) {\n        byte[] buffer = new byte[5 * 1024 * 1024]; // 5MB allocation per task\n        PROCESSING_BUFFER.set(buffer);\n        \n        ExportResult result = performProcessing(request);\n        return CompletableFuture.completedFuture(result);\n    }\n}\n",
-      "question": "What is the primary cause of this memory leak in production?",
+      "scenario": "A fintech enterprise is building a credit card limit assignment system. 85% of existing customers fall into lower credit limits (< $2,000), while a small tail of high-net-worth applicants requires continuous predictions up to $100,000. The data science team initially framed this as a unified regression problem using Mean Squared Error (MSE). However, the model consistently severe-underpredicts high-value limits due to extreme right-skewness and the dominance of low-value modes in gradient updates.",
+      "question": "Which framing shift optimally resolves the prediction bias across both common low-value modes and rare continuous high-value tails?",
       "options": [
-        "A) The `@Transactional` proxy retains hard references to the `CompletableFuture` return value in Metaspace until transaction rollback.",
-        "B) The `@Async` thread pool reuses worker threads, but `PROCESSING_BUFFER.remove()` is never called, pinning large buffers in memory across pooled thread lifecycles.",
-        "C) `CompletableFuture.completedFuture()` creates an unclosed resource stream that prevents GC root unreachable tracing.",
-        "D) Static `ThreadLocal` variables are stored directly in the Permanent Generation / Metaspace and can never be garbage collected."
+        "A) Reformulate the architecture into a two-stage hybrid pipeline: a binary classification model (High vs. Low Limit) followed by a specialized log-transformed regression model for the high-value segment.",
+        "B) Apply Huber Loss on the unified regression model to enforce quadratic penalties on small errors and ignore large extreme tail errors.",
+        "C) Convert the regression task into a multi-class classification problem using 10,000 uniform categorical bins of $10 increments trained via Cross-Entropy Loss.",
+        "D) Apply SMOTE-R to oversample high-value records and retain standard Mean Squared Error loss on scaled inputs without changing the target representation."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `@Async` thread pool reuses worker threads, but `PROCESSING_BUFFER.remove()` is never called, pinning large buffers in memory across pooled thread lifecycles.",
-      "explanation": "When using `ThreadLocal` variables within pooled threads (such as Spring's `@Async` executor thread pool), values set via `ThreadLocal.set()` remain referenced by the thread's internal `ThreadLocalMap` for the entire lifetime of that thread. Because worker threads in a pool are reused rather than destroyed, failing to invoke `ThreadLocal.remove()` in a `try-finally` block causes the 5MB byte array to remain strongly reachable from the thread GC Root indefinitely, resulting in a severe memory leak."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Reformulate the architecture into a two-stage hybrid pipeline: a binary classification model (High vs. Low Limit) followed by a specialized log-transformed regression model for the high-value segment.",
+      "explanation": "Extremely skewed target distributions with dense point-masses (e.g., $2,000) cause single-stage MSE regression models to collapse towards the majority mode. Disentangling the task into a discrete Classification stage (gating decision) and a log-transformed Regression stage (for continuous tail estimation) isolates high variance and prevents MSE gradients from being dominated by zero/low-value mode density."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a low-latency trading microservice running on JDK 17 with the G1 Garbage Collector experiences periodic long Stop-The-World (STW) GC pauses accompanied by `To-space exhausted` warning logs. GC logs reveal that under spikes of concurrent writes, the Eden space shrinks dynamically, forcing high volumes of short-lived objects to be prematurely promoted into the Old Generation.",
-      "question": "Which configuration change or JVM tuning strategy directly mitigates premature promotion caused by G1's adaptive sizing mechanics?",
+      "scenario": "An IoT healthcare provider streams 128-channel EEG continuous signals (high-dimensional, 500 Hz sampling rate) to detect focal epileptic seizure onset within 100 milliseconds. The engineering team deployed a Support Vector Regression (SVR) model with a non-linear Radial Basis Function (RBF) kernel to output a continuous 'Seizure Severity Score' (0.0 to 1.0). In production on edge devices, computing the kernel matrix against thousands of support vectors causes inference latency to hit 450 ms per window, breaching safety bounds.",
+      "question": "How should the engineering team re-architect the ML task and model selection to satisfy strict edge latency bounds (<100ms) without sacrificing sensitivity?",
       "options": [
-        "A) Increase `-XX:G1ReservePercent` and lower `-XX:InitiatingHeapOccupancyPercent` (IHOP) to start concurrent marking earlier, while relaxing strict pause time targets via `-XX:MaxGCPauseMillis` or fixing a minimum young generation size with `-XX:NewSize`.",
-        "B) Set `-XX:+UseStringDeduplication` and disable `-XX:+UseTLAB` to force direct heap allocation into Old Generation regions.",
-        "C) Switch from G1 GC to `SerialGC` to eliminate region fragmentation overhead and memory barriers.",
-        "D) Increase `-XX:SurvivorRatio=1` so that survivor spaces are entirely removed, forcing all allocations directly into Eden."
+        "A) Re-frame the task as binary classification using Logistic Regression with L1 regularization (Lasso) on extracted spectral domain features.",
+        "B) Replace SVR with a k-Nearest Neighbors Regression (k-NN, k=1) to instantly lookup raw signal similarity without kernel transformations.",
+        "C) Retain the non-linear SVR model but increase the penalty parameter C and RBF gamma hyperparameter to force a sparser decision space.",
+        "D) Keep the SVR pipeline but downsample the streaming signal from 500 Hz to 10 Hz without applying anti-aliasing low-pass filtering."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Increase `-XX:G1ReservePercent` and lower `-XX:InitiatingHeapOccupancyPercent` (IHOP) to start concurrent marking earlier, while relaxing strict pause time targets via `-XX:MaxGCPauseMillis` or fixing a minimum young generation size with `-XX:NewSize`.",
-      "explanation": "G1 GC dynamically adjusts the Young Generation size to meet the user-specified `-XX:MaxGCPauseMillis` target. Under high throughput, G1 may excessively shrink Eden/Survivor spaces to keep GC pauses short, causing short-lived objects to spill directly into Old Gen ('premature promotion'). Lowering IHOP triggers the concurrent marking cycle earlier to reclaim Old Gen space before exhaustion occurs, while increasing `G1ReservePercent` provides a buffer pool to prevent `To-space exhausted` evac failures. Additionally, explicitly defining bounds on Young Gen size prevents adaptive auto-tuning from over-shrinking Eden."
+      "correct_answer_text": "A) Re-frame the task as binary classification using Logistic Regression with L1 regularization (Lasso) on extracted spectral domain features.",
+      "explanation": "Non-linear kernel SVR requires $O(N_{sv} \\cdot d)$ inner product calculations per sample at test time, where $N_{sv}$ can be huge in high-dimensional continuous streaming. Re-framing the problem to binary classification allows using linear models like Logistic Regression with L1 regularization. L1 zeros out irrelevant feature weights, turning real-time prediction into a simple, ultra-fast sparse vector dot-product $O(d_{sparse})$, executed well under 100ms."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a batch import process utilizing Spring Data JPA and `@Transactional` experiences high heap usage and eventual `OutOfMemoryError` when processing 500,000 database records. Even though the application reads records in chunks using pagination and calls `repository.saveAll()`, heap profiling indicates that all 500,000 entity instances remain strongly reachable throughout the transaction duration.",
-      "question": "Why is the JVM Garbage Collector unable to reclaim memory during the execution of this batch transaction?",
+      "scenario": "An e-commerce platform wants to optimize customer retention. They deployed a continuous regression model predicting 'Days Until Churn' optimized with Mean Absolute Error (MAE). Business ops discovered that overestimating churn time (e.g., predicting 30 days remaining when true value is 3 days) leads to lost intervention windows and high revenue loss. Conversely, underestimating churn time (predicting 3 days when true value is 30) causes negligible loss due to a low-cost automated email campaign.",
+      "question": "Why is the current framing failing business objectives, and what is the mathematically sound remedy?",
       "options": [
-        "A) Spring's `@Transactional` aspect creates dynamic CGLIB proxies for each entity, holding hard references in the JVM Metaspace until thread execution finishes.",
-        "B) Hibernate's First-Level Cache (Persistence Context) maintains strong references to all managed entities within the active `Session` until explicitly detached or cleared via `EntityManager.clear()`.",
-        "C) The JVM Garbage Collector automatically pauses GC collection cycles whenever an active database connection is open.",
-        "D) The JDBC driver retains raw SQL `PreparedStatement` parameters in ThreadLocal storage until explicit call to `Connection.close()`."
+        "A) Symmetric regression loss functions like MAE penalize over-prediction and under-prediction identically; the task should be re-framed into discrete probabilistic risk buckets with cost-sensitive decision thresholds.",
+        "B) MAE is overly sensitive to outliers; replacing it with Mean Squared Error (RMSE) naturally imposes non-symmetric penalties favoring under-predictions.",
+        "C) Continuous target values are non-stationary; applying Z-score normalization directly to the target variable eliminates asymmetric operational costs.",
+        "D) The model must switch from supervised regression to unsupervised K-Means clustering to discover natural unlabelled churn cohorts without loss functions."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Hibernate's First-Level Cache (Persistence Context) maintains strong references to all managed entities within the active `Session` until explicitly detached or cleared via `EntityManager.clear()`.",
-      "explanation": "In Spring applications using JPA/Hibernate, a `@Transactional` method keeps an active `EntityManager` Session open across the method execution scope. Hibernate's First-Level Cache maintains hard references to every entity attached to this persistence context to track dirty state and perform automatic synchronization. As the batch loop processes entities, all 500,000 instances remain referenced in memory inside the First-Level Cache, blocking GC root unreachability. To resolve this, batch implementations must periodically flush and invoke `EntityManager.clear()` (or `detach()`) to release these references from the heap."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Symmetric regression loss functions like MAE penalize over-prediction and under-prediction identically; the task should be re-framed into discrete probabilistic risk buckets with cost-sensitive decision thresholds.",
+      "explanation": "Standard regression loss functions (MAE/MSE) assume symmetric penalty structures ($L(y, \\hat{y}) = L(\\hat{y}, y)$). When business costs of error are heavily asymmetric (False Negatives >> False Positives), framing the task as probabilistic classification (e.g., 'Will Churn in <7 days?') permits applying Custom Cost Matrices or adjusting class decision thresholds (Bayes Risk Minimization) to align model outputs with operational financial risk."
     }
   ]
 }
