@@ -47,7 +47,8 @@
     "The Saga Dead-End: Resolving Failures inside Compensating Transactions",
     "Distributed Cooperative Cancellation: Taming Zombie Execution After Client Timeouts",
     "Distributed Deadline Propagation: Managing Timeout Budgets across Microservice Chains",
-    "Server-Driven Load Shedding & Adaptive Throttling: Defending Against Exception-Induced Retry Storms"
+    "Server-Driven Load Shedding & Adaptive Throttling: Defending Against Exception-Induced Retry Storms",
+    "Transient vs. Permanent Distributed Error Classification"
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections",
