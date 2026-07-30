@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
+  "topic": "Memory Management & Garbage Collection Tuning",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a dynamic plugin framework in a Spring-based application continuously throws `java.lang.OutOfMemoryError: Metaspace` after repeated loading and unloading of plugin modules. You inspect the plugin loader implementation:\n\njava\n@Component\npublic class PluginLoader {\n    private final Map<String, ClassLoader> activeLoaders = new ConcurrentHashMap<>();\n\n    public void loadAndRegister(String pluginId, URL jarUrl) throws Exception {\n        URLClassLoader childLoader = new URLClassLoader(new URL[]{jarUrl}, this.getClass().getClassLoader());\n        Class<?> clazz = childLoader.loadClass(\"com.example.PluginEntry\");\n        Object pluginInstance = clazz.getDeclaredConstructor().newInstance();\n        \n        // Global registry holds instance reference for routing\n        GlobalRegistry.registerPlugin(pluginId, pluginInstance);\n        activeLoaders.put(pluginId, childLoader);\n    }\n\n    public void unload(String pluginId) {\n        activeLoaders.remove(pluginId);\n        // Custom cleanup logic executed here\n    }\n}\n",
-      "question": "What is the primary cause of the `Metaspace` memory leak in this code?",
+      "scenario": "You are debugging a production issue where a high-throughput Spring Boot service suffers from progressive memory growth and frequent `java.lang.OutOfMemoryError: Java heap space` under sustained load. A heap dump reveals millions of `byte[]` arrays retained inside thread pools. Inspecting the code reveals the following component:\n\njava\n@Service\npublic class DataExportService {\n    private static final ThreadLocal<byte[]> PROCESSING_BUFFER = new ThreadLocal<>();\n\n    @Async\n    @Transactional(readOnly = true)\n    public CompletableFuture<ExportResult> exportData(ExportRequest request) {\n        byte[] buffer = new byte[5 * 1024 * 1024]; // 5MB allocation per task\n        PROCESSING_BUFFER.set(buffer);\n        \n        ExportResult result = performProcessing(request);\n        return CompletableFuture.completedFuture(result);\n    }\n}\n",
+      "question": "What is the primary cause of this memory leak in production?",
       "options": [
-        "A) The `activeLoaders` map retains strong references to `URLClassLoader`, which prevents the JVM GC from reclaiming class metadata.",
-        "B) The `GlobalRegistry` retains a strong reference to `pluginInstance`, which keeps its `Class` object and consequently its `URLClassLoader` reachable and uncollectable.",
-        "C) Metaspace cannot garbage-collect dynamically instantiated `URLClassLoader` objects unless `System.gc()` is explicitly invoked inside `unload`.",
-        "D) Metaspace allocations are non-reclaimable by design in standard HotSpot JVM executions when running with `-XX:+UseG1GC`."
+        "A) The `@Transactional` proxy retains hard references to the `CompletableFuture` return value in Metaspace until transaction rollback.",
+        "B) The `@Async` thread pool reuses worker threads, but `PROCESSING_BUFFER.remove()` is never called, pinning large buffers in memory across pooled thread lifecycles.",
+        "C) `CompletableFuture.completedFuture()` creates an unclosed resource stream that prevents GC root unreachable tracing.",
+        "D) Static `ThreadLocal` variables are stored directly in the Permanent Generation / Metaspace and can never be garbage collected."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `GlobalRegistry` retains a strong reference to `pluginInstance`, which keeps its `Class` object and consequently its `URLClassLoader` reachable and uncollectable.",
-      "explanation": "In Java's ClassLoader architecture, a custom `ClassLoader` can only be garbage collected if ALL classes loaded by it and ALL instances of those classes are unreachable. Because `GlobalRegistry` retains a strong reference to `pluginInstance`, `pluginInstance.getClass()` remains reachable, which maintains a strong reference back to `childLoader`. As a result, none of the plugin's metadata in `Metaspace` can be reclaimed."
+      "correct_answer_text": "B) The `@Async` thread pool reuses worker threads, but `PROCESSING_BUFFER.remove()` is never called, pinning large buffers in memory across pooled thread lifecycles.",
+      "explanation": "When using `ThreadLocal` variables within pooled threads (such as Spring's `@Async` executor thread pool), values set via `ThreadLocal.set()` remain referenced by the thread's internal `ThreadLocalMap` for the entire lifetime of that thread. Because worker threads in a pool are reused rather than destroyed, failing to invoke `ThreadLocal.remove()` in a `try-finally` block causes the 5MB byte array to remain strongly reachable from the thread GC Root indefinitely, resulting in a severe memory leak."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a low-latency trading microservice running on JDK 17 with `ZGC` (`-XX:+UseZGC`) experiences sudden latency spikes exceeding 150ms during high-volume spikes. GC logs reveal messages indicating `Allocation Stall` events occurring on multiple application threads.",
-      "question": "What is the underlying JVM mechanic triggering these allocation stalls, and how should it be remediated?",
+      "scenario": "You are debugging a production issue where a low-latency trading microservice running on JDK 17 with the G1 Garbage Collector experiences periodic long Stop-The-World (STW) GC pauses accompanied by `To-space exhausted` warning logs. GC logs reveal that under spikes of concurrent writes, the Eden space shrinks dynamically, forcing high volumes of short-lived objects to be prematurely promoted into the Old Generation.",
+      "question": "Which configuration change or JVM tuning strategy directly mitigates premature promotion caused by G1's adaptive sizing mechanics?",
       "options": [
-        "A) Application threads are allocating memory faster than `ZGC` can concurrently mark and relocate memory, forcing application threads to pause; solved by increasing heap size (`-Xmx`) or tuning `-XX:ConcGCThreads`.",
-        "B) `ZGC` hit a severe memory fragmentation limit and fell back to a single-threaded Stop-The-World (STW) compaction phase; solved by switching to `G1GC`.",
-        "C) Thread-Local Allocation Buffers (TLABs) became exhausted, forcing memory allocations to contend on heavy OS locks; solved by setting `-XX:-UseTLAB`.",
-        "D) Read barriers executed colored pointer checks that suffered cache misses across NUMA sockets; solved by setting `-XX:-UseNUMA`."
+        "A) Increase `-XX:G1ReservePercent` and lower `-XX:InitiatingHeapOccupancyPercent` (IHOP) to start concurrent marking earlier, while relaxing strict pause time targets via `-XX:MaxGCPauseMillis` or fixing a minimum young generation size with `-XX:NewSize`.",
+        "B) Set `-XX:+UseStringDeduplication` and disable `-XX:+UseTLAB` to force direct heap allocation into Old Generation regions.",
+        "C) Switch from G1 GC to `SerialGC` to eliminate region fragmentation overhead and memory barriers.",
+        "D) Increase `-XX:SurvivorRatio=1` so that survivor spaces are entirely removed, forcing all allocations directly into Eden."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Application threads are allocating memory faster than `ZGC` can concurrently mark and relocate memory, forcing application threads to pause; solved by increasing heap size (`-Xmx`) or tuning `-XX:ConcGCThreads`.",
-      "explanation": "`ZGC` performs almost all GC tasks concurrently with application threads. However, if the allocation rate of application threads outpaces the rate at which concurrent GC worker threads can free memory, the heap becomes full. When this occurs, threads trying to allocate memory suffer an `Allocation Stall` (a pause) until GC progress frees up available space. Remediation includes increasing heap size (`-Xmx`), allocating more concurrent GC threads (`-XX:ConcGCThreads`), or tuning allocation rates."
+      "correct_answer_text": "A) Increase `-XX:G1ReservePercent` and lower `-XX:InitiatingHeapOccupancyPercent` (IHOP) to start concurrent marking earlier, while relaxing strict pause time targets via `-XX:MaxGCPauseMillis` or fixing a minimum young generation size with `-XX:NewSize`.",
+      "explanation": "G1 GC dynamically adjusts the Young Generation size to meet the user-specified `-XX:MaxGCPauseMillis` target. Under high throughput, G1 may excessively shrink Eden/Survivor spaces to keep GC pauses short, causing short-lived objects to spill directly into Old Gen ('premature promotion'). Lowering IHOP triggers the concurrent marking cycle earlier to reclaim Old Gen space before exhaustion occurs, while increasing `G1ReservePercent` provides a buffer pool to prevent `To-space exhausted` evac failures. Additionally, explicitly defining bounds on Young Gen size prevents adaptive auto-tuning from over-shrinking Eden."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Spring Boot order-management service fails to roll back database operations when an exception occurs. Transaction management is configured using Spring's proxy-based `@Transactional`. You analyze the implementation code:\n\njava\n@Service\npublic class OrderProcessor {\n    @Autowired\n    private AuditLogger auditLogger;\n\n    public void processOrder(Order order) {\n        auditLogger.logStart(order);\n        saveOrderWithTransaction(order);\n    }\n\n    @Transactional(rollbackFor = Exception.class)\n    public void saveOrderWithTransaction(Order order) {\n        // DB operation 1\n        // DB operation 2\n        throw new RuntimeException(\"Database persistence failed\");\n    }\n}\n",
-      "question": "What is the primary cause of the transaction failing to roll back?",
+      "scenario": "You are debugging a production issue where a batch import process utilizing Spring Data JPA and `@Transactional` experiences high heap usage and eventual `OutOfMemoryError` when processing 500,000 database records. Even though the application reads records in chunks using pagination and calls `repository.saveAll()`, heap profiling indicates that all 500,000 entity instances remain strongly reachable throughout the transaction duration.",
+      "question": "Why is the JVM Garbage Collector unable to reclaim memory during the execution of this batch transaction?",
       "options": [
-        "A) Spring's `@Transactional` annotation does not trigger rollbacks for `RuntimeException` unless `rollbackFor = Throwable.class` is defined.",
-        "B) Self-invocation (`this.saveOrderWithTransaction(...)`) calls the method directly on the internal target instance, bypassing the Spring AOP Proxy and transaction interceptor.",
-        "C) The JVM JIT compiler inlined `saveOrderWithTransaction` into `processOrder`, stripping out the bytecode instructions for transactional boundaries.",
-        "D) `@Service` beans use JDK Dynamic Proxies by default, which can only intercept methods declared on interfaces."
+        "A) Spring's `@Transactional` aspect creates dynamic CGLIB proxies for each entity, holding hard references in the JVM Metaspace until thread execution finishes.",
+        "B) Hibernate's First-Level Cache (Persistence Context) maintains strong references to all managed entities within the active `Session` until explicitly detached or cleared via `EntityManager.clear()`.",
+        "C) The JVM Garbage Collector automatically pauses GC collection cycles whenever an active database connection is open.",
+        "D) The JDBC driver retains raw SQL `PreparedStatement` parameters in ThreadLocal storage until explicit call to `Connection.close()`."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Self-invocation (`this.saveOrderWithTransaction(...)`) calls the method directly on the internal target instance, bypassing the Spring AOP Proxy and transaction interceptor.",
-      "explanation": "Spring's declarative transaction management relies on AOP dynamic proxies (CGLIB or JDK Dynamic Proxies). When a method inside the target class invokes another method (`saveOrderWithTransaction`) directly on `this`, the call bypasses the Spring Proxy wrapper completely. Consequently, the `@Transactional` advice interceptor is never invoked, no database transaction is created, and no rollback occurs."
+      "correct_answer_text": "B) Hibernate's First-Level Cache (Persistence Context) maintains strong references to all managed entities within the active `Session` until explicitly detached or cleared via `EntityManager.clear()`.",
+      "explanation": "In Spring applications using JPA/Hibernate, a `@Transactional` method keeps an active `EntityManager` Session open across the method execution scope. Hibernate's First-Level Cache maintains hard references to every entity attached to this persistence context to track dirty state and perform automatic synchronization. As the batch loop processes entities, all 500,000 instances remain referenced in memory inside the First-Level Cache, blocking GC root unreachability. To resolve this, batch implementations must periodically flush and invoke `EntityManager.clear()` (or `detach()`) to release these references from the heap."
     }
   ]
 }
