@@ -25,7 +25,8 @@
     "The Virtual Thread Scheduler: ForkJoinPool Work-Stealing, Queue Mechanics, and Task Scheduling",
     "Exception Propagation and Resilience: Managing Failures in CompletableFuture Pipelines vs. Virtual Threads",
     "Scatter-Gather Aggregation: CompletableFuture Pipelines vs. Virtual Thread Parallel Streams",
-    "Task Cancellation Mechanics: Clean Teardowns across Virtual Threads and CompletableFuture"
+    "Task Cancellation Mechanics: Clean Teardowns across Virtual Threads and CompletableFuture",
+    "The JVM Network Poller: Bridging Virtual Threads and OS-Level Non-Blocking I/O"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
