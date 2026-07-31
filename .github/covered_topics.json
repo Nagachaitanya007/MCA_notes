@@ -106,7 +106,8 @@
     "Designing a Real-time Chat System with WebSockets and Redis Pub/Sub",
     "Distributed Session Registry and Pub/Sub Topology for Real-Time Chat",
     "Message Delivery Guarantees and Offline Buffering in Distributed WebSocket Systems",
-    "Connection Lifecycle, Heartbeats, and Distributed Presence in Real-Time Chat Systems"
+    "Connection Lifecycle, Heartbeats, and Distributed Presence in Real-Time Chat Systems",
+    "Handling Mass Fan-out and Redis Memory Limits in Large-Scale Group Chat Systems"
   ],
   "Memory Management & Garbage Collection Tuning": [
     "Java Memory Management & Garbage Collection Tuning",
