@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
+  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot REST API slowly consumes heap memory over time, eventually crashing with `java.lang.OutOfMemoryError: Java heap space`. A heap dump analysis reveals millions of `UserContext` instances retained in memory. You inspect the following custom interceptor snippet:\n\njava\n@Component\npublic class ContextInterceptor implements HandlerInterceptor {\n    private static final ThreadLocal<UserContext> contextHolder = new ThreadLocal<>();\n\n    @Override\n    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {\n        String userId = request.getHeader(\"X-User-ID\");\n        if (userId != null) {\n            contextHolder.set(new UserContext(userId));\n        }\n        return true;\n    }\n}\n",
-      "question": "What is the primary cause of this memory leak and how should it be resolved?",
+      "scenario": "You are debugging a production issue where a high-throughput payment processing engine intermittently fails to roll back database transactions during unexpected runtime exceptions. Additionally, thread dumps show multiple threads executing concurrently without creating isolated transactional contexts.\n\nHere is the snippet from the backend service:\njava\n@Service\npublic class PaymentProcessor {\n\n    @Autowired\n    private PaymentRepository paymentRepo;\n\n    public void processBatch(List<Payment> payments) {\n        payments.parallelStream().forEach(this::processPayment);\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void processPayment(Payment p) {\n        paymentRepo.save(p);\n        if (p.isInvalid()) {\n            throw new IllegalArgumentException(\"Invalid payment payload\");\n        }\n    }\n}\n",
+      "question": "What is the primary cause of the transaction failure and lack of rollback support in this implementation?",
       "options": [
-        "A) `ThreadLocal` fields in `@Component` beans must be marked `volatile` to allow Garbage Collection across thread boundaries.",
-        "B) Web application servers reuse worker threads from a thread pool; failing to call `contextHolder.remove()` in `afterCompletion` leaves strong references in `Thread.threadLocals`, preventing GC of `UserContext` objects.",
-        "C) The `HandlerInterceptor` creates a new instance of `UserContext` on every request which exceeds the Metaspace capacity.",
-        "D) Spring proxies automatically wrap `ThreadLocal` variables and keep a hard reference in the `ApplicationContext` until context refresh."
+        "A) `this::processPayment` bypasses the Spring CGLIB proxy via self-invocation, and `parallelStream()` executes methods across the common `ForkJoinPool` where Spring's `ThreadLocal`-bound transaction context is not automatically propagated.",
+        "B) `Propagation.REQUIRES_NEW` causes a deadlock in the database connection pool when executed inside a `parallelStream()`, forcing transactions to auto-commit.",
+        "C) Spring's `@Transactional` annotation does not support runtime exceptions like `IllegalArgumentException` by default for rollback.",
+        "D) The CGLIB proxy intercepts `processBatch` instead of `processPayment`, forcing all stream threads to share a single read-only transaction."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Web application servers reuse worker threads from a thread pool; failing to call `contextHolder.remove()` in `afterCompletion` leaves strong references in `Thread.threadLocals`, preventing GC of `UserContext` objects.",
-      "explanation": "In web containers like Tomcat, threads are pooled and reused across multiple HTTP requests. `ThreadLocal` variables are stored inside the `ThreadLocalMap` of the `Thread` instance. If `contextHolder.remove()` is not explicitly invoked in the `afterCompletion` callback, the entry remains strongly referenced by the worker thread indefinitely. As worker threads process thousands of requests, orphaned `UserContext` instances accumulate, leading to an eventual `OutOfMemoryError`."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) `this::processPayment` bypasses the Spring CGLIB proxy via self-invocation, and `parallelStream()` executes methods across the common `ForkJoinPool` where Spring's `ThreadLocal`-bound transaction context is not automatically propagated.",
+      "explanation": "Two core mechanisms fail here: First, Spring declarative transaction management uses AOP proxies (CGLIB/JDK dynamic proxies). Calling `this::processPayment` inside `PaymentProcessor` is a self-invocation, bypassing the proxy entirely so `@Transactional` interceptors never execute. Second, Spring binds transactional state (such as `EntityManager` or `Connection`) to `ThreadLocal` storage. `parallelStream()` offloads execution to worker threads in the shared `ForkJoinPool.commonPool()`, which do not inherit the calling thread's `ThreadLocal` context."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a low-latency financial service running on Java 17 with G1GC experiences periodic, long Stop-The-World (STW) pauses. GC logs reveal frequent `to-space exhausted` (or `to-space overflow`) messages followed immediately by a Full GC cycle during peak traffic hours.",
-      "question": "What is the primary cause of this issue and the most effective tuning strategy?",
+      "scenario": "You are debugging a production issue where an ultra-low latency trading application running on Java 17 was recently migrated from G1GC to ZGC (`-XX:+UseZGC`). While average GC pause times dropped significantly to sub-milliseconds, the application now periodically experiences abrupt out-of-memory crashes (`java.lang.OutOfMemoryError: Java heap space`) during extreme market volatility spikes, despite total heap usage staying well below 50% capacity prior to the spike.",
+      "question": "What is the root cause of these sudden `OutOfMemoryError` failures under ZGC in this environment?",
       "options": [
-        "A) The Young generation is too large; set `-XX:NewRatio=1` to shrink the Eden space and force faster minor collections.",
-        "B) Evacuation failure occurs because survivor/old regions cannot accommodate live objects during copying; lower `-XX:InitiatingHeapOccupancyPercent` (IHOP) and increase `-XX:G1ReservePercent` to start concurrent marking earlier and reserve heap buffer.",
-        "C) Metaspace capacity is exhausted during G1 region allocation; set `-XX:MaxMetaspaceSize=512m` to stop region fragmentation.",
-        "D) The String deduplication feature is disabled; enable `-XX:+UseStringDeduplication` to reduce allocation rate in the Eden space."
+        "A) In Java 17, ZGC is non-generational; sudden spikes in object allocation rate outpace the concurrent marking and compacting threads, leading to allocation stalls and rapid heap exhaustion before GC cycles can finish.",
+        "B) ZGC colored pointers exceed the 44-bit virtual memory address space limit under high allocation rates, forcing the JVM to crash.",
+        "C) The ZGC load barriers fail to process `WeakReference` cleanups during thread-local handshakes under high volatility.",
+        "D) ZGC forces dynamic C2 JIT compilation to revert back to interpreted mode during high memory allocation, exhausting thread stack memory."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Evacuation failure occurs because survivor/old regions cannot accommodate live objects during copying; lower `-XX:InitiatingHeapOccupancyPercent` (IHOP) and increase `-XX:G1ReservePercent` to start concurrent marking earlier and reserve heap buffer.",
-      "explanation": "`to-space exhausted` indicates an Evacuation Failure in G1GC: during a GC cycle, G1 could not find free regions to copy live objects from young/surviving regions. This triggers an expensive single-threaded or multi-threaded fallback Full GC. Lowering `-XX:InitiatingHeapOccupancyPercent` (IHOP) starts the concurrent marking cycle sooner before the heap fills up, and raising `-XX:G1ReservePercent` allocates a larger false-ceiling buffer to absorb unexpected allocation surges."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) In Java 17, ZGC is non-generational; sudden spikes in object allocation rate outpace the concurrent marking and compacting threads, leading to allocation stalls and rapid heap exhaustion before GC cycles can finish.",
+      "explanation": "In Java 17, ZGC is single-generational (Generational ZGC was introduced later in JDK 21 via JEP 439). In non-generational ZGC, all objects (young and old) reside in the same collection space. When an application experiences a massive allocation spike (high object allocation rate), the concurrent GC background threads (`-XX:ConcGCThreads`) may not collect memory fast enough compared to the application's allocation rate. This leads to Allocation Stalls, and if allocations continue to exceed GC reclamation capacity before heap space runs out, the JVM throws `java.lang.OutOfMemoryError: Java heap space`."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a batch application processes millions of records from a database table using Spring Data JPA. The service executes inside a `@Transactional` service method. Although the code periodically calls `entityManager.clear()`, memory usage grows linearly until `java.lang.OutOfMemoryError: GC overhead limit exceeded` occurs.",
-      "question": "What is the primary cause of this memory escalation despite explicitly clearing the `EntityManager`?",
+      "scenario": "You are debugging a production issue where a modular enterprise Java application dynamically loads and unloads custom plugin `.jar` files using custom `URLClassLoader` instances. After multiple dynamic reload cycles over several days, the JVM throws `java.lang.OutOfMemoryError: Metaspace`. Heap dumps reveal that while actual plugin domain object instances have been garbage collected, thousands of old `URLClassLoader` and `Class` metadata objects remain firmly retained in memory.",
+      "question": "Which underlying mechanism prevents the `URLClassLoader` and its associated Metaspace metadata from being garbage collected?",
       "options": [
-        "A) Spring's `@Transactional` proxy maintains a reference to all managed entities in the transaction synchronized resource map until the transaction completes and commits.",
-        "B) `entityManager.clear()` does not detach entities if they were fetched using standard JPA repository methods like `findAll()`.",
-        "C) The database JDBC driver disables cursor streaming when invoked inside `@Transactional` methods, buffering all rows in heap memory.",
-        "D) Spring Security context retains deep copies of detached entities for auditing purposes until the thread terminates."
+        "A) A strong reference path exists from a active thread (e.g., via a `ThreadLocal` or registered shutdown hook/system driver) to a class or object instance loaded by the custom `URLClassLoader`, which indirectly holds a reference back to its `ClassLoader` via `Class.getClassLoader()`.",
+        "B) Metaspace memory allocations are managed natively outside the JVM garbage collection boundary and can only be freed by invoking `System.gc()` explicitly.",
+        "C) The JVM Bootstrap ClassLoader maintains a permanent hard reference to all child `URLClassLoader` instances to guarantee parent-first delegation order.",
+        "D) Unloaded class metadata remains pinned in Metaspace until the Compressed Class Space address space is completely cleared."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Spring's `@Transactional` proxy maintains a reference to all managed entities in the transaction synchronized resource map until the transaction completes and commits.",
-      "explanation": "When executing within a single long-running `@Transactional` boundary, Hibernate's Persistence Context (first-level cache) tracks all managed/dirty entities until the transaction completes. Even if `entityManager.clear()` detaches entities from the local session, holding a single outer transaction keeps transaction synchronization resources, underlying JDBC resources, and dirty checking state accumulated across the execution context, resulting in progressive memory exhaustion."
+      "correct_answer_text": "A) A strong reference path exists from a active thread (e.g., via a `ThreadLocal` or registered shutdown hook/system driver) to a class or object instance loaded by the custom `URLClassLoader`, which indirectly holds a reference back to its `ClassLoader` via `Class.getClassLoader()`.",
+      "explanation": "In Java, a `ClassLoader` cannot be garbage collected if any `Class` loaded by it is still referenced, OR if any instance of any class loaded by it is still reachable. Every Java object retains a reference to its `java.lang.Class`, and every `Class` retains a reference to its defining `ClassLoader`. If a thread (e.g., via `ThreadLocal`, `DriverManager`, or custom thread pool) retains a reference to even a single instance or class from the plugin, the entire `URLClassLoader` and ALL metadata loaded by it in Metaspace become un-collectable, resulting in a Metaspace leak."
     }
   ]
 }
