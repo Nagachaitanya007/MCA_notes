@@ -1,48 +1,48 @@
 {
-  "topic": "Machine Learning: Classification vs Regression Scenarios",
+  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A fintech enterprise is building a credit card limit assignment system. 85% of existing customers fall into lower credit limits (< $2,000), while a small tail of high-net-worth applicants requires continuous predictions up to $100,000. The data science team initially framed this as a unified regression problem using Mean Squared Error (MSE). However, the model consistently severe-underpredicts high-value limits due to extreme right-skewness and the dominance of low-value modes in gradient updates.",
-      "question": "Which framing shift optimally resolves the prediction bias across both common low-value modes and rare continuous high-value tails?",
+      "scenario": "A healthtech enterprise deployed an emergency room clinical decision system using a pre-trained general-domain RoBERTa model (utilizing standard Byte-Pair Encoding / BPE). During operational stress-testing, clinical notes containing complex medical terms (e.g., 'piperacillin-tazobactam' or 'thrombocytopenia') frequently hit the 512-sequence length limit and caused severe inference latency spikes, despite the raw input text being under 180 words. Investigation reveals that medical jargon is being fragmented into dozens of single-character or two-character sub-tokens.",
+      "question": "What is the root cause of this performance trade-off, and what is the most effective architectural solution?",
       "options": [
-        "A) Reformulate the architecture into a two-stage hybrid pipeline: a binary classification model (High vs. Low Limit) followed by a specialized log-transformed regression model for the high-value segment.",
-        "B) Apply Huber Loss on the unified regression model to enforce quadratic penalties on small errors and ignore large extreme tail errors.",
-        "C) Convert the regression task into a multi-class classification problem using 10,000 uniform categorical bins of $10 increments trained via Cross-Entropy Loss.",
-        "D) Apply SMOTE-R to oversample high-value records and retain standard Mean Squared Error loss on scaled inputs without changing the target representation."
+        "A) BPE suffers from domain-out-of-vocabulary (OOV) vocabulary mismatch, causing extreme token fragmentation that inflates sequence length $N$ and triggers quadratic $O(N^2)$ attention memory overhead; solved by retraining a domain-adapted tokenizer (e.g., BioBPE/WordPiece) on medical corpora.",
+        "B) The absolute positional embeddings in RoBERTa duplicate tokens when hyphens are present; solved by replacing absolute positional embeddings with Rotary Positional Embeddings (RoPE).",
+        "C) The Scaled Dot-Product Attention mechanism suffers from numerical instability on subword sequences; solved by raising the attention temperature during inference.",
+        "D) Byte-Pair Encoding is inherently incapable of handling hyphenated medical terms; solved by bypassing subword tokenization completely and using pure character-level Convolutional Neural Networks (CNNs)."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Reformulate the architecture into a two-stage hybrid pipeline: a binary classification model (High vs. Low Limit) followed by a specialized log-transformed regression model for the high-value segment.",
-      "explanation": "Extremely skewed target distributions with dense point-masses (e.g., $2,000) cause single-stage MSE regression models to collapse towards the majority mode. Disentangling the task into a discrete Classification stage (gating decision) and a log-transformed Regression stage (for continuous tail estimation) isolates high variance and prevents MSE gradients from being dominated by zero/low-value mode density."
+      "correct_answer_text": "A) BPE suffers from domain-out-of-vocabulary (OOV) vocabulary mismatch, causing extreme token fragmentation that inflates sequence length $N$ and triggers quadratic $O(N^2)$ attention memory overhead; solved by retraining a domain-adapted tokenizer (e.g., BioBPE/WordPiece) on medical corpora.",
+      "explanation": "BPE tokenizers trained on general web text lack highly specific domain terminology in their vocabulary. When encountered, rare/OOV words are split into fine-grained character or sub-character tokens. A 180-word clinical note can inflate to >512 tokens. Because Self-Attention complexity scales quadratically ($O(N^2)$ in time and memory with sequence length $N$), this sequence inflation drastically increases latency and causes sequence truncation. Retraining/adapting the tokenizer vocabulary on domain-specific text merges these frequent subwords back into single domain tokens, keeping $N$ short."
     },
     {
       "id": 2,
-      "scenario": "An IoT healthcare provider streams 128-channel EEG continuous signals (high-dimensional, 500 Hz sampling rate) to detect focal epileptic seizure onset within 100 milliseconds. The engineering team deployed a Support Vector Regression (SVR) model with a non-linear Radial Basis Function (RBF) kernel to output a continuous 'Seizure Severity Score' (0.0 to 1.0). In production on edge devices, computing the kernel matrix against thousands of support vectors causes inference latency to hit 450 ms per window, breaching safety bounds.",
-      "question": "How should the engineering team re-architect the ML task and model selection to satisfy strict edge latency bounds (<100ms) without sacrificing sensitivity?",
+      "scenario": "A fintech compliance team is building an automated legal document auditing pipeline that must process 12,000-token SEC filing reports in real-time under tight GPU memory constraints (single NVIDIA T4 16GB GPU). When using a vanilla Transformer encoder with standard Multi-Head Self-Attention, the system regularly throws CUDA Out-Of-Memory (OOM) exceptions even with a batch size of 1.",
+      "question": "Which attention mechanism modification directly addresses this memory wall while preserving long-range global context across the document?",
       "options": [
-        "A) Re-frame the task as binary classification using Logistic Regression with L1 regularization (Lasso) on extracted spectral domain features.",
-        "B) Replace SVR with a k-Nearest Neighbors Regression (k-NN, k=1) to instantly lookup raw signal similarity without kernel transformations.",
-        "C) Retain the non-linear SVR model but increase the penalty parameter C and RBF gamma hyperparameter to force a sparser decision space.",
-        "D) Keep the SVR pipeline but downsample the streaming signal from 500 Hz to 10 Hz without applying anti-aliasing low-pass filtering."
+        "A) Switch to Multi-Query Attention (MQA) which reduces the feed-forward network parameter count while maintaining standard dense $O(N^2)$ attention matrices.",
+        "B) Implement Local Sliding Window Attention combined with selective Global Tokens (e.g., Longformer architecture), reducing space complexity from $O(N^2)$ to $O(N)$.",
+        "C) Increase the number of attention heads $H$ while decreasing the per-head hidden dimension $d_k$, eliminating the quadratic dependency on sequence length.",
+        "D) Replace Cross-Attention layers with static Word2Vec vector averaging across fixed 512-token chunks."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Re-frame the task as binary classification using Logistic Regression with L1 regularization (Lasso) on extracted spectral domain features.",
-      "explanation": "Non-linear kernel SVR requires $O(N_{sv} \\cdot d)$ inner product calculations per sample at test time, where $N_{sv}$ can be huge in high-dimensional continuous streaming. Re-framing the problem to binary classification allows using linear models like Logistic Regression with L1 regularization. L1 zeros out irrelevant feature weights, turning real-time prediction into a simple, ultra-fast sparse vector dot-product $O(d_{sparse})$, executed well under 100ms."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Implement Local Sliding Window Attention combined with selective Global Tokens (e.g., Longformer architecture), reducing space complexity from $O(N^2)$ to $O(N)$.",
+      "explanation": "Standard Self-Attention computes an $N \\times N$ matrix for sequence length $N$. For $N = 12,000$, $N^2 = 144,000,000$ elements per head per layer, causing massive GPU memory footprint ($O(N^2)$). Sparse attention mechanisms like Longformer use local windowed attention ($O(N \\times w)$) for local context and designated global tokens ($O(N)$) for overall document representations, dropping total space and computational complexity to $O(N)$, which comfortably fits within 16GB VRAM."
     },
     {
       "id": 3,
-      "scenario": "An e-commerce platform wants to optimize customer retention. They deployed a continuous regression model predicting 'Days Until Churn' optimized with Mean Absolute Error (MAE). Business ops discovered that overestimating churn time (e.g., predicting 30 days remaining when true value is 3 days) leads to lost intervention windows and high revenue loss. Conversely, underestimating churn time (predicting 3 days when true value is 30) causes negligible loss due to a low-cost automated email campaign.",
-      "question": "Why is the current framing failing business objectives, and what is the mathematically sound remedy?",
+      "scenario": "An e-commerce platform is deploying a conversational customer support bot using an auto-regressive Transformer decoder (e.g., LLaMA-style architecture). Under real-time operational benchmarking, latency per generated token increases linearly as the generated answer length grows from token 1 to token 512, exceeding the strictly enforced 20ms per-token streaming SLA.",
+      "question": "What is the primary computational bottleneck during auto-regressive inference, and how is it mitigated without retraining the underlying model?",
       "options": [
-        "A) Symmetric regression loss functions like MAE penalize over-prediction and under-prediction identically; the task should be re-framed into discrete probabilistic risk buckets with cost-sensitive decision thresholds.",
-        "B) MAE is overly sensitive to outliers; replacing it with Mean Squared Error (RMSE) naturally imposes non-symmetric penalties favoring under-predictions.",
-        "C) Continuous target values are non-stationary; applying Z-score normalization directly to the target variable eliminates asymmetric operational costs.",
-        "D) The model must switch from supervised regression to unsupervised K-Means clustering to discover natural unlabelled churn cohorts without loss functions."
+        "A) Redundant computation of Key and Value vectors for historical tokens at every generation step; mitigated by implementing a Key-Value (KV) Cache.",
+        "B) High computational overhead of greedy token search; mitigated by switching to Beam Search with a beam width of 10.",
+        "C) Gradient recalculation during the forward pass; mitigated by enabling PyTorch automatic mixed precision (AMP) without changing the attention flow.",
+        "D) Softmax bottleneck in the final language model (LM) head; mitigated by applying Dynamic Quantization exclusively to the input embedding matrix."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Symmetric regression loss functions like MAE penalize over-prediction and under-prediction identically; the task should be re-framed into discrete probabilistic risk buckets with cost-sensitive decision thresholds.",
-      "explanation": "Standard regression loss functions (MAE/MSE) assume symmetric penalty structures ($L(y, \\hat{y}) = L(\\hat{y}, y)$). When business costs of error are heavily asymmetric (False Negatives >> False Positives), framing the task as probabilistic classification (e.g., 'Will Churn in <7 days?') permits applying Custom Cost Matrices or adjusting class decision thresholds (Bayes Risk Minimization) to align model outputs with operational financial risk."
+      "correct_answer_text": "A) Redundant computation of Key and Value vectors for historical tokens at every generation step; mitigated by implementing a Key-Value (KV) Cache.",
+      "explanation": "In auto-regressive decoding, generating step $t$ requires attention over all previous $t-1$ tokens. Without caching, the model redundantly projects Query, Key, and Value states for all preceding tokens at every single step, leading to $O(t)$ work per token and overall $O(N^2)$ redundant computations. Implementing a KV Cache stores the Key and Value representations of previous tokens in GPU memory, meaning at step $t$, only the single new token's $Q, K, V$ are projected, reducing generation cost per token to $O(1)$ matrix-vector operations (memory-bound)."
     }
   ]
 }

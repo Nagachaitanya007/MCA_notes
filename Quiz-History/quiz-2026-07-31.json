@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
-  "mode": "Java",
+  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput payment processing engine intermittently fails to roll back database transactions during unexpected runtime exceptions. Additionally, thread dumps show multiple threads executing concurrently without creating isolated transactional contexts.\n\nHere is the snippet from the backend service:\njava\n@Service\npublic class PaymentProcessor {\n\n    @Autowired\n    private PaymentRepository paymentRepo;\n\n    public void processBatch(List<Payment> payments) {\n        payments.parallelStream().forEach(this::processPayment);\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void processPayment(Payment p) {\n        paymentRepo.save(p);\n        if (p.isInvalid()) {\n            throw new IllegalArgumentException(\"Invalid payment payload\");\n        }\n    }\n}\n",
-      "question": "What is the primary cause of the transaction failure and lack of rollback support in this implementation?",
+      "scenario": "A healthtech enterprise deployed an emergency room clinical decision system using a pre-trained general-domain RoBERTa model (utilizing standard Byte-Pair Encoding / BPE). During operational stress-testing, clinical notes containing complex medical terms (e.g., 'piperacillin-tazobactam' or 'thrombocytopenia') frequently hit the 512-sequence length limit and caused severe inference latency spikes, despite the raw input text being under 180 words. Investigation reveals that medical jargon is being fragmented into dozens of single-character or two-character sub-tokens.",
+      "question": "What is the root cause of this performance trade-off, and what is the most effective architectural solution?",
       "options": [
-        "A) `this::processPayment` bypasses the Spring CGLIB proxy via self-invocation, and `parallelStream()` executes methods across the common `ForkJoinPool` where Spring's `ThreadLocal`-bound transaction context is not automatically propagated.",
-        "B) `Propagation.REQUIRES_NEW` causes a deadlock in the database connection pool when executed inside a `parallelStream()`, forcing transactions to auto-commit.",
-        "C) Spring's `@Transactional` annotation does not support runtime exceptions like `IllegalArgumentException` by default for rollback.",
-        "D) The CGLIB proxy intercepts `processBatch` instead of `processPayment`, forcing all stream threads to share a single read-only transaction."
+        "A) BPE suffers from domain-out-of-vocabulary (OOV) vocabulary mismatch, causing extreme token fragmentation that inflates sequence length $N$ and triggers quadratic $O(N^2)$ attention memory overhead; solved by retraining a domain-adapted tokenizer (e.g., BioBPE/WordPiece) on medical corpora.",
+        "B) The absolute positional embeddings in RoBERTa duplicate tokens when hyphens are present; solved by replacing absolute positional embeddings with Rotary Positional Embeddings (RoPE).",
+        "C) The Scaled Dot-Product Attention mechanism suffers from numerical instability on subword sequences; solved by raising the attention temperature during inference.",
+        "D) Byte-Pair Encoding is inherently incapable of handling hyphenated medical terms; solved by bypassing subword tokenization completely and using pure character-level Convolutional Neural Networks (CNNs)."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) `this::processPayment` bypasses the Spring CGLIB proxy via self-invocation, and `parallelStream()` executes methods across the common `ForkJoinPool` where Spring's `ThreadLocal`-bound transaction context is not automatically propagated.",
-      "explanation": "Two core mechanisms fail here: First, Spring declarative transaction management uses AOP proxies (CGLIB/JDK dynamic proxies). Calling `this::processPayment` inside `PaymentProcessor` is a self-invocation, bypassing the proxy entirely so `@Transactional` interceptors never execute. Second, Spring binds transactional state (such as `EntityManager` or `Connection`) to `ThreadLocal` storage. `parallelStream()` offloads execution to worker threads in the shared `ForkJoinPool.commonPool()`, which do not inherit the calling thread's `ThreadLocal` context."
+      "correct_answer_text": "A) BPE suffers from domain-out-of-vocabulary (OOV) vocabulary mismatch, causing extreme token fragmentation that inflates sequence length $N$ and triggers quadratic $O(N^2)$ attention memory overhead; solved by retraining a domain-adapted tokenizer (e.g., BioBPE/WordPiece) on medical corpora.",
+      "explanation": "BPE tokenizers trained on general web text lack highly specific domain terminology in their vocabulary. When encountered, rare/OOV words are split into fine-grained character or sub-character tokens. A 180-word clinical note can inflate to >512 tokens. Because Self-Attention complexity scales quadratically ($O(N^2)$ in time and memory with sequence length $N$), this sequence inflation drastically increases latency and causes sequence truncation. Retraining/adapting the tokenizer vocabulary on domain-specific text merges these frequent subwords back into single domain tokens, keeping $N$ short."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where an ultra-low latency trading application running on Java 17 was recently migrated from G1GC to ZGC (`-XX:+UseZGC`). While average GC pause times dropped significantly to sub-milliseconds, the application now periodically experiences abrupt out-of-memory crashes (`java.lang.OutOfMemoryError: Java heap space`) during extreme market volatility spikes, despite total heap usage staying well below 50% capacity prior to the spike.",
-      "question": "What is the root cause of these sudden `OutOfMemoryError` failures under ZGC in this environment?",
+      "scenario": "A fintech compliance team is building an automated legal document auditing pipeline that must process 12,000-token SEC filing reports in real-time under tight GPU memory constraints (single NVIDIA T4 16GB GPU). When using a vanilla Transformer encoder with standard Multi-Head Self-Attention, the system regularly throws CUDA Out-Of-Memory (OOM) exceptions even with a batch size of 1.",
+      "question": "Which attention mechanism modification directly addresses this memory wall while preserving long-range global context across the document?",
       "options": [
-        "A) In Java 17, ZGC is non-generational; sudden spikes in object allocation rate outpace the concurrent marking and compacting threads, leading to allocation stalls and rapid heap exhaustion before GC cycles can finish.",
-        "B) ZGC colored pointers exceed the 44-bit virtual memory address space limit under high allocation rates, forcing the JVM to crash.",
-        "C) The ZGC load barriers fail to process `WeakReference` cleanups during thread-local handshakes under high volatility.",
-        "D) ZGC forces dynamic C2 JIT compilation to revert back to interpreted mode during high memory allocation, exhausting thread stack memory."
+        "A) Switch to Multi-Query Attention (MQA) which reduces the feed-forward network parameter count while maintaining standard dense $O(N^2)$ attention matrices.",
+        "B) Implement Local Sliding Window Attention combined with selective Global Tokens (e.g., Longformer architecture), reducing space complexity from $O(N^2)$ to $O(N)$.",
+        "C) Increase the number of attention heads $H$ while decreasing the per-head hidden dimension $d_k$, eliminating the quadratic dependency on sequence length.",
+        "D) Replace Cross-Attention layers with static Word2Vec vector averaging across fixed 512-token chunks."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) In Java 17, ZGC is non-generational; sudden spikes in object allocation rate outpace the concurrent marking and compacting threads, leading to allocation stalls and rapid heap exhaustion before GC cycles can finish.",
-      "explanation": "In Java 17, ZGC is single-generational (Generational ZGC was introduced later in JDK 21 via JEP 439). In non-generational ZGC, all objects (young and old) reside in the same collection space. When an application experiences a massive allocation spike (high object allocation rate), the concurrent GC background threads (`-XX:ConcGCThreads`) may not collect memory fast enough compared to the application's allocation rate. This leads to Allocation Stalls, and if allocations continue to exceed GC reclamation capacity before heap space runs out, the JVM throws `java.lang.OutOfMemoryError: Java heap space`."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Implement Local Sliding Window Attention combined with selective Global Tokens (e.g., Longformer architecture), reducing space complexity from $O(N^2)$ to $O(N)$.",
+      "explanation": "Standard Self-Attention computes an $N \\times N$ matrix for sequence length $N$. For $N = 12,000$, $N^2 = 144,000,000$ elements per head per layer, causing massive GPU memory footprint ($O(N^2)$). Sparse attention mechanisms like Longformer use local windowed attention ($O(N \\times w)$) for local context and designated global tokens ($O(N)$) for overall document representations, dropping total space and computational complexity to $O(N)$, which comfortably fits within 16GB VRAM."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a modular enterprise Java application dynamically loads and unloads custom plugin `.jar` files using custom `URLClassLoader` instances. After multiple dynamic reload cycles over several days, the JVM throws `java.lang.OutOfMemoryError: Metaspace`. Heap dumps reveal that while actual plugin domain object instances have been garbage collected, thousands of old `URLClassLoader` and `Class` metadata objects remain firmly retained in memory.",
-      "question": "Which underlying mechanism prevents the `URLClassLoader` and its associated Metaspace metadata from being garbage collected?",
+      "scenario": "An e-commerce platform is deploying a conversational customer support bot using an auto-regressive Transformer decoder (e.g., LLaMA-style architecture). Under real-time operational benchmarking, latency per generated token increases linearly as the generated answer length grows from token 1 to token 512, exceeding the strictly enforced 20ms per-token streaming SLA.",
+      "question": "What is the primary computational bottleneck during auto-regressive inference, and how is it mitigated without retraining the underlying model?",
       "options": [
-        "A) A strong reference path exists from a active thread (e.g., via a `ThreadLocal` or registered shutdown hook/system driver) to a class or object instance loaded by the custom `URLClassLoader`, which indirectly holds a reference back to its `ClassLoader` via `Class.getClassLoader()`.",
-        "B) Metaspace memory allocations are managed natively outside the JVM garbage collection boundary and can only be freed by invoking `System.gc()` explicitly.",
-        "C) The JVM Bootstrap ClassLoader maintains a permanent hard reference to all child `URLClassLoader` instances to guarantee parent-first delegation order.",
-        "D) Unloaded class metadata remains pinned in Metaspace until the Compressed Class Space address space is completely cleared."
+        "A) Redundant computation of Key and Value vectors for historical tokens at every generation step; mitigated by implementing a Key-Value (KV) Cache.",
+        "B) High computational overhead of greedy token search; mitigated by switching to Beam Search with a beam width of 10.",
+        "C) Gradient recalculation during the forward pass; mitigated by enabling PyTorch automatic mixed precision (AMP) without changing the attention flow.",
+        "D) Softmax bottleneck in the final language model (LM) head; mitigated by applying Dynamic Quantization exclusively to the input embedding matrix."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) A strong reference path exists from a active thread (e.g., via a `ThreadLocal` or registered shutdown hook/system driver) to a class or object instance loaded by the custom `URLClassLoader`, which indirectly holds a reference back to its `ClassLoader` via `Class.getClassLoader()`.",
-      "explanation": "In Java, a `ClassLoader` cannot be garbage collected if any `Class` loaded by it is still referenced, OR if any instance of any class loaded by it is still reachable. Every Java object retains a reference to its `java.lang.Class`, and every `Class` retains a reference to its defining `ClassLoader`. If a thread (e.g., via `ThreadLocal`, `DriverManager`, or custom thread pool) retains a reference to even a single instance or class from the plugin, the entire `URLClassLoader` and ALL metadata loaded by it in Metaspace become un-collectable, resulting in a Metaspace leak."
+      "correct_answer_text": "A) Redundant computation of Key and Value vectors for historical tokens at every generation step; mitigated by implementing a Key-Value (KV) Cache.",
+      "explanation": "In auto-regressive decoding, generating step $t$ requires attention over all previous $t-1$ tokens. Without caching, the model redundantly projects Query, Key, and Value states for all preceding tokens at every single step, leading to $O(t)$ work per token and overall $O(N^2)$ redundant computations. Implementing a KV Cache stores the Key and Value representations of previous tokens in GPU memory, meaning at step $t$, only the single new token's $Q, K, V$ are projected, reducing generation cost per token to $O(1)$ matrix-vector operations (memory-bound)."
     }
   ]
 }
