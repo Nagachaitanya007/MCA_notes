@@ -129,7 +129,8 @@
     "GC Ergonomics & Adaptive Heap Sizing: Tuning Dynamic Memory Boundaries",
     "Tuning GC Thread Dynamics: Balancing Parallel and Concurrent Workers to Avoid CPU Starvation",
     "Metaspace & Non-Heap Memory Tuning: Managing Runtime Class Metadata and Preventing Native OOMs",
-    "Premature Promotion & Tenure Threshold Tuning: Preventing Old Generation Contamination"
+    "Premature Promotion & Tenure Threshold Tuning: Preventing Old Generation Contamination",
+    "Humongous Object Allocation Tuning: Preventing GC Spikes in Region-Based Collectors"
   ],
   "Design a URL Shortener (Key Generation Service, Sharding)": [
     "URL Shortener: Key Generation Service (KGS) & Sharding",
