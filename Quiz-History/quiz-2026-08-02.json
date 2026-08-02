@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
-  "mode": "Java",
+  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a Spring Boot microservice periodically crashes with `java.lang.OutOfMemoryError: Metaspace` after running for several days in production. The application dynamically compiles and executes custom business logic scripts submitted by users. You inspect the following code snippet from the rule processing service:\n\njava\n@Service\npublic class DynamicRuleEngine {\n    @Autowired\n    private AutowireCapableBeanFactory beanFactory;\n\n    public void executeCustomRule(String ruleName, byte[] classBytes) throws Exception {\n        CustomClassLoader loader = new CustomClassLoader(getClass().getClassLoader());\n        Class<?> ruleClass = loader.defineClass(ruleName, classBytes);\n        Object ruleInstance = ruleClass.getDeclaredConstructor().newInstance();\n        beanFactory.autowireBean(ruleInstance);\n        ((Runnable) ruleInstance).run();\n    }\n}\n",
-      "question": "What is the primary cause of the `Metaspace` memory leak in this code?",
+      "scenario": "A smart manufacturing plant uses an automated optical inspection pipeline to detect microscopic solder defects on high-speed printed circuit board (PCB) assembly lines operating at 120 units per minute. The current vision model (ResNet-50) achieves 98.5% classification accuracy but exhibits an inference latency of 85ms per image on an edge accelerator (NVIDIA Jetson Xavier), violating the strict real-time SLA limit of 50ms per frame. Spatial downscaling of input images reduces latency to 30ms but drops defect recall from 98.5% to 62% due to loss of fine-grained spatial detail.",
+      "question": "Which optimization technique will reduce inference latency below 50ms while maintaining spatial resolution for micro-defect detection without requiring complete network retraining from scratch?",
       "options": [
-        "A) `beanFactory.autowireBean(ruleInstance)` registers the instance in Spring internal lifecycle caches, retaining a strong reference to `ruleInstance`, which prevents `CustomClassLoader` and its loaded metadata from being garbage collected.",
-        "B) The `CustomClassLoader` uses `getClass().getClassLoader()` as its parent class loader, forcing all dynamically generated classes into the Bootstrap ClassLoader Metaspace region.",
-        "C) Dynamic byte code instantiation via `newInstance()` bypasses Garbage Collection unless `loader.finalize()` is manually invoked before `executeCustomRule` finishes.",
-        "D) Spring `@Service` singletons acquire a thread-level lock on `loader.defineClass()`, holding class metadata permanently in the JVM PermGen space."
+        "A) Perform TensorRT Post-Training INT8 Quantization (PTQ) with dynamic range calibration using a representative validation dataset.",
+        "B) Replace standard convolutions in all residual blocks with Depthwise Separable Convolutions and fine-tune for 50 epochs.",
+        "C) Apply structural L1-norm filter pruning to remove 60% of conv layers, followed by high-learning-rate fine-tuning.",
+        "D) Increase the convolution stride in the initial ResNet stem layer from 2 to 4 to reduce early feature map dimensions."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) `beanFactory.autowireBean(ruleInstance)` registers the instance in Spring internal lifecycle caches, retaining a strong reference to `ruleInstance`, which prevents `CustomClassLoader` and its loaded metadata from being garbage collected.",
-      "explanation": "A Java `Class` can only be unloaded from `Metaspace` if its defining `ClassLoader` is eligible for Garbage Collection. A `ClassLoader` cannot be GC'd if any `Class` defined by it has live instances on the Heap. When `beanFactory.autowireBean(ruleInstance)` is called, Spring registers the object instance into internal lifecycle management pools (such as destruction/disposal caches). Because Spring maintains a strong reference to `ruleInstance`, `ruleInstance` keeps its `Class` alive, which in turn keeps `CustomClassLoader` alive, completely preventing `Metaspace` class unloading across executions."
+      "correct_answer_text": "A) Perform TensorRT Post-Training INT8 Quantization (PTQ) with dynamic range calibration using a representative validation dataset.",
+      "explanation": "Post-Training Quantization (PTQ) to INT8 precision leverages dedicated hardware Tensor Cores on edge platforms like the Jetson Xavier to significantly accelerate throughput (typically 2x-4x speedup) without altering the model topology or spatial input resolution. Because it operates on pre-trained weights using calibration data to determine dynamic ranges, it preserves high-frequency spatial details crucial for micro-defect detection while meeting latency constraints without full retraining."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a low-latency microservice running on JDK 17 with ZGC (`-XX:+UseZGC`) experiences sudden, multi-second latency spikes under peak throughput. Inspection of GC logs reveals frequent `Allocation Stall` entries immediately preceding the application pauses. The JVM heap is fixed at `-Xms32g -Xmx32g`.",
-      "question": "What is the root cause of these `Allocation Stall` events under ZGC, and what is the appropriate fix?",
+      "scenario": "An energy grid operator deploys a predictive analytics engine to continuously forecast turbine gearbox failure from high-frequency sensor streams (vibration, thermal, acoustic) sampled at 100 Hz over a continuous 10,000-time-step rolling window. A standard Long Short-Term Memory (LSTM) network deployed on this stream suffers severe vanishing gradient issues across the long sequence length, failing to capture critical long-range lead-up patterns occurring 8,000 steps prior to failure. Additionally, inference needs to operate under strict causal real-time constraints.",
+      "question": "Which architectural shift best resolves the vanishing gradient problem over 10,000 time steps while preserving causality and computational efficiency for real-time streaming data?",
       "options": [
-        "A) The application is allocating memory at a higher rate than ZGC can reclaim it concurrently, forcing mutator threads to stall while waiting for GC cycles to complete; fix by tuning `-XX:ZAllocationSpikeTolerance` or increasing `-XX:ConcGCThreads`.",
-        "B) ZGC's colored pointers fail when heap usage exceeds 16GB, causing a full Stop-The-World compaction fallback; fix by setting `-XX:+UseCompressedOops`.",
-        "C) Metaspace expansion triggers a mandatory synchronous STW collection under ZGC; fix by pre-allocating `-XX:MetaspaceSize=2g`.",
-        "D) Thread Local Allocation Buffers (`TLABs`) are disabled by default under ZGC; fix by explicitly enabling `-XX:+UseTLAB`."
+        "A) Global Scaled Dot-Product Self-Attention Transformer operating over the full un-segmented sequence window.",
+        "B) Temporal Convolutional Network (TCN) utilizing Dilated Causal Convolutions with exponentially growing dilation factors.",
+        "C) Deep Bidirectional LSTM (BiLSTM) with Truncated Backpropagation Through Time (TBPTT) capped at 50 time steps.",
+        "D) Standard Recurrent Neural Network (RNN) using Leaky ReLU activation functions and Gradient Clipping."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The application is allocating memory at a higher rate than ZGC can reclaim it concurrently, forcing mutator threads to stall while waiting for GC cycles to complete; fix by tuning `-XX:ZAllocationSpikeTolerance` or increasing `-XX:ConcGCThreads`.",
-      "explanation": "ZGC is a concurrent garbage collector designed to keep STW pauses under 1 millisecond. However, if mutator application threads allocate memory faster than ZGC's concurrent marking and relocating phases can free memory, the heap becomes exhausted. When this happens, ZGC stalls the allocating application threads (`Allocation Stall`) until memory becomes available. Resolving this requires giving ZGC more CPU resources to finish GC phases faster by increasing `-XX:ConcGCThreads` or initiating GC earlier using `-XX:ZAllocationSpikeTolerance`."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Temporal Convolutional Network (TCN) utilizing Dilated Causal Convolutions with exponentially growing dilation factors.",
+      "explanation": "Temporal Convolutional Networks (TCNs) combine causal convolutions (ensuring no leakage from future to past for real-time streaming) with dilated convolutions. Dilations expand the receptive field exponentially (2^k) with network depth, allowing the model to capture dependencies across 10,000+ steps without sequence-length vanishing gradient dynamics typical of recurrent backpropagation. Self-attention transformers have O(N^2) memory and computational complexity, making 10,000-step windows intractable for real-time low-latency streaming."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a high-throughput multi-threaded Spring component fails to shut down gracefully. Worker threads running a processing loop fail to acknowledge a state update performed by an administrative endpoint thread. You review the following implementation:\n\njava\n@Component\npublic class WorkerTaskProcessor {\n    private boolean active = true;\n\n    public void shutdown() {\n        this.active = false;\n    }\n\n    public void processLoop() {\n        while (active) {\n            // Perform non-blocking processing task\n        }\n    }\n}\n",
-      "question": "From a Java Memory Model (JMM) perspective, why does `processLoop()` continue running indefinitely after `shutdown()` is invoked by another thread?",
+      "scenario": "A warehouse logistics company runs a CCTV video surveillance analytics platform combining a CNN feature extractor with a Gated Recurrent Unit (GRU) to flag unauthorized human entries into automated forklift paths. The temporal dataset is severely imbalanced: 99.3% of video sequences depict normal operations, while 0.7% contain violation events. An end-to-end CNN-GRU trained with standard Binary Cross-Entropy loss achieves 99.3% total accuracy but yields a critical safety recall of under 12% on violation sequences.",
+      "question": "Which combination of loss formulation and sampling strategy best mitigates this extreme temporal class imbalance to maximize safety recall without producing excessive false alarms?",
       "options": [
-        "A) Without `volatile` or explicit synchronization, the JMM allows CPU core caches to keep stale reads of `active`, and JIT (C2) optimizations can hoist `active` out of the loop into a single check (`hoisting`).",
-        "B) Spring `@Component` proxies generate thread-local shadow copies of instance fields, making field state mutations invisible across threads.",
-        "C) Non-volatile boolean writes in 64-bit HotSpot JVMs are non-atomic and lead to word tearing across CPU socket boundaries.",
-        "D) Spring Transaction Manager injects a `StoreLoad` memory barrier that prevents non-transactional methods like `processLoop()` from reading heap memory."
+        "A) Class-Balanced Focal Loss combined with Sequence-Level Hard Negative Mining (Hard Example Mining).",
+        "B) Synthetic Minority Over-sampling Technique (SMOTE) applied to raw input image pixel matrices prior to spatial feature extraction.",
+        "C) Random Frame Duplication inside minority video sequences combined with standard Binary Cross-Entropy loss.",
+        "D) Mean Squared Error (MSE) Loss paired with unweighted random mini-batch sampling."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Without `volatile` or explicit synchronization, the JMM allows CPU core caches to keep stale reads of `active`, and JIT (C2) optimizations can hoist `active` out of the loop into a single check (`hoisting`).",
-      "explanation": "According to the Java Memory Model (JMM), reads and writes to non-volatile fields do not establish a Happens-Before relationship. Without declaring `active` as `volatile` or accessing it via `synchronized`/locks, changes made by one thread in its CPU core cache are not guaranteed to be flushed to main memory or visible to other threads. Furthermore, the C2 JIT compiler optimizes `while (active)` into `if (active) { while(true) {} }` (loop hoisting) because it assumes `active` is not modified inside the local thread context."
+      "correct_answer_text": "A) Class-Balanced Focal Loss combined with Sequence-Level Hard Negative Mining (Hard Example Mining).",
+      "explanation": "Class-Balanced Focal Loss down-weights easy-to-classify majority examples (normal operations) and focuses training gradients on hard minority sequences (safety violations). Combining this with Sequence-Level Hard Negative Mining dynamically forces the spatial-temporal network (CNN-GRU) to learn subtle edge cases (e.g., near-misses or partial human occlusions) during training, significantly boosting minority recall. Interpolating high-dimensional image pixels with SMOTE generates unrealistic spatial artifacts, and frame duplication leads to severe temporal overfitting."
     }
   ]
 }
