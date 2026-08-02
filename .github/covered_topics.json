@@ -94,7 +94,8 @@
     "JVM Memory Model: Escape Analysis and Scalar Replacement Internals",
     "JVM Reference Processing: The Mechanics of Soft, Weak, Phantom, and Final References",
     "JVM G1 GC: Humongous Allocations and Heap Fragmentation Mechanics",
-    "JVM Memory Model: Cache Line Padding, Field Layout, and False Sharing"
+    "JVM Memory Model: Cache Line Padding, Field Layout, and False Sharing",
+    "JVM G1 Collector: Mixed GC Cycles, Adaptive IHOP, and Evacuation Failure"
   ],
   "Design a Real-time Chat System (WebSockets, Redis Pub/Sub)": [
     "Scalable Real-time Chat: WebSockets & Redis Pub/Sub",
