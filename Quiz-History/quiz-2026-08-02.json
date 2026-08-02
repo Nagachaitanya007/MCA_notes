@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
+  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput microservice is experiencing severe memory leaks and intermittent `null` lookup failures. A developer implemented a custom session store using `ConcurrentHashMap` with a custom key class:\n\njava\npublic class UserSessionKey {\n    private String userId;\n    private String deviceId;\n\n    public UserSessionKey(String userId, String deviceId) {\n        this.userId = userId;\n        this.deviceId = deviceId;\n    }\n\n    public void setDeviceId(String deviceId) {\n        this.deviceId = deviceId;\n    }\n\n    @Override\n    public boolean equals(Object o) {\n        if (this == o) return true;\n        if (!(o instanceof UserSessionKey)) return false;\n        UserSessionKey that = (UserSessionKey) o;\n        return Objects.equals(userId, that.userId) && Objects.equals(deviceId, that.deviceId);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(userId, deviceId);\n    }\n}\n\n\nWhen a user updates their device, the background worker invokes `key.setDeviceId(newDeviceId)` on an existing `UserSessionKey` instance while it is actively stored as a key inside the `ConcurrentHashMap`.",
-      "question": "What is the primary cause of the lookup failures and memory leakage in this system?",
+      "scenario": "You are debugging a production issue where a Spring Boot microservice periodically crashes with `java.lang.OutOfMemoryError: Metaspace` after running for several days in production. The application dynamically compiles and executes custom business logic scripts submitted by users. You inspect the following code snippet from the rule processing service:\n\njava\n@Service\npublic class DynamicRuleEngine {\n    @Autowired\n    private AutowireCapableBeanFactory beanFactory;\n\n    public void executeCustomRule(String ruleName, byte[] classBytes) throws Exception {\n        CustomClassLoader loader = new CustomClassLoader(getClass().getClassLoader());\n        Class<?> ruleClass = loader.defineClass(ruleName, classBytes);\n        Object ruleInstance = ruleClass.getDeclaredConstructor().newInstance();\n        beanFactory.autowireBean(ruleInstance);\n        ((Runnable) ruleInstance).run();\n    }\n}\n",
+      "question": "What is the primary cause of the `Metaspace` memory leak in this code?",
       "options": [
-        "A) `ConcurrentHashMap` performs internal segment re-hashing, which invalidates mutable keys upon collision resolution.",
-        "B) Mutating the key alters its `hashCode()`, causing subsequent lookups to target a different hash bucket while leaving orphaned entries in the original bucket.",
-        "C) Modifying a key object while stored inside a `ConcurrentHashMap` triggers a `ConcurrentModificationException` during bucket traversal.",
-        "D) `ConcurrentHashMap` uses weak references for keys, leading to garbage collection of mutated key instances."
+        "A) `beanFactory.autowireBean(ruleInstance)` registers the instance in Spring internal lifecycle caches, retaining a strong reference to `ruleInstance`, which prevents `CustomClassLoader` and its loaded metadata from being garbage collected.",
+        "B) The `CustomClassLoader` uses `getClass().getClassLoader()` as its parent class loader, forcing all dynamically generated classes into the Bootstrap ClassLoader Metaspace region.",
+        "C) Dynamic byte code instantiation via `newInstance()` bypasses Garbage Collection unless `loader.finalize()` is manually invoked before `executeCustomRule` finishes.",
+        "D) Spring `@Service` singletons acquire a thread-level lock on `loader.defineClass()`, holding class metadata permanently in the JVM PermGen space."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Mutating the key alters its `hashCode()`, causing subsequent lookups to target a different hash bucket while leaving orphaned entries in the original bucket.",
-      "explanation": "In hash-based collections such as `HashMap` and `ConcurrentHashMap`, entry bucket placement is determined by the key's `hashCode()` upon insertion. Mutating fields involved in `hashCode()` after insertion causes subsequent lookups (`get()`) to compute a new hash and evaluate a different bucket, resulting in `null`. Meanwhile, the original key-value pair remains permanently trapped in its initial bucket, inaccessible by normal map operations, creating a severe memory leak."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) `beanFactory.autowireBean(ruleInstance)` registers the instance in Spring internal lifecycle caches, retaining a strong reference to `ruleInstance`, which prevents `CustomClassLoader` and its loaded metadata from being garbage collected.",
+      "explanation": "A Java `Class` can only be unloaded from `Metaspace` if its defining `ClassLoader` is eligible for Garbage Collection. A `ClassLoader` cannot be GC'd if any `Class` defined by it has live instances on the Heap. When `beanFactory.autowireBean(ruleInstance)` is called, Spring registers the object instance into internal lifecycle management pools (such as destruction/disposal caches). Because Spring maintains a strong reference to `ruleInstance`, `ruleInstance` keeps its `Class` alive, which in turn keeps `CustomClassLoader` alive, completely preventing `Metaspace` class unloading across executions."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a high-frequency routing service experiences extreme P99 latency spikes (exceeding 3000ms) and intense Garbage Collection pressure under load. Profiling reveals that the system spends over 40% of CPU cycles inside `Arrays.copyOf()` within a component that manages active network routes using `CopyOnWriteArrayList`. The application executes 80,000 read operations per second and approximately 300 write/update operations per second across the routing table.",
-      "question": "What is the underlying root cause of the performance degradation in this collection setup?",
+      "scenario": "You are debugging a production issue where a low-latency microservice running on JDK 17 with ZGC (`-XX:+UseZGC`) experiences sudden, multi-second latency spikes under peak throughput. Inspection of GC logs reveals frequent `Allocation Stall` entries immediately preceding the application pauses. The JVM heap is fixed at `-Xms32g -Xmx32g`.",
+      "question": "What is the root cause of these `Allocation Stall` events under ZGC, and what is the appropriate fix?",
       "options": [
-        "A) `CopyOnWriteArrayList` acquires a global read lock during iterator traversals, causing high thread contention during high-volume read operations.",
-        "B) Every write operation clones the entire underlying array under a lock, generating extreme allocation churn and CPU overhead at 300 writes per second.",
-        "C) `CopyOnWriteArrayList` forces internal array allocations into the Old Generation, triggering frequent Stop-The-World Full GC cycles.",
-        "D) Concurrent read and write operations trigger lock stripping contention across internal `ReentrantLock` segments."
+        "A) The application is allocating memory at a higher rate than ZGC can reclaim it concurrently, forcing mutator threads to stall while waiting for GC cycles to complete; fix by tuning `-XX:ZAllocationSpikeTolerance` or increasing `-XX:ConcGCThreads`.",
+        "B) ZGC's colored pointers fail when heap usage exceeds 16GB, causing a full Stop-The-World compaction fallback; fix by setting `-XX:+UseCompressedOops`.",
+        "C) Metaspace expansion triggers a mandatory synchronous STW collection under ZGC; fix by pre-allocating `-XX:MetaspaceSize=2g`.",
+        "D) Thread Local Allocation Buffers (`TLABs`) are disabled by default under ZGC; fix by explicitly enabling `-XX:+UseTLAB`."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Every write operation clones the entire underlying array under a lock, generating extreme allocation churn and CPU overhead at 300 writes per second.",
-      "explanation": "`CopyOnWriteArrayList` is designed for scenarios where read operations vastly outnumber write operations (e.g., 99.9% reads, very rare writes). Mutating operations (`add`, `set`, `remove`) create a full copy of the backing array inside a synchronized lock using `Arrays.copyOf()`. At 300 writes per second on a large array, the continuous reallocation of memory creates massive allocation churn, triggers frequent Young GC collections, and consumes significant CPU overhead due to memory copying."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The application is allocating memory at a higher rate than ZGC can reclaim it concurrently, forcing mutator threads to stall while waiting for GC cycles to complete; fix by tuning `-XX:ZAllocationSpikeTolerance` or increasing `-XX:ConcGCThreads`.",
+      "explanation": "ZGC is a concurrent garbage collector designed to keep STW pauses under 1 millisecond. However, if mutator application threads allocate memory faster than ZGC's concurrent marking and relocating phases can free memory, the heap becomes exhausted. When this happens, ZGC stalls the allocating application threads (`Allocation Stall`) until memory becomes available. Resolving this requires giving ZGC more CPU resources to finish GC phases faster by increasing `-XX:ConcGCThreads` or initiating GC earlier using `-XX:ZAllocationSpikeTolerance`."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where an asynchronous task execution engine uses `PriorityBlockingQueue` to execute tasks based on a calculated priority score. In production, workers report that high-priority tasks are frequently executed after lower-priority tasks, violating task ordering invariants. Investigation shows that tasks are added to the queue, and later, a background system periodically updates their priority score field directly on the enqueued `Task` instances without removing or re-inserting them into the queue.",
-      "question": "Why does dynamically modifying the priority field of an enqueued element corrupt the ordering of the `PriorityBlockingQueue`?",
+      "scenario": "You are debugging a production issue where a high-throughput multi-threaded Spring component fails to shut down gracefully. Worker threads running a processing loop fail to acknowledge a state update performed by an administrative endpoint thread. You review the following implementation:\n\njava\n@Component\npublic class WorkerTaskProcessor {\n    private boolean active = true;\n\n    public void shutdown() {\n        this.active = false;\n    }\n\n    public void processLoop() {\n        while (active) {\n            // Perform non-blocking processing task\n        }\n    }\n}\n",
+      "question": "From a Java Memory Model (JMM) perspective, why does `processLoop()` continue running indefinitely after `shutdown()` is invoked by another thread?",
       "options": [
-        "A) `PriorityBlockingQueue` uses a lock-free skip-list that requires explicit node modification listeners to re-sort.",
-        "B) `PriorityBlockingQueue` relies on a binary heap array where order is adjusted via sifting only during `offer()` and `poll()`; mutating enqueued elements does not trigger heap re-balancing.",
-        "C) Mutating an enqueued object invalidates its `Comparable` identity, causing the collection to fall back to FIFO insertion order.",
-        "D) `PriorityBlockingQueue` caches the element priority as a primitive integer upon insertion and ignores subsequent getter calls."
+        "A) Without `volatile` or explicit synchronization, the JMM allows CPU core caches to keep stale reads of `active`, and JIT (C2) optimizations can hoist `active` out of the loop into a single check (`hoisting`).",
+        "B) Spring `@Component` proxies generate thread-local shadow copies of instance fields, making field state mutations invisible across threads.",
+        "C) Non-volatile boolean writes in 64-bit HotSpot JVMs are non-atomic and lead to word tearing across CPU socket boundaries.",
+        "D) Spring Transaction Manager injects a `StoreLoad` memory barrier that prevents non-transactional methods like `processLoop()` from reading heap memory."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) `PriorityBlockingQueue` relies on a binary heap array where order is adjusted via sifting only during `offer()` and `poll()`; mutating enqueued elements does not trigger heap re-balancing.",
-      "explanation": "`PriorityBlockingQueue` maintains element ordering using a binary min/max heap backed by an array. Heap invariants are maintained strictly during mutative queue entry/exit operations (`offer`, `poll`, `remove`) via `siftUp` and `siftDown` operations based on `compareTo()` or a `Comparator`. Modifying the priority property of an object already sitting inside the heap array does not notify the queue or trigger any sifting operations, leaving the binary heap in an invalid state and producing out-of-order element extractions."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Without `volatile` or explicit synchronization, the JMM allows CPU core caches to keep stale reads of `active`, and JIT (C2) optimizations can hoist `active` out of the loop into a single check (`hoisting`).",
+      "explanation": "According to the Java Memory Model (JMM), reads and writes to non-volatile fields do not establish a Happens-Before relationship. Without declaring `active` as `volatile` or accessing it via `synchronized`/locks, changes made by one thread in its CPU core cache are not guaranteed to be flushed to main memory or visible to other threads. Furthermore, the C2 JIT compiler optimizes `while (active)` into `if (active) { while(true) {} }` (loop hoisting) because it assumes `active` is not modified inside the local thread context."
     }
   ]
 }
