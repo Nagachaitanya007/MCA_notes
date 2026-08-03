@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
-  "mode": "Java",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a Spring component hangs indefinitely under high concurrent traffic. A developer implemented a hierarchical computation cache using `ConcurrentHashMap` as shown below:\n\njava\n@Component\npublic class DependencyResolver {\n    private final ConcurrentHashMap<String, String> cache = new ConcurrentHashMap<>();\n\n    public String getOrCompute(String taskId) {\n        return cache.computeIfAbsent(taskId, key -> {\n            if (key.startsWith(\"SUB_\")) {\n                return \"COMPUTED_SUBTASK\";\n            }\n            // Recursive computeIfAbsent call on the same ConcurrentHashMap instance\n            return cache.computeIfAbsent(\"SUB_\" + key, subKey -> \"COMPUTED_\" + subKey);\n        });\n    }\n}\n",
-      "question": "What is the primary cause of the thread hang during concurrent calls to `getOrCompute`?",
+      "scenario": "An autonomous fleet management system in a high-density smart warehouse routes 500+ Automated Guided Vehicles (AGVs) simultaneously using standard A* search over a dynamic spatiotemporal grid. During peak operational hours, system memory reaches 100% utilization, leading to Out-Of-Memory (OOM) crashes due to the O(b^d) space complexity caused by maintaining millions of unexpanded states in the OPEN list.",
+      "question": "Which algorithmic modification should the AI architect implement to strictly control memory consumption while maintaining path optimality whenever memory permits?",
       "options": [
-        "A) `ConcurrentHashMap` throws a `ConcurrentModificationException` during recursive writes, which is caught and blocked by Spring's proxy handling.",
-        "B) The inner `computeIfAbsent` call attempts to acquire a lock on a bin/reservation node that is already locked by the outer `computeIfAbsent` call, causing a self-deadlock.",
-        "C) The underlying table array expands rapidly due to simultaneous insertions, triggering an unrecoverable infinite loop in `ConcurrentHashMap.addCount()`.",
-        "D) `ConcurrentHashMap` does not allow string key modifications inside lambda functions, causing the thread to transition to a `BLOCKED` state indefinitely."
+        "A) Transition to Simplified Memory-Bounded A* (SMA*), which drops the highest f-cost nodes from memory when capacity is reached and backs up their values to parent nodes.",
+        "B) Convert the heuristic h(n) into an inadmissible heuristic by multiplying it by a factor w > 1 to force pure Depth-First Search memory efficiency.",
+        "C) Replace A* with Min-Max search to treat dynamic path obstacles as an adversarial agent operating in a zero-sum environment.",
+        "D) Disable the CLOSED list in standard A* search to immediately free memory allocated to previously visited state nodes."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The inner `computeIfAbsent` call attempts to acquire a lock on a bin/reservation node that is already locked by the outer `computeIfAbsent` call, causing a self-deadlock.",
-      "explanation": "In Java 8+, `ConcurrentHashMap.computeIfAbsent` locks the target bin (hash bucket) using `synchronized` on the head `Node` or a `ReservationNode` while computing the value. If the mapping function recursively attempts to compute another key that maps to the same bin (or triggers table expansion/rehashing), the current thread attempts to re-acquire the lock on the bin node or waits on initialization, resulting in a silent self-deadlock or hang. Recursive computations on the same `ConcurrentHashMap` instance are explicitly prohibited in its specification."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Transition to Simplified Memory-Bounded A* (SMA*), which drops the highest f-cost nodes from memory when capacity is reached and backs up their values to parent nodes.",
+      "explanation": "SMA* (Simplified Memory-Bounded A*) is specifically designed for memory-constrained environments. It utilizes available memory up to a fixed limit. When memory fills up, it drops the node with the highest f-value (least promising) from the OPEN list, while backing up the forgotten node's f-value to its parent. This allows the algorithm to regenerate dropped paths if needed while guaranteeing memory limits are respected and retaining admissibility if an optimal path fits within the memory bound."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where an in-memory session metadata service experiences severe `java.lang.OutOfMemoryError: Java heap space` over time. The cache uses a custom `WeakHashMap<UserSession, SessionMetadata>` intended to automatically drop cached values when the user's `UserSession` object is garbage collected across the application.",
-      "question": "What is the primary architectural flaw preventing the expected garbage collection of `UserSession` keys?",
+      "scenario": "An enterprise automated threat mitigation system models cybersecurity counter-measures as a two-player zero-sum game using a Min-Max search tree with Alpha-Beta pruning. During volumetric attack simulations, the system fails to deliver optimal mitigation decisions within its required 50ms SLA window. Profiling reveals that Alpha-Beta pruning is failing to prune significant portions of the tree because child nodes are examined in arbitrary or near-worst-case order.",
+      "question": "What optimization strategy will maximize the pruning efficiency of Alpha-Beta search to approach optimal O(b^(m/2)) time complexity without reducing the target search depth?",
       "options": [
-        "A) `WeakHashMap` uses `SoftReference` objects internally for keys, which are only reclaimed when critical heap thresholds are breached.",
-        "B) The value object `SessionMetadata` holds a direct or indirect strong reference back to the `UserSession` key object, creating a strong reference chain that prevents GC.",
-        "C) `WeakHashMap` requires explicit calls to `WeakHashMap.expungeStaleEntries()` via a scheduled background thread; without it, GC is disabled.",
-        "D) Spring context manages all map instances as singleton targets, converting internal weak references into strong references."
+        "A) Implement dynamic move ordering using transposition tables and principal variation search to evaluate high-utility moves first.",
+        "B) Increase the branching factor b artificially by inserting pseudo-random dummy nodes at intermediate decision levels.",
+        "C) Replace the evaluation function at terminal nodes with a uniform random sampler to bypass static evaluation overhead.",
+        "D) Force alpha = +infinity and beta = -infinity as initial bound parameters at the root node to trigger immediate branch truncation."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The value object `SessionMetadata` holds a direct or indirect strong reference back to the `UserSession` key object, creating a strong reference chain that prevents GC.",
-      "explanation": "In `WeakHashMap`, the keys are held via `WeakReference`, but the values are held via standard **strong references**. If the value (`SessionMetadata`) contains a reference back to the key (`UserSession`), the strong reference from Value -> Key forms a strong reference path (`Map.Entry` -> Value -> Key). This prevents the Garbage Collector from reclaiming the `WeakReference` key, completely neutralizing the weak key behavior and leading to a continuous memory leak."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Implement dynamic move ordering using transposition tables and principal variation search to evaluate high-utility moves first.",
+      "explanation": "Alpha-Beta pruning efficiency highly depends on node ordering. If best moves are evaluated first, alpha/beta bounds shrink/expand rapidly, allowing early cutoffs of inferior branches. Perfect ordering reduces time complexity from O(b^m) to O(b^(m/2)). Transposition tables store previously evaluated positions to inform move ordering (such as Principal Variation Search or Killer Heuristic), maximizing pruning efficiency."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue in a high-frequency trading engine where tail latency spikes significantly during high market volatility. Profiling indicates that an internal priority processing engine using `java.util.PriorityQueue<TradeOrder>` triggers massive Garbage Collection (GC) pauses due to constant array allocations and element shifting during high burst operations.",
-      "question": "Why does `java.util.PriorityQueue` exhibit high memory allocation churn under bursty workload patterns, and what is the optimal remedy?",
+      "scenario": "A dynamic dispatch system for aerial logistics utilizes A* search with a machine-learning based neural network heuristic h(n) to estimate flight time based on dynamic wind and atmospheric profiles. During deployment testing, A* occasionally outputs suboptimal flight paths. Auditing reveals that for a minority of fringe node states (roughly 5% of overall state space), the ML model overestimates the actual remaining cost to the destination (h(n) > h*(n)).",
+      "question": "Why does this occasional overestimation cause A* to output suboptimal paths, and what condition must the heuristic strictly satisfy to guarantee path optimality?",
       "options": [
-        "A) `PriorityQueue` allocates internal `Node` wrappers on every enqueue; it should be replaced with `ConcurrentLinkedQueue`.",
-        "B) `PriorityQueue` resizes its internal array dynamically when full but never automatically shrinks its backing array upon `poll()`, causing repeated large array re-allocations when bursts recede and spike again.",
-        "C) `PriorityQueue` uses `IdentityHashMap` internally for index lookups, which generates thousands of transient entry objects per insertion.",
-        "D) `PriorityQueue` synchronizes on the JVM Thread-Local Allocation Buffer (`TLAB`), forcing heap allocations directly into the Old Generation."
+        "A) Overestimation breaks the admissibility requirement (h(n) <= h*(n) for ALL nodes), causing A* to overestimate optimal branch costs and prune or delay expanding optimal paths.",
+        "B) Overestimation violates monotonic path cost g(n), forcing the OPEN list to function as a FIFO queue rather than a priority queue.",
+        "C) Overestimation causes negative-cost cycles within the state expansion graph, preventing the search from terminating.",
+        "D) Overestimation triggers alpha-beta cutoffs inside the node expansion loop, dropping low-cost child nodes prematurely."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) `PriorityQueue` resizes its internal array dynamically when full but never automatically shrinks its backing array upon `poll()`, causing repeated large array re-allocations when bursts recede and spike again.",
-      "explanation": "`PriorityQueue` is implemented using a binary min-heap backed by an array (`Object[]`). When capacity is exceeded, it resizes by allocating a new, larger array and copying elements via `Arrays.copyOf`. However, calls to `poll()` or `clear()` remove elements but **never downsize or trim** the backing array. If the queue frequently transitions between low utilization and massive spikes, or if queues are repeatedly recreated without initial capacity sizing, it places tremendous pressure on GC allocation rate. Pre-sizing the queue with a fixed initial capacity or implementing a reusable, custom bounded array heap mitigates this churn."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Overestimation breaks the admissibility requirement (h(n) <= h*(n) for ALL nodes), causing A* to overestimate optimal branch costs and prune or delay expanding optimal paths.",
+      "explanation": "A* search guarantees finding an optimal path if and only if its heuristic h(n) is admissible (i.e., it never overestimates the actual cost to reach the goal, h(n) <= h*(n) for every node n). If h(n) overestimates the cost even for a single state along the true optimal path, A* may rank a suboptimal path lower in total estimated cost (f(n) = g(n) + h(n)) and select it for termination before expanding the true optimal path."
     }
   ]
 }

@@ -1,48 +1,48 @@
 {
-  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A smart manufacturing plant uses an automated optical inspection pipeline to detect microscopic solder defects on high-speed printed circuit board (PCB) assembly lines operating at 120 units per minute. The current vision model (ResNet-50) achieves 98.5% classification accuracy but exhibits an inference latency of 85ms per image on an edge accelerator (NVIDIA Jetson Xavier), violating the strict real-time SLA limit of 50ms per frame. Spatial downscaling of input images reduces latency to 30ms but drops defect recall from 98.5% to 62% due to loss of fine-grained spatial detail.",
-      "question": "Which optimization technique will reduce inference latency below 50ms while maintaining spatial resolution for micro-defect detection without requiring complete network retraining from scratch?",
+      "scenario": "An autonomous fleet management system in a high-density smart warehouse routes 500+ Automated Guided Vehicles (AGVs) simultaneously using standard A* search over a dynamic spatiotemporal grid. During peak operational hours, system memory reaches 100% utilization, leading to Out-Of-Memory (OOM) crashes due to the O(b^d) space complexity caused by maintaining millions of unexpanded states in the OPEN list.",
+      "question": "Which algorithmic modification should the AI architect implement to strictly control memory consumption while maintaining path optimality whenever memory permits?",
       "options": [
-        "A) Perform TensorRT Post-Training INT8 Quantization (PTQ) with dynamic range calibration using a representative validation dataset.",
-        "B) Replace standard convolutions in all residual blocks with Depthwise Separable Convolutions and fine-tune for 50 epochs.",
-        "C) Apply structural L1-norm filter pruning to remove 60% of conv layers, followed by high-learning-rate fine-tuning.",
-        "D) Increase the convolution stride in the initial ResNet stem layer from 2 to 4 to reduce early feature map dimensions."
+        "A) Transition to Simplified Memory-Bounded A* (SMA*), which drops the highest f-cost nodes from memory when capacity is reached and backs up their values to parent nodes.",
+        "B) Convert the heuristic h(n) into an inadmissible heuristic by multiplying it by a factor w > 1 to force pure Depth-First Search memory efficiency.",
+        "C) Replace A* with Min-Max search to treat dynamic path obstacles as an adversarial agent operating in a zero-sum environment.",
+        "D) Disable the CLOSED list in standard A* search to immediately free memory allocated to previously visited state nodes."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Perform TensorRT Post-Training INT8 Quantization (PTQ) with dynamic range calibration using a representative validation dataset.",
-      "explanation": "Post-Training Quantization (PTQ) to INT8 precision leverages dedicated hardware Tensor Cores on edge platforms like the Jetson Xavier to significantly accelerate throughput (typically 2x-4x speedup) without altering the model topology or spatial input resolution. Because it operates on pre-trained weights using calibration data to determine dynamic ranges, it preserves high-frequency spatial details crucial for micro-defect detection while meeting latency constraints without full retraining."
+      "correct_answer_text": "A) Transition to Simplified Memory-Bounded A* (SMA*), which drops the highest f-cost nodes from memory when capacity is reached and backs up their values to parent nodes.",
+      "explanation": "SMA* (Simplified Memory-Bounded A*) is specifically designed for memory-constrained environments. It utilizes available memory up to a fixed limit. When memory fills up, it drops the node with the highest f-value (least promising) from the OPEN list, while backing up the forgotten node's f-value to its parent. This allows the algorithm to regenerate dropped paths if needed while guaranteeing memory limits are respected and retaining admissibility if an optimal path fits within the memory bound."
     },
     {
       "id": 2,
-      "scenario": "An energy grid operator deploys a predictive analytics engine to continuously forecast turbine gearbox failure from high-frequency sensor streams (vibration, thermal, acoustic) sampled at 100 Hz over a continuous 10,000-time-step rolling window. A standard Long Short-Term Memory (LSTM) network deployed on this stream suffers severe vanishing gradient issues across the long sequence length, failing to capture critical long-range lead-up patterns occurring 8,000 steps prior to failure. Additionally, inference needs to operate under strict causal real-time constraints.",
-      "question": "Which architectural shift best resolves the vanishing gradient problem over 10,000 time steps while preserving causality and computational efficiency for real-time streaming data?",
+      "scenario": "An enterprise automated threat mitigation system models cybersecurity counter-measures as a two-player zero-sum game using a Min-Max search tree with Alpha-Beta pruning. During volumetric attack simulations, the system fails to deliver optimal mitigation decisions within its required 50ms SLA window. Profiling reveals that Alpha-Beta pruning is failing to prune significant portions of the tree because child nodes are examined in arbitrary or near-worst-case order.",
+      "question": "What optimization strategy will maximize the pruning efficiency of Alpha-Beta search to approach optimal O(b^(m/2)) time complexity without reducing the target search depth?",
       "options": [
-        "A) Global Scaled Dot-Product Self-Attention Transformer operating over the full un-segmented sequence window.",
-        "B) Temporal Convolutional Network (TCN) utilizing Dilated Causal Convolutions with exponentially growing dilation factors.",
-        "C) Deep Bidirectional LSTM (BiLSTM) with Truncated Backpropagation Through Time (TBPTT) capped at 50 time steps.",
-        "D) Standard Recurrent Neural Network (RNN) using Leaky ReLU activation functions and Gradient Clipping."
+        "A) Implement dynamic move ordering using transposition tables and principal variation search to evaluate high-utility moves first.",
+        "B) Increase the branching factor b artificially by inserting pseudo-random dummy nodes at intermediate decision levels.",
+        "C) Replace the evaluation function at terminal nodes with a uniform random sampler to bypass static evaluation overhead.",
+        "D) Force alpha = +infinity and beta = -infinity as initial bound parameters at the root node to trigger immediate branch truncation."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Temporal Convolutional Network (TCN) utilizing Dilated Causal Convolutions with exponentially growing dilation factors.",
-      "explanation": "Temporal Convolutional Networks (TCNs) combine causal convolutions (ensuring no leakage from future to past for real-time streaming) with dilated convolutions. Dilations expand the receptive field exponentially (2^k) with network depth, allowing the model to capture dependencies across 10,000+ steps without sequence-length vanishing gradient dynamics typical of recurrent backpropagation. Self-attention transformers have O(N^2) memory and computational complexity, making 10,000-step windows intractable for real-time low-latency streaming."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Implement dynamic move ordering using transposition tables and principal variation search to evaluate high-utility moves first.",
+      "explanation": "Alpha-Beta pruning efficiency highly depends on node ordering. If best moves are evaluated first, alpha/beta bounds shrink/expand rapidly, allowing early cutoffs of inferior branches. Perfect ordering reduces time complexity from O(b^m) to O(b^(m/2)). Transposition tables store previously evaluated positions to inform move ordering (such as Principal Variation Search or Killer Heuristic), maximizing pruning efficiency."
     },
     {
       "id": 3,
-      "scenario": "A warehouse logistics company runs a CCTV video surveillance analytics platform combining a CNN feature extractor with a Gated Recurrent Unit (GRU) to flag unauthorized human entries into automated forklift paths. The temporal dataset is severely imbalanced: 99.3% of video sequences depict normal operations, while 0.7% contain violation events. An end-to-end CNN-GRU trained with standard Binary Cross-Entropy loss achieves 99.3% total accuracy but yields a critical safety recall of under 12% on violation sequences.",
-      "question": "Which combination of loss formulation and sampling strategy best mitigates this extreme temporal class imbalance to maximize safety recall without producing excessive false alarms?",
+      "scenario": "A dynamic dispatch system for aerial logistics utilizes A* search with a machine-learning based neural network heuristic h(n) to estimate flight time based on dynamic wind and atmospheric profiles. During deployment testing, A* occasionally outputs suboptimal flight paths. Auditing reveals that for a minority of fringe node states (roughly 5% of overall state space), the ML model overestimates the actual remaining cost to the destination (h(n) > h*(n)).",
+      "question": "Why does this occasional overestimation cause A* to output suboptimal paths, and what condition must the heuristic strictly satisfy to guarantee path optimality?",
       "options": [
-        "A) Class-Balanced Focal Loss combined with Sequence-Level Hard Negative Mining (Hard Example Mining).",
-        "B) Synthetic Minority Over-sampling Technique (SMOTE) applied to raw input image pixel matrices prior to spatial feature extraction.",
-        "C) Random Frame Duplication inside minority video sequences combined with standard Binary Cross-Entropy loss.",
-        "D) Mean Squared Error (MSE) Loss paired with unweighted random mini-batch sampling."
+        "A) Overestimation breaks the admissibility requirement (h(n) <= h*(n) for ALL nodes), causing A* to overestimate optimal branch costs and prune or delay expanding optimal paths.",
+        "B) Overestimation violates monotonic path cost g(n), forcing the OPEN list to function as a FIFO queue rather than a priority queue.",
+        "C) Overestimation causes negative-cost cycles within the state expansion graph, preventing the search from terminating.",
+        "D) Overestimation triggers alpha-beta cutoffs inside the node expansion loop, dropping low-cost child nodes prematurely."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Class-Balanced Focal Loss combined with Sequence-Level Hard Negative Mining (Hard Example Mining).",
-      "explanation": "Class-Balanced Focal Loss down-weights easy-to-classify majority examples (normal operations) and focuses training gradients on hard minority sequences (safety violations). Combining this with Sequence-Level Hard Negative Mining dynamically forces the spatial-temporal network (CNN-GRU) to learn subtle edge cases (e.g., near-misses or partial human occlusions) during training, significantly boosting minority recall. Interpolating high-dimensional image pixels with SMOTE generates unrealistic spatial artifacts, and frame duplication leads to severe temporal overfitting."
+      "correct_answer_text": "A) Overestimation breaks the admissibility requirement (h(n) <= h*(n) for ALL nodes), causing A* to overestimate optimal branch costs and prune or delay expanding optimal paths.",
+      "explanation": "A* search guarantees finding an optimal path if and only if its heuristic h(n) is admissible (i.e., it never overestimates the actual cost to reach the goal, h(n) <= h*(n) for every node n). If h(n) overestimates the cost even for a single state along the true optimal path, A* may rank a suboptimal path lower in total estimated cost (f(n) = g(n) + h(n)) and select it for termination before expanding the true optimal path."
     }
   ]
 }
