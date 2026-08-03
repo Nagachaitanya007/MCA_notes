@@ -26,7 +26,8 @@
     "Exception Propagation and Resilience: Managing Failures in CompletableFuture Pipelines vs. Virtual Threads",
     "Scatter-Gather Aggregation: CompletableFuture Pipelines vs. Virtual Thread Parallel Streams",
     "Task Cancellation Mechanics: Clean Teardowns across Virtual Threads and CompletableFuture",
-    "The JVM Network Poller: Bridging Virtual Threads and OS-Level Non-Blocking I/O"
+    "The JVM Network Poller: Bridging Virtual Threads and OS-Level Non-Blocking I/O",
+    "Observability and Diagnostics for Virtual Threads: JFR Events, Thread Dumps, and Pinning Detection"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
