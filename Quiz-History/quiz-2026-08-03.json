@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput caching service experiences a severe memory leak, eventually throwing `java.lang.OutOfMemoryError: Java heap space`. The code snippet below shows the custom cache implementation:\n\njava\npublic class SessionCache<K, V> {\n    private final Map<K, CacheEntry<K, V>> map = Collections.synchronizedMap(new WeakHashMap<>());\n\n    public void put(K key, V value) {\n        map.put(key, new CacheEntry<>(key, value));\n    }\n\n    private static class CacheEntry<K, V> {\n        private final K key;\n        private final V value;\n\n        public CacheEntry(K key, V value) {\n            this.key = key;\n            this.value = value;\n        }\n    }\n}\n",
-      "question": "What is the primary cause of the memory leak in this implementation?",
+      "scenario": "You are debugging a production issue where a Spring component hangs indefinitely under high concurrent traffic. A developer implemented a hierarchical computation cache using `ConcurrentHashMap` as shown below:\n\njava\n@Component\npublic class DependencyResolver {\n    private final ConcurrentHashMap<String, String> cache = new ConcurrentHashMap<>();\n\n    public String getOrCompute(String taskId) {\n        return cache.computeIfAbsent(taskId, key -> {\n            if (key.startsWith(\"SUB_\")) {\n                return \"COMPUTED_SUBTASK\";\n            }\n            // Recursive computeIfAbsent call on the same ConcurrentHashMap instance\n            return cache.computeIfAbsent(\"SUB_\" + key, subKey -> \"COMPUTED_\" + subKey);\n        });\n    }\n}\n",
+      "question": "What is the primary cause of the thread hang during concurrent calls to `getOrCompute`?",
       "options": [
-        "A) `Collections.synchronizedMap` wraps the `WeakHashMap` with strong references to all entry keys.",
-        "B) The `CacheEntry` value retains a strong reference to `key`, creating a hard reference chain that prevents GC cleanup of the `WeakKey`.",
-        "C) `WeakHashMap` keys are cleared during GC, but their corresponding values are never removed unless `get()` is explicitly invoked.",
-        "D) The `CacheEntry` class is defined as `static`, which keeps a reference to the outer class's `ClassLoader` instance."
+        "A) `ConcurrentHashMap` throws a `ConcurrentModificationException` during recursive writes, which is caught and blocked by Spring's proxy handling.",
+        "B) The inner `computeIfAbsent` call attempts to acquire a lock on a bin/reservation node that is already locked by the outer `computeIfAbsent` call, causing a self-deadlock.",
+        "C) The underlying table array expands rapidly due to simultaneous insertions, triggering an unrecoverable infinite loop in `ConcurrentHashMap.addCount()`.",
+        "D) `ConcurrentHashMap` does not allow string key modifications inside lambda functions, causing the thread to transition to a `BLOCKED` state indefinitely."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `CacheEntry` value retains a strong reference to `key`, creating a hard reference chain that prevents GC cleanup of the `WeakKey`.",
-      "explanation": "`WeakHashMap` holds keys via `WeakReference`. However, values in `WeakHashMap` are stored via strong references. Since `CacheEntry` (the value) contains a field referencing `key`, a strong reference path exists: `WeakHashMap` -> `Entry` -> `Value (CacheEntry)` -> `key`. This strong reference counteracts the weak reference on the key, preventing the garbage collector from reclaiming the key and causing a severe memory leak."
+      "correct_answer_text": "B) The inner `computeIfAbsent` call attempts to acquire a lock on a bin/reservation node that is already locked by the outer `computeIfAbsent` call, causing a self-deadlock.",
+      "explanation": "In Java 8+, `ConcurrentHashMap.computeIfAbsent` locks the target bin (hash bucket) using `synchronized` on the head `Node` or a `ReservationNode` while computing the value. If the mapping function recursively attempts to compute another key that maps to the same bin (or triggers table expansion/rehashing), the current thread attempts to re-acquire the lock on the bin node or waits on initialization, resulting in a silent self-deadlock or hang. Recursive computations on the same `ConcurrentHashMap` instance are explicitly prohibited in its specification."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a payment engine experiences severe thread starvation and high latency spikes under peak load. Thread dumps reveal dozens of worker threads stuck in a `WAITING` or `BLOCKED` state inside `ConcurrentHashMap.computeIfAbsent()`. Code analysis reveals that the mapping function passed into `computeIfAbsent()` executes a secondary compute or lookup operation on the exact same `ConcurrentHashMap` instance for a different key.",
-      "question": "What underlying JVM and `ConcurrentHashMap` mechanics cause this behavior?",
+      "scenario": "You are debugging a production issue where an in-memory session metadata service experiences severe `java.lang.OutOfMemoryError: Java heap space` over time. The cache uses a custom `WeakHashMap<UserSession, SessionMetadata>` intended to automatically drop cached values when the user's `UserSession` object is garbage collected across the application.",
+      "question": "What is the primary architectural flaw preventing the expected garbage collection of `UserSession` keys?",
       "options": [
-        "A) `ConcurrentHashMap.computeIfAbsent()` locks the table bucket (`Node`) via `synchronized`; nested modifications can cause lock contention or deadlocks if keys hash to the same bucket.",
-        "B) `ConcurrentHashMap` locks the entire segment globally during write operations, causing all threads accessing any bucket to block.",
-        "C) The mapping function in `computeIfAbsent()` runs asynchronously in a shared `ForkJoinPool`, leading to pool exhaustion.",
-        "D) Calling `computeIfAbsent()` concurrently triggers an automatic internal resize operation that blocks all read and write operations until complete."
+        "A) `WeakHashMap` uses `SoftReference` objects internally for keys, which are only reclaimed when critical heap thresholds are breached.",
+        "B) The value object `SessionMetadata` holds a direct or indirect strong reference back to the `UserSession` key object, creating a strong reference chain that prevents GC.",
+        "C) `WeakHashMap` requires explicit calls to `WeakHashMap.expungeStaleEntries()` via a scheduled background thread; without it, GC is disabled.",
+        "D) Spring context manages all map instances as singleton targets, converting internal weak references into strong references."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) `ConcurrentHashMap.computeIfAbsent()` locks the table bucket (`Node`) via `synchronized`; nested modifications can cause lock contention or deadlocks if keys hash to the same bucket.",
-      "explanation": "In Java 8+, `ConcurrentHashMap.computeIfAbsent()` locks the head `Node` of the bin (bucket) during key insertion or value computation using `synchronized`. If the computation lambda attempts to mutate or recursively access the same `ConcurrentHashMap` (or another key that hashes to the same bucket array index), it can result in thread contention, deadlocks, or infinite loops. The Javadoc explicitly states that the mapping function must be short, simple, and must not attempt to update the map."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The value object `SessionMetadata` holds a direct or indirect strong reference back to the `UserSession` key object, creating a strong reference chain that prevents GC.",
+      "explanation": "In `WeakHashMap`, the keys are held via `WeakReference`, but the values are held via standard **strong references**. If the value (`SessionMetadata`) contains a reference back to the key (`UserSession`), the strong reference from Value -> Key forms a strong reference path (`Map.Entry` -> Value -> Key). This prevents the Garbage Collector from reclaiming the `WeakReference` key, completely neutralizing the weak key behavior and leading to a continuous memory leak."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a real-time order matching engine using `ConcurrentSkipListMap<OrderKey, Order>` randomly drops active orders. The `OrderKey` implements `Comparable<OrderKey>` based solely on `price` and `timestamp`. However, two distinct orders can occasionally arrive with identical prices and timestamps.",
-      "question": "Why does `ConcurrentSkipListMap` silently overwrite existing entries even though `OrderKey.equals()` returns `false` for distinct order IDs?",
+      "scenario": "You are debugging a production issue in a high-frequency trading engine where tail latency spikes significantly during high market volatility. Profiling indicates that an internal priority processing engine using `java.util.PriorityQueue<TradeOrder>` triggers massive Garbage Collection (GC) pauses due to constant array allocations and element shifting during high burst operations.",
+      "question": "Why does `java.util.PriorityQueue` exhibit high memory allocation churn under bursty workload patterns, and what is the optimal remedy?",
       "options": [
-        "A) `ConcurrentSkipListMap` uses `hashCode()` instead of `Comparable` when resolving collisions at the same skip-list level.",
-        "B) `ConcurrentSkipListMap` uses `compareTo()` (or `Comparator`) exclusively to determine key equality and identity, ignoring `equals()`.",
-        "C) Skip lists require non-blocking lock-free CAS updates which silently overwrite values when bucket collisions occur.",
-        "D) Objects implementing `Comparable` must also override `hashCode()` to match `compareTo() == 0`, otherwise `ConcurrentSkipListMap` throws keys into a shared dead-letter bucket."
+        "A) `PriorityQueue` allocates internal `Node` wrappers on every enqueue; it should be replaced with `ConcurrentLinkedQueue`.",
+        "B) `PriorityQueue` resizes its internal array dynamically when full but never automatically shrinks its backing array upon `poll()`, causing repeated large array re-allocations when bursts recede and spike again.",
+        "C) `PriorityQueue` uses `IdentityHashMap` internally for index lookups, which generates thousands of transient entry objects per insertion.",
+        "D) `PriorityQueue` synchronizes on the JVM Thread-Local Allocation Buffer (`TLAB`), forcing heap allocations directly into the Old Generation."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) `ConcurrentSkipListMap` uses `compareTo()` (or `Comparator`) exclusively to determine key equality and identity, ignoring `equals()`.",
-      "explanation": "Sorted collections like `ConcurrentSkipListMap` and `TreeSet` do not use `equals()` or `hashCode()` to determine key equality; they rely exclusively on `Comparable.compareTo()` or `Comparator.compare()`. If two distinct `OrderKey` instances yield `compareTo() == 0` (same price and timestamp), `ConcurrentSkipListMap` considers them to be the exact same key and overwrites the existing entry, regardless of what `equals()` returns."
+      "correct_answer_text": "B) `PriorityQueue` resizes its internal array dynamically when full but never automatically shrinks its backing array upon `poll()`, causing repeated large array re-allocations when bursts recede and spike again.",
+      "explanation": "`PriorityQueue` is implemented using a binary min-heap backed by an array (`Object[]`). When capacity is exceeded, it resizes by allocating a new, larger array and copying elements via `Arrays.copyOf`. However, calls to `poll()` or `clear()` remove elements but **never downsize or trim** the backing array. If the queue frequently transitions between low utilization and massive spikes, or if queues are repeatedly recreated without initial capacity sizing, it places tremendous pressure on GC allocation rate. Pre-sizing the queue with a fixed initial capacity or implementing a reusable, custom bounded array heap mitigates this churn."
     }
   ]
 }
