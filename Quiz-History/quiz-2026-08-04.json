@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
+  "topic": "Advanced Collections Framework & Custom Implementations",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a microservice that dynamically compiles and executes customer validation rules crashes with `java.lang.OutOfMemoryError: Metaspace` every few days. The following Spring service handles script execution:\n\njava\n@Service\npublic class RuleEngineService {\n    private final Map<String, Class<?>> ruleCache = new ConcurrentHashMap<>();\n\n    public void executeRule(String ruleId, String byteCode, DataContext context) throws Exception {\n        Class<?> ruleClass = ruleCache.computeIfAbsent(ruleId, id -> {\n            ByteClassLoader loader = new ByteClassLoader();\n            return loader.bytesToClass(byteCode);\n        });\n        Rule rule = (Rule) ruleClass.getDeclaredConstructor().newInstance();\n        rule.evaluate(context);\n    }\n}\n\n\nWhen rule definitions update, `ruleId` is appended with a timestamp (e.g., `rule_123_1672531199`), generating thousands of unique keys over time.",
-      "question": "Why does caching the `Class<?>` object in `ruleCache` cause a native `Metaspace` memory leak?",
+      "scenario": "You are debugging a production issue where high-throughput concurrent updates to a custom `ConcurrentHashMap<TransactionKey, TransactionData>` cache result in memory leaks and unexpected cache misses. Lookups fail even when keys are demonstrably present in the map keyset.\n\nBug Hunter Snippet:\njava\npublic class TransactionKey {\n    private final String transactionId;\n    private final List<String> metadataTags;\n\n    public TransactionKey(String transactionId, List<String> metadataTags) {\n        this.transactionId = transactionId;\n        this.metadataTags = metadataTags;\n    }\n\n    public void addTag(String tag) {\n        this.metadataTags.add(tag);\n    }\n\n    @Override\n    public boolean equals(Object o) {\n        if (this == o) return true;\n        if (!(o instanceof TransactionKey)) return false;\n        TransactionKey that = (TransactionKey) o;\n        return Objects.equals(transactionId, that.transactionId) &&\n               Objects.equals(metadataTags, that.metadataTags);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(transactionId, metadataTags);\n    }\n}\n",
+      "question": "What is the primary cause of the cache misses and memory leak in this implementation?",
       "options": [
-        "A) The `Class<?>` object instance resides on the Heap, but holding a strong reference to it prevents its defining `ByteClassLoader` and all associated native class metadata in `Metaspace` from being uncollected by GC.",
-        "B) Spring `@Service` singletons store `ConcurrentHashMap` keys directly in `Metaspace`, leading to native memory exhaustion under high key cardinality.",
-        "C) Instances of `Class<?>` generated via custom `ClassLoader` implementations bypass Eden space and allocate native memory in `Metaspace` directly.",
-        "D) The JVM cannot unload classes created by custom class loaders unless the root System `ClassLoader` is reloaded."
+        "A) Mutating `metadataTags` alters the return value of `hashCode()`, placing key lookups into the wrong hash bucket while leaving orphan entries in old buckets.",
+        "B) `ConcurrentHashMap` requires keys to implement `Comparable` to resolve hash collisions in treeified bin nodes.",
+        "C) The `equals()` method fails to verify thread safety on `metadataTags`, triggering a `ConcurrentModificationException` during bucket traversal.",
+        "D) `Objects.hash()` creates weak references internally that are prematurely garbage collected under heavy memory pressure."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) The `Class<?>` object instance resides on the Heap, but holding a strong reference to it prevents its defining `ByteClassLoader` and all associated native class metadata in `Metaspace` from being uncollected by GC.",
-      "explanation": "In Java class loading mechanics, a class in `Metaspace` can only be unloaded if three conditions are met: 1) The `Class<?>` instance on the heap is unreachable, 2) The `ClassLoader` that loaded it is unreachable, and 3) All instances of that class are unreachable. By caching `Class<?>` objects in `ruleCache`, the strong reference keeps the `Class<?>` alive on the heap. Because every `Class<?>` maintains a strong reference back to its defining `ClassLoader`, the `ByteClassLoader` instance remains reachable. Consequently, the GC cannot unload the class metadata stored in native `Metaspace`, leading to eventual memory exhaustion."
+      "correct_answer_text": "A) Mutating `metadataTags` alters the return value of `hashCode()`, placing key lookups into the wrong hash bucket while leaving orphan entries in old buckets.",
+      "explanation": "In Java standard collections (including `ConcurrentHashMap`), key objects MUST be immutable regarding fields used in `hashCode()` and `equals()`. When `addTag()` mutates `metadataTags`, the key's calculated hash bucket changes. Subsequent `get()` or `remove()` operations search the newly calculated bucket and fail to find the entry (cache miss), while the original entry remains trapped in its original bucket forever (memory leak)."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where an ultra-low-latency financial microservice migrated from `G1GC` to `ZGC` (`-XX:+UseZGC`) on JDK 17. During market open peak traffic, application throughput drops dramatically and thread dumps show dozens of application threads blocked on memory allocation. Monitoring shows JVM Heap usage reaching 98%.",
-      "question": "What is the primary cause of this performance degradation under `ZGC`?",
+      "scenario": "You are debugging a production issue where an application monitoring framework uses a `WeakHashMap<Class<?>, ServiceMetadata>` to cache introspected reflection metadata for Spring proxy classes. After repeated application redeployments or dynamic proxy regenerations in a long-running JVM, the application suffers a catastrophic `java.lang.OutOfMemoryError: Metaspace`.",
+      "question": "What is the root cause of the Metaspace memory leak despite using `WeakHashMap`?",
       "options": [
-        "A) `ZGC` triggers full Stop-The-World (STW) compaction pauses when heap usage exceeds 95% capacity.",
-        "B) The application thread allocation rate surpassed the concurrent garbage collection rate, triggering `ZGC` 'Allocation Stalls' that stall mutator threads.",
-        "C) `ZGC` colored pointers fail to resolve load barriers when heap occupancy is near capacity, causing CPU thread deadlocks.",
-        "D) The JVM attempted an emergency fallback to `G1GC` during high allocation pressure, causing severe context switching."
+        "A) `WeakHashMap` uses soft references for values, preventing GC from reclaiming entries until heap space is completely exhausted.",
+        "B) The value `ServiceMetadata` maintains a strong reference to the `Class<?>` key or its `ClassLoader`, creating a strong reference cycle that prevents GC of the key.",
+        "C) `WeakHashMap` relies on `equals()` rather than reference identity (`==`), causing stale class instances to persist across reloads.",
+        "D) Spring dynamic proxies are generated in the JVM C2 Compiler Code Cache rather than Metaspace, causing native memory fragmentation."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The application thread allocation rate surpassed the concurrent garbage collection rate, triggering `ZGC` 'Allocation Stalls' that stall mutator threads.",
-      "explanation": "`ZGC` is a concurrent collector that performs almost all work while application (mutator) threads are running. However, if the application's memory allocation rate is faster than the rate at which `ZGC` can concurrently mark and reclaim memory, the JVM runs out of free heap space for new allocations. To prevent an `OutOfMemoryError`, `ZGC` introduces 'Allocation Stalls', intentionally slowing down or pausing allocating threads until GC phases free up sufficient memory. Fixing this usually requires tuning `-XX:ConcGCThreads` or increasing heap size (`-Xmx`)."
+      "correct_answer_text": "B) The value `ServiceMetadata` maintains a strong reference to the `Class<?>` key or its `ClassLoader`, creating a strong reference cycle that prevents GC of the key.",
+      "explanation": "In `WeakHashMap`, only the keys are stored as `WeakReference` objects. The values are stored as standard strong references. If a value object (`ServiceMetadata`) holds a direct or indirect strong reference back to the key (`Class<?>`) or its defining `ClassLoader`, it creates an unbroken chain of strong references: `Map Entry` -> `Value` -> `Class` / `ClassLoader`. This prevents the key's `WeakReference` from being cleared by the Garbage Collector, keeping the `Class` and its entire `ClassLoader` alive in Metaspace."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where an asynchronous event handling service fails to execute database updates within a transaction context. The implementation is shown below:\n\njava\n@Service\npublic class OrderProcessingService {\n\n    @Autowired\n    private OrderRepository orderRepository;\n\n    @Transactional\n    public void processOrder(Long orderId) {\n        Order order = orderRepository.findById(orderId).orElseThrow();\n        order.setStatus(OrderStatus.PROCESSING);\n        orderRepository.save(order);\n\n        CompletableFuture.runAsync(() -> updateInventory(order));\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void updateInventory(Order order) {\n        if (order.getQuantity() > 1000) {\n            throw new IllegalStateException(\"Stock limit exceeded\");\n        }\n        // Database update logic\n    }\n}\n\n\nWhen `updateInventory` throws an `IllegalStateException`, `processOrder` commits successfully anyway, and `updateInventory` DB statements are executed outside the parent transaction.",
-      "question": "What are the two primary root causes for this transaction management failure?",
+      "scenario": "You are debugging a production issue where a low-latency trading platform uses a `ConcurrentSkipListMap<BigDecimal, Queue<Order>>` to maintain an ordered limit order book. Under extreme multi-threaded trade volume, orders placed at identical price levels suffer from silent data loss and inconsistent state, even though map navigation operations remain completely thread-safe.",
+      "question": "Why is data corruption occurring at individual price levels despite using a concurrent collection?",
       "options": [
-        "A) 1. Spring `@Transactional` uses `ThreadLocal` storage, which is not propagated to worker threads in `CompletableFuture`; 2. Invoking `updateInventory` directly via `this` bypasses the Spring AOP proxy.",
-        "B) 1. `Propagation.REQUIRES_NEW` is incompatible with `IllegalStateException`; 2. `OrderRepository` is not declared with `@Async`.",
-        "C) 1. `CompletableFuture.runAsync` executes inside native `Metaspace`; 2. Spring proxies cannot intercept methods returning `void`.",
-        "D) 1. `IllegalStateException` is a checked exception which disables Spring rollback; 2. `Order` entity detached state causes session leak."
+        "A) `ConcurrentSkipListMap` provides thread safety for map node traversal and structural map modifications, but does not synchronize operations on non-thread-safe collection values like standard `Queue` implementations retrieved from it.",
+        "B) `ConcurrentSkipListMap` drops write operations when concurrent updates occur on adjacent skip list levels during internal index rebalancing.",
+        "C) `BigDecimal` fails to implement thread-safe comparison, leading to incorrect lock striping across map buckets.",
+        "D) Lock-free skip list maps require all read operations to be explicitly wrapped in a `@Transactional` block when fetching nested collection values."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) 1. Spring `@Transactional` uses `ThreadLocal` storage, which is not propagated to worker threads in `CompletableFuture`; 2. Invoking `updateInventory` directly via `this` bypasses the Spring AOP proxy.",
-      "explanation": "Spring declarative transaction management relies on two key mechanics: 1) Spring AOP proxies intercepting method calls, and 2) `ThreadLocal` variable storage via `TransactionSynchronizationManager` to bind active DB connections and transaction states to the current thread. Here, calling `updateInventory` directly inside the lambda invokes the method on `this` (the raw target object) rather than the Spring proxy, bypassing `@Transactional` entirely. Additionally, `CompletableFuture.runAsync` shifts execution to a `ForkJoinPool` worker thread, which lacks the parent thread's `ThreadLocal` transaction context."
+      "correct_answer_text": "A) `ConcurrentSkipListMap` provides thread safety for map node traversal and structural map modifications, but does not synchronize operations on non-thread-safe collection values like standard `Queue` implementations retrieved from it.",
+      "explanation": "`ConcurrentSkipListMap` guarantees concurrent thread safety for map-level operations (e.g., `put`, `get`, `computeIfAbsent`). However, thread safety is not transitively extended to the value objects stored within the map. If multiple threads retrieve the `Queue<Order>` value associated with a `BigDecimal` price level and mutate it using non-concurrent queues (such as `LinkedList` or `ArrayDeque`), race conditions will corrupt the inner queue structure. A concurrent queue (e.g., `ConcurrentLinkedQueue`) or explicit atomic update patterns must be used for the value collection."
     }
   ]
 }
