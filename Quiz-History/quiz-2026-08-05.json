@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
-  "mode": "Java",
+  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot microservice crashes with `java.lang.OutOfMemoryError: Metaspace` after running smoothly for several days. Review the following component responsible for dynamic business rule evaluation:\n\njava\n@Service\npublic class RuleEngineService {\n    public Object evaluateRule(String ruleScript, Map<String, Object> context) throws Exception {\n        // Load and execute dynamic Groovy script per request\n        GroovyClassLoader classLoader = new GroovyClassLoader();\n        Class<?> scriptClass = classLoader.parseClass(ruleScript);\n        GroovyObject scriptInstance = (GroovyObject) scriptClass.getDeclaredConstructor().newInstance();\n        return scriptInstance.invokeMethod(\"run\", context);\n    }\n}\n",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "An automated visual inspection system in a high-speed semiconductor manufacturing plant deploys a pre-trained ResNet-50 model to identify microscopic surface defects on silicon wafers. While the model achieves 98.5% accuracy during offline validation, production deployment reveals a severe performance drop when wafers are slightly rotated or shifted during high-speed conveyor belt movement. The system has a strict real-time requirement of sub-10ms latency per wafer image.",
+      "question": "Which architectural enhancement best resolves this spatial transformation sensitivity while preserving the required sub-10ms real-time processing latency?",
       "options": [
-        "A) A Metaspace leak caused by instantiating a new `GroovyClassLoader` on every execution, generating unique un-cached `Class` metadata that cannot be GC'd while classloader references persist.",
-        "B) A Heap memory leak because `GroovyObject` instances are retained in the Thread Local Allocation Buffer (TLAB) indefinitely.",
-        "C) A Stack Overflow issue because the dynamic class loading overrides JVM frame pointers during JIT compilation.",
-        "D) Direct Byte Buffer exhaustion caused by underlying NIO channels failing to close when parsing `ruleScript`."
+        "A) Replace standard spatial pooling layers with Anti-Aliased CNN (BlurPool) layers to restore shift-invariance lost by subsampling.",
+        "B) Integrate a Spatial Transformer Network (STN) module prior to the convolutional backbone to learn dynamic affine transformations.",
+        "C) Convert the convolutional backbone into a Vision Transformer (ViT-Base) with dynamic 2D relative positional embeddings.",
+        "D) Increase the receptive field by expanding early kernel sizes from 7x7 to 15x15 with dilated convolutions."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) A Metaspace leak caused by instantiating a new `GroovyClassLoader` on every execution, generating unique un-cached `Class` metadata that cannot be GC'd while classloader references persist.",
-      "explanation": "In Java, Metaspace stores class metadata. Creating a new `GroovyClassLoader` for every incoming request compiles the script into a new Java class and loads its metadata into Metaspace. Because each `ClassLoader` holds a reference to all classes it loads, and class unloading only occurs when the `ClassLoader` itself becomes unreachable and collected during GC, rapidly creating distinct `GroovyClassLoader` instances fills up Metaspace faster than the GC can reclaim them, ultimately leading to `java.lang.OutOfMemoryError: Metaspace`."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Integrate a Spatial Transformer Network (STN) module prior to the convolutional backbone to learn dynamic affine transformations.",
+      "explanation": "Spatial Transformer Networks (STNs) introduce explicit geometric transformation capabilities into standard CNNs without requiring extra training supervision or heavy computational overhead. An STN consists of a localization network, grid generator, and spatial sampler that dynamically crops, translates, and rotates feature maps to align input features. This directly handles wafer rotation and translation issues with negligible latency impact (~1-2ms), unlike ViTs which introduce massive parameter counts and latency penalties unsuitable for sub-10ms real-time constraints."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a low-latency financial trading microservice running on Java 21 with `-XX:+UseZGC` experiences sudden latency spikes exceeding 150ms and sporadic `java.lang.OutOfMemoryError: Java heap space`. Garbage collector logs reveal frequent `Allocation Stall` events during peak traffic, even though total heap utilization rarely exceeds 60%.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A smart energy grid management provider uses a Bidirectional Long Short-Term Memory (Bi-LSTM) network to forecast localized voltage anomalies from continuous smart meter stream data sampled at 100 Hz. During live execution, two critical bottlenecks emerge: 1) severe vanishing gradients when capturing extended temporal dependencies exceeding 1,000 time steps, and 2) inference latency exceeding the 50ms real-time processing deadline due to the sequential temporal dependency and future-context requirement of the Bi-LSTM structure.",
+      "question": "Which algorithmic shift offers the optimal balance between modeling long temporal dependencies and delivering high-throughput, low-latency stream processing?",
       "options": [
-        "A) The application's thread allocation rate exceeds the ZGC concurrent marking/relocation throughput, forcing application threads to stall while waiting for GC cycles to free memory.",
-        "B) ZGC is triggering a full Stop-The-World (STW) fallback phase because Metaspace threshold (`-XX:MetaspaceSize`) was exceeded.",
-        "C) Colored pointers in ZGC are failing to dereference multi-mapped memory pages due to OS memory fragmentation.",
-        "D) The G1 Region size is misconfigured, causing humongous allocations to trigger full garbage collection pauses."
+        "A) Replace the Bi-LSTM with a Temporal Convolutional Network (TCN) featuring causal dilated convolutions and residual blocks.",
+        "B) Transition to a multi-layer Gated Recurrent Unit (GRU) with Scaled Dot-Product Self-Attention applied to hidden states.",
+        "C) Retain the Bi-LSTM but apply Truncated Backpropagation Through Time (TBPTT) with a fixed window of 50 timesteps.",
+        "D) Apply FP16 dynamic quantization and TensorRT compilation directly onto the existing Bi-LSTM architecture."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) The application's thread allocation rate exceeds the ZGC concurrent marking/relocation throughput, forcing application threads to stall while waiting for GC cycles to free memory.",
-      "explanation": "ZGC (Z Garbage Collector) is a low-latency concurrent collector designed to perform GC work concurrently with application threads. However, if the application's memory allocation rate outpaces the rate at which ZGC can concurrently mark and compact memory, the JVM runs out of available memory pages for new allocations. When this occurs, allocation requests incur an `Allocation Stall`, pausing the requesting application thread until concurrent GC frees enough memory. To resolve this, developer teams must either allocate more heap, increase concurrent GC threads via `-XX:ConcGCThreads`, or optimize hot-path allocations."
+      "correct_answer_text": "A) Replace the Bi-LSTM with a Temporal Convolutional Network (TCN) featuring causal dilated convolutions and residual blocks.",
+      "explanation": "Temporal Convolutional Networks (TCNs) replace recurrent operations with 1D dilated causal convolutions. The causal constraint ensures no future information leakage, while exponential dilation factors allow the receptive field to expand exponentially over long history sequences (1000+ timesteps) without vanishing gradients. Crucially, during inference, TCNs run fully parallel feedforward computations across sliding windows, bypassing the step-by-step sequential constraint of Bi-LSTMs and drastically cutting inference latency to satisfy sub-50ms bounds."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Spring `@Service` singleton bean exhibits inconsistent counter states and stale data reads during concurrent requests. An asynchronous method annotated with `@Async` increments a standard field `private int requestCount` whenever a transaction succeeds.",
-      "question": "What combination of Java Memory Model (JMM) principles and Spring mechanics explains this behavior?",
+      "scenario": "A medical diagnostic AI platform utilizes a 3D Convolutional Neural Network (3D U-Net) to segment rare pulmonary nodules from high-resolution thoracic CT scans. The dataset exhibits severe class imbalance: positive nodule voxels account for less than 0.05% of the total image volume. Training with standard Binary Cross-Entropy (BCE) loss results in the network predicting near-zero background probabilities across all voxels, producing high specificity (0.999) but a near-zero sensitivity (0.02).",
+      "question": "Which loss formulation and optimization strategy directly addresses this extreme pixel-level class imbalance to improve nodule detection sensitivity?",
       "options": [
-        "A) Spring Singleton beans are shared across threads; without synchronization or atomic wrappers like `AtomicInteger`, updates to `requestCount` lack atomicity and memory visibility guarantees under the JMM.",
-        "B) The `@Async` CGLIB proxy creates thread-local copies of target class primitive fields, preventing updates from propagating to the target instance.",
-        "C) The JIT compiler optimizes away non-final primitive variables in `@Service` beans by hoisting them into thread registers, disabling main memory synchronization.",
-        "D) Spring's `@Transactional` context creates an isolated database snapshot that overrides JVM field mutations."
+        "A) Replace BCE loss with a hybrid combination of Focal Loss and Dice Loss to dynamically down-weight background voxel contributions.",
+        "B) Apply Synthetic Minority Over-sampling Technique (SMOTE) on the bottleneck layer features before the decoder path.",
+        "C) Switch to Mean Squared Error (MSE) loss combined with Stochastic Gradient Descent (SGD) and a high momentum value of 0.99.",
+        "D) Apply Mixup data augmentation on input volumes while oversampling CT slices containing confirmed nodule regions."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Spring Singleton beans are shared across threads; without synchronization or atomic wrappers like `AtomicInteger`, updates to `requestCount` lack atomicity and memory visibility guarantees under the JMM.",
-      "explanation": "Spring `@Service` components default to Singleton scope, meaning a single instance is shared across all application threads. Under the Java Memory Model (JMM), non-synchronized updates to non-volatile fields (such as `requestCount++`, which is a compound read-modify-write operation) lack atomicity and memory visibility guarantees (happens-before ordering). When executed across multiple worker threads dispatched by `@Async`, thread CPU caches become out of sync, leading to lost updates and race conditions. This should be solved using `AtomicInteger` or explicit concurrency control."
+      "correct_answer_text": "A) Replace BCE loss with a hybrid combination of Focal Loss and Dice Loss to dynamically down-weight background voxel contributions.",
+      "explanation": "Extreme spatial class imbalance causes standard Cross-Entropy loss to be overwhelmed by easy-to-classify background voxels, driving gradients toward predicting background everywhere. Focal Loss introduces a modulating factor (1 - p_t)^gamma to exponentially down-weight loss contribution from easy negative background pixels, focusing gradients on hard foreground voxels. Combining Focal Loss with Dice Loss directly optimizes spatial overlap (Intersection over Union), directly penalizing false negatives and restoring high sensitivity without needing complex resample pipelines."
     }
   ]
 }

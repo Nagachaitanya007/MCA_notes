@@ -1,48 +1,48 @@
 {
-  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
+  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A Fintech enterprise deploys a high-throughput automated credit-scoring pipeline using an XGBoost model on a high-dimensional dataset (250+ financial and transactional features). The dataset suffers from severe class imbalance (3% default rate) and inherent historical demographic bias against minority applicant groups. To comply with regulatory standards on fairness (Demographic Parity), the ML engineering team added a post-processing threshold optimizer (e.g., Fairlearn ThresholdOptimizer). In production, while fairness metrics met legal thresholds, overall model AUC-ROC dropped by 18%, and per-inference latency increased by 120ms due to dynamic distribution checks, violating SLA limits for real-time API responses.",
-      "question": "Which algorithmic shift best balances inference latency, predictive utility, and fairness guarantees under these operational constraints?",
+      "scenario": "An automated visual inspection system in a high-speed semiconductor manufacturing plant deploys a pre-trained ResNet-50 model to identify microscopic surface defects on silicon wafers. While the model achieves 98.5% accuracy during offline validation, production deployment reveals a severe performance drop when wafers are slightly rotated or shifted during high-speed conveyor belt movement. The system has a strict real-time requirement of sub-10ms latency per wafer image.",
+      "question": "Which architectural enhancement best resolves this spatial transformation sensitivity while preserving the required sub-10ms real-time processing latency?",
       "options": [
-        "A) Transition to an In-Processing mitigation strategy such as Adversarial Debiasing or a Fairness-Constrained Loss function during model training, optimizing accuracy and parity simultaneously without post-processing latency.",
-        "B) Apply a Pre-Processing technique like Reweighing on the full 250+ feature set while retaining the post-processing threshold optimizer to guarantee double coverage.",
-        "C) Replace XGBoost with an unconstrained Deep Neural Network and drop all protected attributes (Fairness through Blindness) to eliminate bias while maintaining sub-10ms response times.",
-        "D) Implement L1-regularized Logistic Regression coupled with SMOTE up-sampling on the minority demographic class to achieve linear latency and zero bias."
+        "A) Replace standard spatial pooling layers with Anti-Aliased CNN (BlurPool) layers to restore shift-invariance lost by subsampling.",
+        "B) Integrate a Spatial Transformer Network (STN) module prior to the convolutional backbone to learn dynamic affine transformations.",
+        "C) Convert the convolutional backbone into a Vision Transformer (ViT-Base) with dynamic 2D relative positional embeddings.",
+        "D) Increase the receptive field by expanding early kernel sizes from 7x7 to 15x15 with dilated convolutions."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Transition to an In-Processing mitigation strategy such as Adversarial Debiasing or a Fairness-Constrained Loss function during model training, optimizing accuracy and parity simultaneously without post-processing latency.",
-      "explanation": "In-processing fairness methods integrate fairness constraints directly into the objective function (e.g., using adversarial networks or custom loss penalization) during the training phase. This allows the model to learn a Pareto-optimal trade-off between predictive accuracy and fairness. Because the fairness constraints are baked into the network weights/trees, the model incurs zero additional computational overhead at inference time, satisfying sub-10ms latency SLAs. Post-processing adds run-time overhead and often causes sharper performance drops. 'Fairness through blindness' (Option C) fails because high-dimensional spaces contain proxy variables that encode demographic traits. Simple SMOTE upsampling (Option D) does not resolve underlying structural bias."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Integrate a Spatial Transformer Network (STN) module prior to the convolutional backbone to learn dynamic affine transformations.",
+      "explanation": "Spatial Transformer Networks (STNs) introduce explicit geometric transformation capabilities into standard CNNs without requiring extra training supervision or heavy computational overhead. An STN consists of a localization network, grid generator, and spatial sampler that dynamically crops, translates, and rotates feature maps to align input features. This directly handles wafer rotation and translation issues with negligible latency impact (~1-2ms), unlike ViTs which introduce massive parameter counts and latency penalties unsuitable for sub-10ms real-time constraints."
     },
     {
       "id": 2,
-      "scenario": "A healthcare provider utilizes a hybrid 3D-CNN and Transformer network to process high-resolution emergency CT scans for automated stroke detection. Regulations mandate that every automated triage recommendation must include a local feature attribution map for attending radiologists, with a strict real-time execution constraint of < 50 milliseconds per scan. The engineering team initially implemented KernelSHAP to generate instance-level explanations, but the system required over 15 seconds per scan, making it unusable in critical emergency scenarios.",
-      "question": "Which Explainable AI (XAI) technique should be integrated to meet the stringent < 50ms latency constraint while delivering mathematical fidelity for deep neural networks?",
+      "scenario": "A smart energy grid management provider uses a Bidirectional Long Short-Term Memory (Bi-LSTM) network to forecast localized voltage anomalies from continuous smart meter stream data sampled at 100 Hz. During live execution, two critical bottlenecks emerge: 1) severe vanishing gradients when capturing extended temporal dependencies exceeding 1,000 time steps, and 2) inference latency exceeding the 50ms real-time processing deadline due to the sequential temporal dependency and future-context requirement of the Bi-LSTM structure.",
+      "question": "Which algorithmic shift offers the optimal balance between modeling long temporal dependencies and delivering high-throughput, low-latency stream processing?",
       "options": [
-        "A) Switch to Gradient-based attribution methods like Integrated Gradients or Grad-CAM, which calculate exact feature attributions via direct backpropagation passes.",
-        "B) Implement LIME with a low sample count (e.g., 50 perturbations) using a sparse linear surrogate model to trade off accuracy for latency.",
-        "C) Deploy TreeSHAP by approximating the neural network predictions through an auxiliary Gradient Boosted Decision Tree ensemble.",
-        "D) Use dynamic Brute-Force Counterfactual Explanations generated via iterative pixel-level grid search over the input image manifold."
+        "A) Replace the Bi-LSTM with a Temporal Convolutional Network (TCN) featuring causal dilated convolutions and residual blocks.",
+        "B) Transition to a multi-layer Gated Recurrent Unit (GRU) with Scaled Dot-Product Self-Attention applied to hidden states.",
+        "C) Retain the Bi-LSTM but apply Truncated Backpropagation Through Time (TBPTT) with a fixed window of 50 timesteps.",
+        "D) Apply FP16 dynamic quantization and TensorRT compilation directly onto the existing Bi-LSTM architecture."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Switch to Gradient-based attribution methods like Integrated Gradients or Grad-CAM, which calculate exact feature attributions via direct backpropagation passes.",
-      "explanation": "KernelSHAP and LIME are model-agnostic, perturbation-based explanation methods. They require thousands of forward passes through the model on perturbed inputs, leading to immense computational overhead (O(N) scale relative to perturbation samples) that violates real-time latency requirements in high-dimensional domains like 3D medical imaging. Gradient-based methods (e.g., Integrated Gradients, Grad-CAM) exploit the continuous, differentiable nature of deep networks to compute pixel-level attributions directly via GPU-accelerated backpropagation in a single or few passes, executing within milliseconds (<50ms) with high axiomatic rigor (e.g., Completeness, Implementation Invariance)."
+      "correct_answer_text": "A) Replace the Bi-LSTM with a Temporal Convolutional Network (TCN) featuring causal dilated convolutions and residual blocks.",
+      "explanation": "Temporal Convolutional Networks (TCNs) replace recurrent operations with 1D dilated causal convolutions. The causal constraint ensures no future information leakage, while exponential dilation factors allow the receptive field to expand exponentially over long history sequences (1000+ timesteps) without vanishing gradients. Crucially, during inference, TCNs run fully parallel feedforward computations across sliding windows, bypassing the step-by-step sequential constraint of Bi-LSTMs and drastically cutting inference latency to satisfy sub-50ms bounds."
     },
     {
       "id": 3,
-      "scenario": "An automated hiring algorithm was deployed by a technology firm to screen developer resumes. The model was trained on 5 years of historical hiring and annual performance review data. Over time, an audit revealed a severe historical feedback loop (selection bias): because historically fewer female candidates were hired, the dataset lacked positive ground-truth performance records for females. As a result, the model consistently scored qualified female applicants low. Merely removing gender identifiers (e.g., name, pronouns) failed to eliminate the discrepancy due to proxy features like university clubs and resume keywords.",
-      "question": "Which architectural intervention effectively dismantles this feedback loop and re-establishes model fairness without discarding valuable historical data?",
+      "scenario": "A medical diagnostic AI platform utilizes a 3D Convolutional Neural Network (3D U-Net) to segment rare pulmonary nodules from high-resolution thoracic CT scans. The dataset exhibits severe class imbalance: positive nodule voxels account for less than 0.05% of the total image volume. Training with standard Binary Cross-Entropy (BCE) loss results in the network predicting near-zero background probabilities across all voxels, producing high specificity (0.999) but a near-zero sensitivity (0.02).",
+      "question": "Which loss formulation and optimization strategy directly addresses this extreme pixel-level class imbalance to improve nodule detection sensitivity?",
       "options": [
-        "A) Combine Counterfactual Fairness constraints with an Exploration Policy (e.g., Multi-Armed Bandits or Epsilon-Greedy selection) to actively collect unbiased ground-truth performance data.",
-        "B) Apply SMOTE up-sampling to duplicate the feature vectors of all female applicants present in the historical dataset prior to retraining.",
-        "C) Standardize all text features using Min-Max scaling and train an unconstrained Random Forest classifier.",
-        "D) Apply a global post-hoc bias adjustment factor that artificially boosts all female applicant scores by a constant scalar +K."
+        "A) Replace BCE loss with a hybrid combination of Focal Loss and Dice Loss to dynamically down-weight background voxel contributions.",
+        "B) Apply Synthetic Minority Over-sampling Technique (SMOTE) on the bottleneck layer features before the decoder path.",
+        "C) Switch to Mean Squared Error (MSE) loss combined with Stochastic Gradient Descent (SGD) and a high momentum value of 0.99.",
+        "D) Apply Mixup data augmentation on input volumes while oversampling CT slices containing confirmed nodule regions."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Combine Counterfactual Fairness constraints with an Exploration Policy (e.g., Multi-Armed Bandits or Epsilon-Greedy selection) to actively collect unbiased ground-truth performance data.",
-      "explanation": "When historical bias creates missing ground-truth labels (selection bias / feedback loop), supervised models trained on static historical data will continually reinforce the bias. Standard SMOTE or scalar boosting merely duplicates or shifts biased representations without acquiring missing counterfactual data. Combining Counterfactual Fairness (ensuring predictions are invariant under counterfactual swaps of protected traits) with an Exploration Framework (like Contextual Multi-Armed Bandits) enables the system to occasionally select candidate decisions from underrepresented groups. This actively breaks the feedback loop by systematically gathering true ground-truth outcome labels required to retrain an unbiased model."
+      "correct_answer_text": "A) Replace BCE loss with a hybrid combination of Focal Loss and Dice Loss to dynamically down-weight background voxel contributions.",
+      "explanation": "Extreme spatial class imbalance causes standard Cross-Entropy loss to be overwhelmed by easy-to-classify background voxels, driving gradients toward predicting background everywhere. Focal Loss introduces a modulating factor (1 - p_t)^gamma to exponentially down-weight loss contribution from easy negative background pixels, focusing gradients on hard foreground voxels. Combining Focal Loss with Dice Loss directly optimizes spatial overlap (Intersection over Union), directly penalizing false negatives and restoring high sensitivity without needing complex resample pipelines."
     }
   ]
 }
