@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Java service using Spring Boot frequently crashes with `java.lang.OutOfMemoryError: Metaspace` after running dynamic script executions for a few hours.\n\nCode snippet triggering the issue:\njava\n@Service\npublic class DynamicScriptEngine {\n    public void executeScript(String scriptSource) throws Exception {\n        GroovyClassLoader classLoader = new GroovyClassLoader(ClassLoader.getSystemClassLoader());\n        Class<?> scriptClass = classLoader.parseClass(scriptSource);\n        Runnable script = (Runnable) scriptClass.getDeclaredConstructor().newInstance();\n        script.run();\n    }\n}\n",
-      "question": "What is the primary cause of this `java.lang.OutOfMemoryError: Metaspace` leak?",
+      "scenario": "You are debugging a production issue where a high-throughput Spring Boot microservice crashes with `java.lang.OutOfMemoryError: Metaspace` after running smoothly for several days. Review the following component responsible for dynamic business rule evaluation:\n\njava\n@Service\npublic class RuleEngineService {\n    public Object evaluateRule(String ruleScript, Map<String, Object> context) throws Exception {\n        // Load and execute dynamic Groovy script per request\n        GroovyClassLoader classLoader = new GroovyClassLoader();\n        Class<?> scriptClass = classLoader.parseClass(ruleScript);\n        GroovyObject scriptInstance = (GroovyObject) scriptClass.getDeclaredConstructor().newInstance();\n        return scriptInstance.invokeMethod(\"run\", context);\n    }\n}\n",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) Each execution creates a new `GroovyClassLoader` instance which generates new `Class` metadata in Metaspace, and these `Class` objects cannot be GC'd because `GroovyClassLoader` maintains implicit strong references to them.",
-        "B) The JVM Heap is too small, causing the heap allocations from `script.run()` to spill over into `Metaspace`.",
-        "C) The Spring `@Service` annotation marks this class as a singleton, causing all `scriptSource` strings to be pinned in the JVM String table inside `Metaspace`.",
-        "D) The `G1` Garbage Collector does not clean up `Metaspace` dynamically unless `-XX:+ClassUnloadingWithConcurrentMark` is disabled."
+        "A) A Metaspace leak caused by instantiating a new `GroovyClassLoader` on every execution, generating unique un-cached `Class` metadata that cannot be GC'd while classloader references persist.",
+        "B) A Heap memory leak because `GroovyObject` instances are retained in the Thread Local Allocation Buffer (TLAB) indefinitely.",
+        "C) A Stack Overflow issue because the dynamic class loading overrides JVM frame pointers during JIT compilation.",
+        "D) Direct Byte Buffer exhaustion caused by underlying NIO channels failing to close when parsing `ruleScript`."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Each execution creates a new `GroovyClassLoader` instance which generates new `Class` metadata in Metaspace, and these `Class` objects cannot be GC'd because `GroovyClassLoader` maintains implicit strong references to them.",
-      "explanation": "In Java, class metadata resides in `Metaspace`. A `Class` object can only be Garbage Collected if its defining `ClassLoader` is eligible for GC. In this snippet, creating a new `GroovyClassLoader` per execution parses and loads a unique class into `Metaspace`. Unless the `GroovyClassLoader` and all loaded class instances are completely unreferenced and collected, the class metadata stays pinned in `Metaspace`, quickly exhausting memory."
+      "correct_answer_text": "A) A Metaspace leak caused by instantiating a new `GroovyClassLoader` on every execution, generating unique un-cached `Class` metadata that cannot be GC'd while classloader references persist.",
+      "explanation": "In Java, Metaspace stores class metadata. Creating a new `GroovyClassLoader` for every incoming request compiles the script into a new Java class and loads its metadata into Metaspace. Because each `ClassLoader` holds a reference to all classes it loads, and class unloading only occurs when the `ClassLoader` itself becomes unreachable and collected during GC, rapidly creating distinct `GroovyClassLoader` instances fills up Metaspace faster than the GC can reclaim them, ultimately leading to `java.lang.OutOfMemoryError: Metaspace`."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a concurrent Java service uses double-checked locking for lazy initialization of a heavy configuration manager shared across threads.\n\nCode snippet:\njava\npublic class ConfigurationRegistry {\n    private static ConfigurationRegistry instance;\n    private Map<String, String> configMap;\n\n    private ConfigurationRegistry() {\n        this.configMap = loadConfigFromDatabase();\n    }\n\n    public static ConfigurationRegistry getInstance() {\n        if (instance == null) {\n            synchronized (ConfigurationRegistry.class) {\n                if (instance == null) {\n                    instance = new ConfigurationRegistry();\n                }\n            }\n        }\n        return instance;\n    }\n}\n\nUnder high load, worker threads occasionally observe a non-null `instance` reference, but when accessing `instance.configMap`, a `NullPointerException` or partially initialized state is encountered.",
-      "question": "What JVM Memory Model mechanism causes threads to read a partially initialized `instance` object?",
+      "scenario": "You are debugging a production issue where a low-latency financial trading microservice running on Java 21 with `-XX:+UseZGC` experiences sudden latency spikes exceeding 150ms and sporadic `java.lang.OutOfMemoryError: Java heap space`. Garbage collector logs reveal frequent `Allocation Stall` events during peak traffic, even though total heap utilization rarely exceeds 60%.",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) Memory access reordering allows the JVM to allocate memory and assign the non-null reference to `instance` before the constructor finishes initializing `configMap`.",
-        "B) The `synchronized` block fails to create a happens-before relationship for read operations occurring outside the monitor.",
-        "C) The `G1` Garbage Collector relocates `configMap` during concurrent mark phase, causing temporary unaligned reads.",
-        "D) Spring context initialization wraps `ConfigurationRegistry` in a CGLIB proxy that breaks single-check volatile reads."
+        "A) The application's thread allocation rate exceeds the ZGC concurrent marking/relocation throughput, forcing application threads to stall while waiting for GC cycles to free memory.",
+        "B) ZGC is triggering a full Stop-The-World (STW) fallback phase because Metaspace threshold (`-XX:MetaspaceSize`) was exceeded.",
+        "C) Colored pointers in ZGC are failing to dereference multi-mapped memory pages due to OS memory fragmentation.",
+        "D) The G1 Region size is misconfigured, causing humongous allocations to trigger full garbage collection pauses."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Memory access reordering allows the JVM to allocate memory and assign the non-null reference to `instance` before the constructor finishes initializing `configMap`.",
-      "explanation": "Without declaring `instance` as `volatile`, the JVM and CPU are permitted to reorder instructions for performance optimization. Specifically, object memory allocation and assigning the address to `instance` can happen BEFORE the constructor code (initializing `configMap`) executes. Another thread reading `instance` outside the `synchronized` block sees a non-null `instance` pointer and attempts to read `configMap`, which has not yet been initialized. Marking `instance` as `volatile` adds write barriers preventing instruction reordering."
+      "correct_answer_text": "A) The application's thread allocation rate exceeds the ZGC concurrent marking/relocation throughput, forcing application threads to stall while waiting for GC cycles to free memory.",
+      "explanation": "ZGC (Z Garbage Collector) is a low-latency concurrent collector designed to perform GC work concurrently with application threads. However, if the application's memory allocation rate outpaces the rate at which ZGC can concurrently mark and compact memory, the JVM runs out of available memory pages for new allocations. When this occurs, allocation requests incur an `Allocation Stall`, pausing the requesting application thread until concurrent GC frees enough memory. To resolve this, developer teams must either allocate more heap, increase concurrent GC threads via `-XX:ConcGCThreads`, or optimize hot-path allocations."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a ultra-low-latency financial application migrated from `G1GC` to non-generational `ZGC` (`-XX:+UseZGC`) on Java 17. During peak trading bursts, application threads experience latency spikes of up to 500ms. Garbage Collector logs show frequent messages reading `Allocation Stall`.",
-      "question": "What is the root cause of these `Allocation Stall` events under `ZGC`, and how should it be resolved?",
+      "scenario": "You are debugging a production issue where a Spring `@Service` singleton bean exhibits inconsistent counter states and stale data reads during concurrent requests. An asynchronous method annotated with `@Async` increments a standard field `private int requestCount` whenever a transaction succeeds.",
+      "question": "What combination of Java Memory Model (JMM) principles and Spring mechanics explains this behavior?",
       "options": [
-        "A) The application thread allocation rate exceeds the speed at which `ZGC` reclaims memory, forcing application threads to pause and wait for GC cycle completion.",
-        "B) `ZGC` colored pointers exceed the 42-bit virtual memory address space limit, causing kernel-level page fault stalls.",
-        "C) `ZGC` does not support parallel thread allocation buffers (TLABs), forcing all object allocations onto a single synchronized heap lock.",
-        "D) `ZGC` triggers Stop-The-World root scanning whenever `Metaspace` reaches 80% capacity under peak load."
+        "A) Spring Singleton beans are shared across threads; without synchronization or atomic wrappers like `AtomicInteger`, updates to `requestCount` lack atomicity and memory visibility guarantees under the JMM.",
+        "B) The `@Async` CGLIB proxy creates thread-local copies of target class primitive fields, preventing updates from propagating to the target instance.",
+        "C) The JIT compiler optimizes away non-final primitive variables in `@Service` beans by hoisting them into thread registers, disabling main memory synchronization.",
+        "D) Spring's `@Transactional` context creates an isolated database snapshot that overrides JVM field mutations."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) The application thread allocation rate exceeds the speed at which `ZGC` reclaims memory, forcing application threads to pause and wait for GC cycle completion.",
-      "explanation": "An `Allocation Stall` in `ZGC` occurs when application threads allocate memory faster than `ZGC` can concurrently mark and compact garbage. When available heap space runs out before GC finishes a cycle, allocating threads are stalled/paused until memory is freed. Solutions include tuning `-XX:ConcGCThreads` to give GC more CPU cycles, increasing overall max heap size (`-Xmx`), or upgrading to Generational ZGC (Java 21+)."
+      "correct_answer_text": "A) Spring Singleton beans are shared across threads; without synchronization or atomic wrappers like `AtomicInteger`, updates to `requestCount` lack atomicity and memory visibility guarantees under the JMM.",
+      "explanation": "Spring `@Service` components default to Singleton scope, meaning a single instance is shared across all application threads. Under the Java Memory Model (JMM), non-synchronized updates to non-volatile fields (such as `requestCount++`, which is a compound read-modify-write operation) lack atomicity and memory visibility guarantees (happens-before ordering). When executed across multiple worker threads dispatched by `@Async`, thread CPU caches become out of sync, leading to lost updates and race conditions. This should be solved using `AtomicInteger` or explicit concurrency control."
     }
   ]
 }
