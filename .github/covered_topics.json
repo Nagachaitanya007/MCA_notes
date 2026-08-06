@@ -175,7 +175,8 @@
     "CDN Cache Stampede Prevention and Origin Shielding for Massive-Scale Object Delivery",
     "Securing and Optimizing Direct Client Uploads: Presigned URLs and Token-Based Access Control",
     "Data Integrity Verification: End-to-End Checksums and Bit Rot Detection",
-    "Erasure Coding Mechanics: Reed-Solomon Encoding and Chunk Reconstruction"
+    "Erasure Coding Mechanics: Reed-Solomon Encoding and Chunk Reconstruction",
+    "Cross-Region Replication Mechanics and Conflict Resolution in Distributed Object Storage"
   ],
   "Database Sharding & Replication Strategies": [
     "Horizontal Sharding: Scaling Out Your Data",
