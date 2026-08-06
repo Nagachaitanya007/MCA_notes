@@ -4,46 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where the JVM is experiencing frequent full garbage collections, causing significant pauses in your application. The application uses the G1 garbage collector and the heap size is set to 16GB. The `java.lang.OutOfMemoryError: GC overhead limit exceeded` error is occasionally thrown.",
+      "scenario": "You are debugging a production issue where a `Spring` application is experiencing frequent `OutOfMemoryError` exceptions. After analyzing the heap dump, you notice that there are thousands of instances of `java.lang.ClassLoader$NativeLibrary` loaded, consuming a significant amount of memory. The application uses the `G1` garbage collector. The relevant code snippet is: `ClassLoader classLoader = new ClassLoader() { @Override public Class<?> loadClass(String name) { return super.loadClass(name, true); } };`",
       "question": "What is the primary cause of this issue?",
       "options": [
-        "A) Insufficient heap size",
-        "B) Incorrect G1 garbage collector configuration",
-        "C) Memory leak due to unclosed resources",
-        "D) Excessive object creation"
+        "A) The G1 garbage collector is not able to efficiently collect the ClassLoader instances",
+        "B) The custom ClassLoader implementation is preventing the native libraries from being unloaded",
+        "C) The application is experiencing a class loader leak due to the use of the `java.lang.ClassLoader$NativeLibrary` class",
+        "D) The application is running out of native memory, causing the JVM to throw an OutOfMemoryError"
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) Memory leak due to unclosed resources",
-      "explanation": "The `GC overhead limit exceeded` error typically indicates that the JVM is spending too much time performing garbage collection. This can be due to a memory leak, where objects are not being properly released, causing the heap to fill up and triggering frequent full GCs. In this scenario, the primary cause is likely a memory leak due to unclosed resources, such as file handles, database connections, or sockets, which are not being properly closed, leading to a gradual increase in heap usage and eventual full GCs."
+      "correct_answer_text": "C) The application is experiencing a class loader leak due to the use of the `java.lang.ClassLoader$NativeLibrary` class",
+      "explanation": "The `java.lang.ClassLoader$NativeLibrary` class is not being garbage collected because it is being held by the custom ClassLoader implementation. This is preventing the native libraries from being unloaded, causing a memory leak. The G1 garbage collector is designed to efficiently collect garbage, including ClassLoader instances, but it is not able to collect the NativeLibrary instances because of the strong reference held by the custom ClassLoader."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a Spring application is throwing a `java.lang.ClassNotFoundException` when trying to load a `com.example.MyService` class. The class is defined in a JAR file that is included in the application's classpath. The `java -verbose:class` option reveals that the class is being loaded by the `AppClassLoader`, but the `com.example.MyService$Proxy` class is being loaded by the `java.net.URLClassLoader`. The application uses JDK 11 and the Spring Framework 5.3.",
+      "scenario": "You are debugging a production issue where the JVM is experiencing a significant pause time due to a full garbage collection. The application uses the `ZGC` garbage collector and has a heap size of 16 GB. The relevant JVM flags are: `-Xmx16g -XX:+UseZGC -XX:ZGCHeapSize=16G`. The code snippet is: `public class Example { public static void main(String[] args) { List<String> list = new ArrayList<>(); for (int i = 0; i < 1000000; i++) { list.add(new String(\"Hello World\")); } } }`",
       "question": "What is the primary cause of this issue?",
       "options": [
-        "A) Incorrect classpath configuration",
-        "B) Conflict between classloaders",
-        "C) Missing dependency in the JAR file",
-        "D) Proxy creation failure"
+        "A) The ZGC garbage collector is not able to efficiently collect the garbage due to the large heap size",
+        "B) The application is creating too many temporary objects, causing the ZGC to pause for a long time",
+        "C) The JVM is running out of native memory, causing the ZGC to pause for a long time",
+        "D) The application is experiencing a dead lock, causing the ZGC to pause for a long time"
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Conflict between classloaders",
-      "explanation": "The issue is due to a conflict between the `AppClassLoader` and the `java.net.URLClassLoader`. The `AppClassLoader` is loading the `com.example.MyService` class, but the `java.net.URLClassLoader` is loading the `com.example.MyService$Proxy` class, which is a proxy class created by Spring. This conflict can occur when the proxy class is loaded by a different classloader than the target class, causing the `ClassNotFoundException` to be thrown."
+      "correct_answer_text": "B) The application is creating too many temporary objects, causing the ZGC to pause for a long time",
+      "explanation": "The `ZGC` garbage collector is designed to provide low pause times, but it can still experience pauses if the application is creating too many temporary objects. In this case, the application is creating 1 million `String` objects in a short period of time, causing the ZGC to pause for a long time to collect the garbage. This can be mitigated by reducing the number of temporary objects created or by using a more efficient data structure."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Java application using the `java.util.concurrent` package is experiencing intermittent `java.lang.OutOfMemoryError: Metaspace` errors. The application uses a large number of dynamically loaded classes, and the Metaspace size is set to 128MB. The `java -XX:+PrintGCDetails` option reveals that the Metaspace is filling up rapidly, causing the OOME. The following Java code snippet is suspected to be the cause: `List<String> list = new ArrayList<>(); for (int i = 0; i < 10000; i++) { list.add(new `String`(\"hello\" + i)); } Class<?> clazz = `Class.forName(\"com.example.DynamicClass\" + i);`",
+      "scenario": "You are debugging a production issue where a `Spring` application is experiencing a `java.lang.NoClassDefFoundError` exception when trying to load a class. The application uses a custom `ClassLoader` implementation to load classes from a database. The relevant code snippet is: `ClassLoader classLoader = new ClassLoader() { @Override protected Class<?> findClass(String name) throws ClassNotFoundException { byte[] classBytes = loadClassBytesFromDatabase(name); return defineClass(name, classBytes, 0, classBytes.length); } };`",
       "question": "What is the primary cause of this issue?",
       "options": [
-        "A) Insufficient Metaspace size",
-        "B) Memory leak due to dynamic class loading",
-        "C) Excessive string creation",
-        "D) Incorrect garbage collector configuration"
+        "A) The custom ClassLoader implementation is not able to find the class in the database",
+        "B) The class is not being loaded by the correct ClassLoader",
+        "C) The class is being loaded multiple times, causing a class loader leak",
+        "D) The defineClass method is not being called with the correct parameters"
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Memory leak due to dynamic class loading",
-      "correct_answer_code_snippet": "`Class.forName(\"com.example.DynamicClass\" + i)`",
-      "explanation": "The primary cause of the issue is the dynamic class loading in the suspected Java code snippet. The `Class.forName` method is used to load a new class for each iteration of the loop, resulting in a large number of classes being loaded into the Metaspace. Since the Metaspace is not garbage collected in the same way as the heap, these classes are not being released, causing the Metaspace to fill up rapidly and resulting in the `OutOfMemoryError`."
+      "correct_answer_text": "B) The class is not being loaded by the correct ClassLoader",
+      "explanation": "The `java.lang.NoClassDefFoundError` exception is thrown when the JVM is unable to find the definition of a class. In this case, the custom ClassLoader implementation is loading the class from the database, but it is not being loaded by the correct ClassLoader. This can happen if the class is being loaded by a different ClassLoader than the one that loaded the class that is trying to use it. To fix this issue, the correct ClassLoader must be used to load the class."
     }
   ]
 }
