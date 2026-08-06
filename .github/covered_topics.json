@@ -50,7 +50,8 @@
     "Distributed Cooperative Cancellation: Taming Zombie Execution After Client Timeouts",
     "Distributed Deadline Propagation: Managing Timeout Budgets across Microservice Chains",
     "Server-Driven Load Shedding & Adaptive Throttling: Defending Against Exception-Induced Retry Storms",
-    "Transient vs. Permanent Distributed Error Classification"
+    "Transient vs. Permanent Distributed Error Classification",
+    "Two-Phase Commit (2PC) Exception Recovery: Managing Coordinator and Participant Failures"
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections",
