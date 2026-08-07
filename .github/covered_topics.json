@@ -98,7 +98,8 @@
     "JVM Reference Processing: The Mechanics of Soft, Weak, Phantom, and Final References",
     "JVM G1 GC: Humongous Allocations and Heap Fragmentation Mechanics",
     "JVM Memory Model: Cache Line Padding, Field Layout, and False Sharing",
-    "JVM G1 Collector: Mixed GC Cycles, Adaptive IHOP, and Evacuation Failure"
+    "JVM G1 Collector: Mixed GC Cycles, Adaptive IHOP, and Evacuation Failure",
+    "JVM Class Loading: SystemDictionary Resolution, Parallel Class Loaders, and Concurrent Loading Locks"
   ],
   "Design a Real-time Chat System (WebSockets, Redis Pub/Sub)": [
     "Scalable Real-time Chat: WebSockets & Redis Pub/Sub",
