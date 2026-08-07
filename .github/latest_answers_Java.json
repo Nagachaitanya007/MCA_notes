@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `NullPointerException` is thrown in a distributed system that uses Spring for dependency injection and transaction management. The code snippet causing the issue is: `@Service public class PaymentProcessor { @Autowired private `AccountRepository` accountRepository; public void processPayment(`String` paymentId) { `Account` account = accountRepository.findAccountByPaymentId(paymentId); if (account != null) { accountRepository.updateAccountBalance(account, 100.0); } } }`. The `accountRepository` is properly autowired and the `findAccountByPaymentId` method is annotated with `@Transactional`.",
+      "scenario": "You are debugging a production issue where an order processing system calls an external payment service via a child transactional bean. You observe that when `ExternalPaymentClient.charge()` fails with a `PaymentFailedException` (a `RuntimeException`), the catch block in `OrderService` attempts to record a failure status using `OrderRepository.save()`. However, the transaction ultimately fails at commit time, throwing `UnexpectedRollbackException`, and the failure log is never persisted.\n\njava\n@Service\npublic class OrderService {\n    @Autowired private OrderRepository orderRepo;\n    @Autowired private ExternalPaymentClient paymentClient;\n\n    @Transactional\n    public void processOrder(OrderRequest request) {\n        try {\n            paymentClient.charge(request); // @Transactional(propagation = Propagation.REQUIRED)\n        } catch (Exception e) {\n            // Attempting to record failure state\n            orderRepo.save(new OrderLog(request.getId(), \"FAILED\"));\n        }\n    }\n}\n",
       "question": "What is the primary cause of this issue?",
       "options": [
-        "A) The `accountRepository` is not properly autowired.",
-        "B) The `findAccountByPaymentId` method is not properly annotated with `@Transactional`.",
-        "C) The `updateAccountBalance` method throws a `NullPointerException` when the account balance is null.",
-        "D) The `Account` object is being proxied by Spring and the `updateAccountBalance` method is not being called on the target object."
+        "A) The child method intercepted by the Spring AOP proxy sets the inner `TransactionStatus` to rollback-only upon throwing an exception; catching it in `OrderService` cannot clear this flag, forcing the transaction manager to roll back and throw `UnexpectedRollbackException`.",
+        "B) Spring transaction management defaults to rolling back only on checked exceptions, so `PaymentFailedException` causes a fatal JVM thread interrupt.",
+        "C) The `orderRepo.save()` call requires explicit execution inside an `@Async` boundary to write to the database when an exception is present in the call stack.",
+        "D) The catch block catches `Exception`, which prevents the Spring Proxy from intercepting the transaction lifecycle altogether, leaving the connection in an uncommitted dangling state."
       ],
-      "correct_answer_letter": "D",
-      "correct_answer_text": "D) The `Account` object is being proxied by Spring and the `updateAccountBalance` method is not being called on the target object.",
-      "explanation": "The correct answer is D) because Spring proxies the `Account` object when it is retrieved from the `accountRepository`. When the `updateAccountBalance` method is called, it is being called on the proxy object, not the target object. Since the proxy object does not have the `updateAccountBalance` method, a `NullPointerException` is thrown. To fix this issue, the `updateAccountBalance` method should be annotated with `@Transactional` and the `Account` object should be unwrapped from the proxy before calling the `updateAccountBalance` method."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The child method intercepted by the Spring AOP proxy sets the inner `TransactionStatus` to rollback-only upon throwing an exception; catching it in `OrderService` cannot clear this flag, forcing the transaction manager to roll back and throw `UnexpectedRollbackException`.",
+      "explanation": "In Spring's declarative transaction management (`@Transactional`), when two beans participate in the same logical transaction (`Propagation.REQUIRED`), they share a single physical database transaction. When `ExternalPaymentClient.charge()` throws an unhandled `RuntimeException`, the Spring transaction interceptor catches it and marks the physical transaction as rollback-only via `setRollbackOnly()`. Although `OrderService` catches the exception locally, it cannot unmark the `rollbackOnly` status. When `OrderService` completes, the transaction manager attempts to commit, detects the `rollbackOnly` flag, rolls back the entire transaction (including `orderRepo.save()`), and throws `UnexpectedRollbackException`. To fix this, the logging operation should be executed in a separate transaction using `Propagation.REQUIRES_NEW` or handled without marking the parent transaction rollback-only."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a `ConcurrentModificationException` is thrown in a distributed system that uses a `ConcurrentHashMap` to store account information. The code snippet causing the issue is: `public class AccountManager { private `ConcurrentHashMap`<`String`, `Account`> accounts = new `ConcurrentHashMap`<>(); public void updateAccountBalance(`String` accountId, double balance) { `Account` account = accounts.get(accountId); if (account != null) { account.setBalance(balance); } } }`. The `Account` object is not thread-safe.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "You are debugging a production issue where a microservice uses a Resilience4j `ThreadPoolBulkhead` combined with a `CircuitBreaker` to isolate downstream RPC calls. During a localized network outage, callers stop receiving expected downstream failure details (`TimeoutException` or `CircuitBreakerOpenException`). Instead, every request immediately fails with a `BulkheadFullException`, masking the actual root cause and preventing the upstream fallback handlers from triggering circuit state transitions cleanly.",
+      "question": "What is the underlying cause of this exception masking behavior in the `ThreadPoolBulkhead` pattern during downstream latency spikes?",
       "options": [
-        "A) The `ConcurrentHashMap` is not thread-safe.",
-        "B) The `Account` object is not thread-safe.",
-        "C) The `updateAccountBalance` method is not properly synchronized.",
-        "D) The `ConcurrentHashMap` is not properly initialized."
+        "A) Slow downstream network calls keep bulkhead worker threads occupied, rapidly filling the bounded queue and causing subsequent incoming requests to be rejected immediately with `BulkheadFullException` before reaching the `CircuitBreaker` logic.",
+        "B) The `ThreadPoolBulkhead` component automatically wraps all uncaught `Throwable` instances into a `BulkheadFullException` by design to simplify exception hierarchy handling.",
+        "C) The underlying `ForkJoinPool` common pool automatically overrides thread exceptions when non-blocking reactive streams encounter upstream connection timeouts.",
+        "D) Spring's `@Recover` annotation intercepts `TimeoutException` and re-throws it as `BulkheadFullException` when executed within a synchronized block."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `Account` object is not thread-safe.",
-      "explanation": "The correct answer is B) because the `Account` object is not thread-safe. When multiple threads try to update the account balance simultaneously, they are accessing the same `Account` object, which can lead to a `ConcurrentModificationException`. To fix this issue, the `Account` object should be made thread-safe by using synchronization or by using a thread-safe implementation of the `Account` object."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Slow downstream network calls keep bulkhead worker threads occupied, rapidly filling the bounded queue and causing subsequent incoming requests to be rejected immediately with `BulkheadFullException` before reaching the `CircuitBreaker` logic.",
+      "explanation": "When using a `ThreadPoolBulkhead`, calls are offloaded to a isolated, bounded thread pool with a fixed queue capacity. If downstream service calls hang or experience high latency rather than failing instantly, threads in the pool become blocked waiting for responses. Once all pool threads and queue slots are occupied, any new incoming request is rejected immediately at the bulkhead boundary with `BulkheadFullException`. Because the request is rejected before entering the decorated execution context, the `CircuitBreaker` never observes the call, preventing its internal failure rates from updating or recording `TimeoutException` instances, thus masking the root cause."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a `javax.persistence.TransactionRequiredException` is thrown in a distributed system that uses Spring Data JPA for database operations. The code snippet causing the issue is: `@Repository public interface `AccountRepository` extends `JpaRepository`<`Account`, `Long`> { `@Query(\"SELECT a FROM `Account` a WHERE a.paymentId = :paymentId\") `Account` findAccountByPaymentId(`@Param(\"paymentId\") `String` paymentId); }`. The `findAccountByPaymentId` method is being called from a service class without a transactional context.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "You are debugging a production issue where an asynchronous distributed pipeline processes orders using `CompletableFuture.supplyAsync()` across thread boundaries. During failures, distributed trace IDs (`X-B3-TraceId`) configured in the `MDC` (Mapped Diagnostic Context) disappear from centralized logs, making cross-service correlation impossible. Furthermore, exception handlers receive `CompletionException` rather than the underlying business exception.",
+      "question": "Why does standard Logback `MDC` logging fail to capture trace IDs across `CompletableFuture` boundaries, and how does the JVM handle exception wrapping in this execution model?",
       "options": [
-        "A) The `findAccountByPaymentId` method is not properly annotated with `@Transactional`.",
-        "B) The `JpaRepository` interface is not properly implemented.",
-        "C) The `Account` entity is not properly mapped to the database.",
-        "D) The service class is not properly annotated with `@Transactional`."
+        "A) `MDC` context relies on `ThreadLocal` storage which does not automatically propagate to worker threads in `ForkJoinPool.commonPool()`, and `CompletableFuture` wraps all unhandled stage exceptions in `CompletionException`.",
+        "B) `CompletableFuture` executes tasks directly on the JVM heap without attaching to OS-level threads, which strips `ThreadLocal` storage and exception cause references.",
+        "C) The JVM Garbage Collector (`G1GC`) automatically clears `ThreadLocal` maps during asynchronous thread transitions to prevent memory leaks in pooled threads.",
+        "D) Spring's `@Async` annotation context overrides Logback's `MDC` map whenever custom `Executor` beans are declared without `@EnableAsync`."
       ],
-      "correct_answer_letter": "D",
-      "correct_answer_text": "D) The service class is not properly annotated with `@Transactional`.",
-      "explanation": "The correct answer is D) because the service class is not properly annotated with `@Transactional`. The `findAccountByPaymentId` method is being called from a service class without a transactional context, which means that the method is not being executed within a transaction. To fix this issue, the service class should be annotated with `@Transactional` or the `findAccountByPaymentId` method should be annotated with `@Transactional` and the service class should be configured to use a transactional context."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) `MDC` context relies on `ThreadLocal` storage which does not automatically propagate to worker threads in `ForkJoinPool.commonPool()`, and `CompletableFuture` wraps all unhandled stage exceptions in `CompletionException`.",
+      "explanation": "SLF4J/Logback `MDC` relies on `ThreadLocal` variables to hold contextual information like trace IDs. When `CompletableFuture.supplyAsync()` dispatches execution to an asynchronous worker thread (such as `ForkJoinPool.commonPool()`), the context stored in the originating thread's `ThreadLocal` map is not automatically copied over, causing logs generated inside the async task to lose MDC data. Additionally, any unhandled exception thrown within a `CompletableFuture` pipeline stage is wrapped in a `CompletionException` (or `ExecutionException` if using `.get()`) by design. To retain diagnostic context and properly unpack exceptions, developers must use context-aware custom task decorators or wrappers (e.g., Spring's `ContextAwareTaskDecorator`) and retrieve the root cause using `Throwable.getCause()`."
     }
   ]
 }
