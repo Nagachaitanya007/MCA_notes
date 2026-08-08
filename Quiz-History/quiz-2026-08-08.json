@@ -1,48 +1,48 @@
 {
-  "topic": "Exception Handling Strategies in Distributed Systems",
-  "mode": "Java",
+  "topic": "Machine Learning: Classification vs Regression Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where an order processing microservice fails to roll back local database transactions when a downstream REST call fails with a `HttpServerErrorException`. You inspect the Spring service implementation:\n\njava\n@Service\npublic class OrderService {\n    @Autowired\n    private OrderRepository orderRepo;\n    @Autowired\n    private PaymentClient paymentClient;\n\n    public void processOrder(Order order) {\n        try {\n            this.executeTransaction(order);\n        } catch (Exception e) {\n            log.error(\"Failed processing order\", e);\n            throw e;\n        }\n    }\n\n    @Transactional(rollbackFor = Exception.class)\n    public void executeTransaction(Order order) {\n        orderRepo.save(order);\n        paymentClient.charge(order.getAmount()); // Throws HttpServerErrorException\n    }\n}\n",
-      "question": "What is the primary cause of the local database transaction failing to roll back when an exception occurs?",
+      "scenario": "A fintech corporation is designing an automated credit risk engine. The raw dataset contains severe zero-inflation: 97% of transactions result in zero financial loss, while 3% incur continuous, highly variable dollar losses ranging from $500 to $100,000. The initial engineering approach used a single Gradient Boosted Regressor optimizing Mean Squared Error (MSE) to predict exact financial loss amounts directly. In production, the model consistently predicts near-zero loss values for all users, completely missing high-risk default cases.",
+      "question": "Which architectural re-framing mathematically addresses this zero-inflated continuous distribution while maintaining high sensitivity to financial loss risk?",
       "options": [
-        "A) `HttpServerErrorException` is caught in `processOrder`, which automatically clears the rollback status in `TransactionSynchronizationManager`.",
-        "B) Calling `executeTransaction` via `this` bypasses the Spring AOP proxy, preventing `@Transactional` from intercepting the method call and opening a transaction.",
-        "C) The `@Transactional` annotation requires `noRollbackFor` to be explicitly defined when integrating with remote HTTP clients.",
-        "D) `PaymentClient` executes on a separate thread, causing the exception to be thrown outside the scope of the thread-local transaction context."
+        "A) Formulate a two-stage (Hurdle/Two-Part) architecture using a binary classification model to predict default probability, coupled with a conditional regression model trained solely on non-zero loss instances.",
+        "B) Replace the Mean Squared Error (MSE) loss function in the single regressor with Mean Absolute Error (MAE) to reduce sensitivity to zero-value clusters.",
+        "C) Apply a log transformation to the target variable and retain the single continuous regression framework using Ordinary Least Squares.",
+        "D) Convert the target continuous loss into 100 equal-width discrete bins and train a standard multi-class classification model."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Calling `executeTransaction` via `this` bypasses the Spring AOP proxy, preventing `@Transactional` from intercepting the method call and opening a transaction.",
-      "explanation": "Spring's declarative transaction management relies on dynamic proxies (CGLIB or JDK Dynamic Proxies). When `processOrder` invokes `this.executeTransaction(order)`, it performs a direct target-object method call in Java memory rather than going through the Spring proxy object. Consequently, the proxy's `TransactionInterceptor` never executes, no database transaction is started for `executeTransaction`, and no rollback behavior is triggered when the exception occurs."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Formulate a two-stage (Hurdle/Two-Part) architecture using a binary classification model to predict default probability, coupled with a conditional regression model trained solely on non-zero loss instances.",
+      "explanation": "Zero-inflated targets with continuous positive values present a non-Gaussian, point-mass mixture distribution. Single regression models optimizing MSE minimize global loss by pulling predictions toward the dominant zero-mass mean. A two-stage Hurdle model resolves this by decomposing $P(Loss, Default) = P(Default) \\times E[Loss | Default > 0]$. Stage 1 handles discrete class risk via classification (handling imbalance using cross-entropy or focal loss), and Stage 2 models the continuous severity conditional on a non-zero event."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a distributed saga orchestration service hangs indefinitely during failure recovery. The service uses `CompletableFuture.allOf()` to execute concurrent calls to inventory, payment, and shipping microservices. When the payment service throws a `TimeoutException`, the orchestrator fails to immediately trigger compensating transactions for the inventory service.",
-      "question": "What is the underlying mechanic in `CompletableFuture.allOf()` that causes the compensation workflow to delay or hang under failure conditions?",
+      "scenario": "An e-commerce platform requires dynamic price optimization during user checkouts within a strict sub-50ms SLA limit. The input feature space contains over 100,000 sparse categorical features (search queries, sparse user tag vectors, and item interaction histories). An initial Deep Neural Network Regressor predicting continuous Willingness-To-Pay (WTP) achieved accurate offline RMSE but breached the inference SLA, averaging 250ms per request due to complex non-linear matrix multiplications.",
+      "question": "Which system design strategy provides the best trade-off between inference speed and feature density without losing dynamic pricing capability?",
       "options": [
-        "A) `CompletableFuture.allOf()` immediately cancels pending futures on failure, but blocks the thread pool while running `System.gc()` to clean up incomplete references.",
-        "B) `CompletableFuture.allOf()` returns a future that completes only when ALL constituent futures complete (normally or exceptionally), failing to short-circuit if another future is blocked.",
-        "C) `CompletableFuture.allOf()` converts all checked exceptions to `ExecutionException` and suppresses uncaught exceptions thrown in `ForkJoinPool.commonPool()`.",
-        "D) `CompletableFuture.allOf()` wraps sub-tasks in a synchronized block that deadlocks when multiple futures throw exceptions concurrently."
+        "A) Switch to a Support Vector Regression (SVR) model utilizing a high-dimensional Radial Basis Function (RBF) kernel.",
+        "B) Discretize the continuous price spectrum into fine-grained ordinal price tiers and deploy a regularized sparse Linear/Logistic Classifier using dot-product scoring.",
+        "C) Use t-SNE to reduce the 100,000 sparse features down to 10 dense components, then pass them to a 500-tree Random Forest Regressor.",
+        "D) Apply One-Hot Encoding to all sparse features and train an unpruned Gradient Boosted Decision Tree (GBDT) regressor."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) `CompletableFuture.allOf()` returns a future that completes only when ALL constituent futures complete (normally or exceptionally), failing to short-circuit if another future is blocked.",
-      "explanation": "`CompletableFuture.allOf(...)` yields a new future that completes only when *every* supplied future completes (either successfully or with an exception). It does not short-circuit on the first exception. If one remote service fails fast with an exception while another downstream network call hangs due to unconfigured socket timeouts, `allOf()` will remain uncompleted until the hung future finishes. This prevents downstream `.exceptionally()` or failure-handling blocks from executing immediately to trigger compensations."
+      "correct_answer_text": "B) Discretize the continuous price spectrum into fine-grained ordinal price tiers and deploy a regularized sparse Linear/Logistic Classifier using dot-product scoring.",
+      "explanation": "In ultra-low latency environments (sub-50ms SLA) with high-dimensional sparse inputs ($100k+$ dimensions), non-linear deep models, tree ensembles, and kernel methods (SVR RBF) incur prohibitive $O(N_{trees} \\times depth)$ or $O(N_{support\\_vectors} \\times d)$ compute costs. Discretizing continuous WTP into ordinal tiers converts regression into a linear sparse classification problem. Sparse linear/logistic scoring requires only simple vector inner products ($O(k)$ where $k \\ll d$ active non-zero features), easily executing under 5ms while maintaining price granularity."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Spring Kafka consumer processing financial events causes HikariCP database connection pool exhaustion during external gateway outages. The consumer method is marked with `@Transactional` and relies on Spring Kafka's `DefaultErrorHandler` configured with an `ExponentialBackOff` for in-flight retries.",
-      "question": "What is the root cause of the HikariCP pool exhaustion during repeated exception retries?",
+      "scenario": "A hospital's intensive care unit (ICU) deploys an AI system to monitor continuous vital signs for predicting patient sepsis onset within 6 hours. Clinicians demand actionable binary alerts ('Intervene' vs 'Monitor') subject to a strict operational constraint: the False Alarm Rate (False Positive Rate) must strictly remain below 2% to avoid alarm fatigue. The vendor delivered a Ridge Regression model predicting a continuous 'Sepsis Severity Index' from 0.0 to 100.0.",
+      "question": "Why is framing this problem as continuous regression fundamentally inferior to a calibrated probabilistic classification model for setting threshold-based clinical alerts?",
       "options": [
-        "A) The `DefaultErrorHandler` retries the listener method synchronously on the container thread while holding the active `@Transactional` JDBC connection open across sleep intervals.",
-        "B) Each failed retry attempt leaves an unclosed JDBC `Connection` object in the ThreadLocal context of the Kafka consumer, creating a memory leak in the JVM heap.",
-        "C) The `@KafkaListener` thread spawns new worker threads in `ForkJoinPool.commonPool()` on every exception, each acquiring an additional DB connection.",
-        "D) HikariCP automatically marks connections as broken when a `RuntimeException` crosses a `@Transactional` boundary, forcing the pool to recreate max connections."
+        "A) Ridge Regression optimization forces all continuous predictions to be strictly between 0 and 1, preventing custom thresholding.",
+        "B) Regression models optimize residual sum of squares (distance error) rather than likelihood, producing unbounded output scores that do not represent posterior probabilities $P(Sepsis|Vitals)$ required for precise Neyman-Pearson risk control.",
+        "C) Probabilistic classification automatically removes the need for feature normalization, whereas Ridge Regression degrades when handling real-time vital streams.",
+        "D) Continuous regression models cannot generate Receiver Operating Characteristic (ROC) or Precision-Recall curves."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The `DefaultErrorHandler` retries the listener method synchronously on the container thread while holding the active `@Transactional` JDBC connection open across sleep intervals.",
-      "explanation": "When `@Transactional` wraps a `@KafkaListener` method, the transaction interceptor acquires a JDBC `Connection` from HikariCP before entering the listener method. If the method throws an exception and the `DefaultErrorHandler` handles it in-place using blocking retries (`FixedBackOff` or `ExponentialBackOff`), the retry loop pauses execution directly on the listener thread. Because the `@Transactional` context has not completed, the acquired JDBC connection remains bound to the thread during the entire backoff duration. Across multiple concurrent consumer threads experiencing failures, all pool connections become locked in sleeping retry states, causing connection pool exhaustion for the application."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Regression models optimize residual sum of squares (distance error) rather than likelihood, producing unbounded output scores that do not represent posterior probabilities $P(Sepsis|Vitals)$ required for precise Neyman-Pearson risk control.",
+      "explanation": "Regression models optimize distance-based metrics (e.g., $L_2$ distance / MSE), generating unbounded predictions that lack probabilistic interpretation. Setting arbitrary post-hoc threshold cutoffs on regression scores does not map to true underlying event probabilities $P(Y=1|X)$. A probabilistic classifier (e.g., Logistic Regression or Calibrated XGBoost) trained via Log-Loss / Cross-Entropy directly estimates posterior class probabilities. This enables decision-theoretic threshold tuning (Neyman-Pearson framework) to strictly bound the False Positive Rate at $\\le 2\\%$ based on explicit risk-cost matrices."
     }
   ]
 }

@@ -1,48 +1,48 @@
 {
-  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
+  "topic": "Machine Learning: Classification vs Regression Scenarios",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "Real-world Industrial Problem Statement: A fintech enterprise deploys a deep neural network for automated credit risk assessment processing over 100,000 transactions daily with a sub-50ms latency constraint. Audits reveal that historical demographic bias in training data causes severe Disparate Impact against protected minority groups. Crucially, downstream financial modules require well-calibrated output probability distributions P(Y=1|X) for dynamic risk-based interest rate calculation, rather than simple binary classification outcomes.",
-      "question": "Which bias mitigation strategy should the machine learning engineering team adopt to satisfy equalized odds without degrading runtime inference latency or distorting output probability calibration?",
+      "scenario": "A fintech corporation is designing an automated credit risk engine. The raw dataset contains severe zero-inflation: 97% of transactions result in zero financial loss, while 3% incur continuous, highly variable dollar losses ranging from $500 to $100,000. The initial engineering approach used a single Gradient Boosted Regressor optimizing Mean Squared Error (MSE) to predict exact financial loss amounts directly. In production, the model consistently predicts near-zero loss values for all users, completely missing high-risk default cases.",
+      "question": "Which architectural re-framing mathematically addresses this zero-inflated continuous distribution while maintaining high sensitivity to financial loss risk?",
       "options": [
-        "A) In-processing via Adversarial Debiasing using a Gradient Reversal Layer (GRL) attached to latent representation layers during training.",
-        "B) Post-processing via Reject Option Classification (ROC) to optimize decision thresholds independently per demographic group.",
-        "C) Pre-processing via Synthetic Minority Over-sampling Technique (SMOTE) strictly on the protected minority group features.",
-        "D) Fairness through Unawareness by removing explicit demographic attributes and highly correlated proxy features from the training pipeline."
+        "A) Formulate a two-stage (Hurdle/Two-Part) architecture using a binary classification model to predict default probability, coupled with a conditional regression model trained solely on non-zero loss instances.",
+        "B) Replace the Mean Squared Error (MSE) loss function in the single regressor with Mean Absolute Error (MAE) to reduce sensitivity to zero-value clusters.",
+        "C) Apply a log transformation to the target variable and retain the single continuous regression framework using Ordinary Least Squares.",
+        "D) Convert the target continuous loss into 100 equal-width discrete bins and train a standard multi-class classification model."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) In-processing via Adversarial Debiasing using a Gradient Reversal Layer (GRL) attached to latent representation layers during training.",
-      "explanation": "Adversarial Debiasing with a Gradient Reversal Layer (GRL) forces the primary network to learn latent feature representations that maximize primary task accuracy while minimizing the adversary's ability to predict protected demographic attributes. Because this intervention occurs during training, the runtime model architecture remains unaltered (preserving sub-50ms inference latency). Furthermore, in-processing techniques maintain continuous model optimization, preserving probability calibration better than post-processing threshold adjustments (like ROC), which distort output probabilities P(Y=1|X) into uncalibrated step functions. Pre-processing (SMOTE) fails to eliminate implicit feature entanglements, and Fairness through Unawareness (Option D) fails due to deep non-linear feature redundancies."
+      "correct_answer_text": "A) Formulate a two-stage (Hurdle/Two-Part) architecture using a binary classification model to predict default probability, coupled with a conditional regression model trained solely on non-zero loss instances.",
+      "explanation": "Zero-inflated targets with continuous positive values present a non-Gaussian, point-mass mixture distribution. Single regression models optimizing MSE minimize global loss by pulling predictions toward the dominant zero-mass mean. A two-stage Hurdle model resolves this by decomposing $P(Loss, Default) = P(Default) \\times E[Loss | Default > 0]$. Stage 1 handles discrete class risk via classification (handling imbalance using cross-entropy or focal loss), and Stage 2 models the continuous severity conditional on a non-zero event."
     },
     {
       "id": 2,
-      "scenario": "Real-world Industrial Problem Statement: A healthcare consortium deploys a 3D-DenseNet model for real-time brain MRI scan anomaly detection on high-dimensional voxel volumes (256x256x128). Radiologists require pixel-level feature attribution maps within 2 seconds of model execution for critical triage decisions. Initial tests using LIME took >45 seconds per volume and showed high sampling instability between consecutive runs on identical images. KernelSHAP similarly failed due to exponential computational complexity across high-dimensional feature spaces.",
-      "question": "Which Explainable AI (XAI) methodology satisfies both the strict real-time performance budget and game-theoretic consistency requirements for this high-dimensional deep learning pipeline?",
+      "scenario": "An e-commerce platform requires dynamic price optimization during user checkouts within a strict sub-50ms SLA limit. The input feature space contains over 100,000 sparse categorical features (search queries, sparse user tag vectors, and item interaction histories). An initial Deep Neural Network Regressor predicting continuous Willingness-To-Pay (WTP) achieved accurate offline RMSE but breached the inference SLA, averaging 250ms per request due to complex non-linear matrix multiplications.",
+      "question": "Which system design strategy provides the best trade-off between inference speed and feature density without losing dynamic pricing capability?",
       "options": [
-        "A) TreeSHAP leveraging decision tree structure approximations over flattened image representations.",
-        "B) Integrated Gradients (IG) computed along a straight-line path from a neutral baseline image using Gauss-Legendre quadrature.",
-        "C) Model-agnostic Counterfactual Explanations using genetic algorithms to generate minimal edit distance boundaries.",
-        "D) Subsampling-based Permutation Feature Importance evaluated across sliding 3D convolutional windows."
+        "A) Switch to a Support Vector Regression (SVR) model utilizing a high-dimensional Radial Basis Function (RBF) kernel.",
+        "B) Discretize the continuous price spectrum into fine-grained ordinal price tiers and deploy a regularized sparse Linear/Logistic Classifier using dot-product scoring.",
+        "C) Use t-SNE to reduce the 100,000 sparse features down to 10 dense components, then pass them to a 500-tree Random Forest Regressor.",
+        "D) Apply One-Hot Encoding to all sparse features and train an unpruned Gradient Boosted Decision Tree (GBDT) regressor."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Integrated Gradients (IG) computed along a straight-line path from a neutral baseline image using Gauss-Legendre quadrature.",
-      "explanation": "Integrated Gradients (IG) is a gradient-based feature attribution method designed specifically for differentiable deep neural networks. It calculates the integral of gradients along the straight-line path from a baseline (e.g., black image) to the input instance. Because IG relies on GPU-accelerated backpropagation passes (typically requiring only 20-50 steps via Gauss-Legendre quadrature), it completes in sub-second time frames even for high-dimensional 3D volumes. Furthermore, IG satisfies the mathematical axioms of Completeness and Implementation Invariance, providing game-theoretic consistency. TreeSHAP is strictly for tree ensembles, while perturbation/genetic methods (Options C and D) are computationally intractable for high-dimensional real-time requirements."
+      "correct_answer_text": "B) Discretize the continuous price spectrum into fine-grained ordinal price tiers and deploy a regularized sparse Linear/Logistic Classifier using dot-product scoring.",
+      "explanation": "In ultra-low latency environments (sub-50ms SLA) with high-dimensional sparse inputs ($100k+$ dimensions), non-linear deep models, tree ensembles, and kernel methods (SVR RBF) incur prohibitive $O(N_{trees} \\times depth)$ or $O(N_{support\\_vectors} \\times d)$ compute costs. Discretizing continuous WTP into ordinal tiers converts regression into a linear sparse classification problem. Sparse linear/logistic scoring requires only simple vector inner products ($O(k)$ where $k \\ll d$ active non-zero features), easily executing under 5ms while maintaining price granularity."
     },
     {
       "id": 3,
-      "scenario": "Real-world Industrial Problem Statement: An e-commerce gig-economy platform utilizes a Gradient Boosted Decision Tree (GBDT) model to score merchant reliability. The dataset suffers from extreme class skew (fraud/default occurs in <0.05% of instances). To adhere to algorithmic fairness regulations, the team implemented a re-weighting approach during offline training. However, post-deployment monitoring shows that temporal concept drift in transaction volumes is causing the Disparate Impact Ratio to fluctuate wildly beyond regulatory thresholds within weeks of deployment.",
-      "question": "What is the most technically viable architecture modification to continuously maintain demographic fairness bounds under non-stationary distributions and severe class imbalance without requiring full daily retrains?",
+      "scenario": "A hospital's intensive care unit (ICU) deploys an AI system to monitor continuous vital signs for predicting patient sepsis onset within 6 hours. Clinicians demand actionable binary alerts ('Intervene' vs 'Monitor') subject to a strict operational constraint: the False Alarm Rate (False Positive Rate) must strictly remain below 2% to avoid alarm fatigue. The vendor delivered a Ridge Regression model predicting a continuous 'Sepsis Severity Index' from 0.0 to 100.0.",
+      "question": "Why is framing this problem as continuous regression fundamentally inferior to a calibrated probabilistic classification model for setting threshold-based clinical alerts?",
       "options": [
-        "A) Transition to an offline Support Vector Machine (SVM) using kernel tricks to stabilize high-margin decision boundaries.",
-        "B) Implement FairBatch online adaptive mini-batch resampling that dynamically adjusts group sampling ratios based on real-time fairness loss gradients.",
-        "C) Apply static synthetic data generation (SMOTE-ENC) during weekly batch retraining cycles to fix class ratios.",
-        "D) Enforce strict Equal Opportunity by fixing global threshold cutoffs based on historical Receiver Operating Characteristic (ROC) curves."
+        "A) Ridge Regression optimization forces all continuous predictions to be strictly between 0 and 1, preventing custom thresholding.",
+        "B) Regression models optimize residual sum of squares (distance error) rather than likelihood, producing unbounded output scores that do not represent posterior probabilities $P(Sepsis|Vitals)$ required for precise Neyman-Pearson risk control.",
+        "C) Probabilistic classification automatically removes the need for feature normalization, whereas Ridge Regression degrades when handling real-time vital streams.",
+        "D) Continuous regression models cannot generate Receiver Operating Characteristic (ROC) or Precision-Recall curves."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Implement FairBatch online adaptive mini-batch resampling that dynamically adjusts group sampling ratios based on real-time fairness loss gradients.",
-      "explanation": "FairBatch is an adaptive in-processing algorithm designed for streaming or non-stationary environments. It dynamically adjusts the sampling probabilities (mini-batch selection ratios) of different demographic groups and classes based on the model's intermediate fairness loss gradients. This continuously rebalances the trade-off between fairness (e.g., Equal Opportunity or Demographic Parity) and accuracy as concept drift occurs, eliminating the need for full offline retrains. Static re-sampling (Option C) or static thresholding (Option D) decay rapidly under non-stationary drift, while Kernel SVMs (Option A) do not scale well to streaming e-commerce data volumes."
+      "correct_answer_text": "B) Regression models optimize residual sum of squares (distance error) rather than likelihood, producing unbounded output scores that do not represent posterior probabilities $P(Sepsis|Vitals)$ required for precise Neyman-Pearson risk control.",
+      "explanation": "Regression models optimize distance-based metrics (e.g., $L_2$ distance / MSE), generating unbounded predictions that lack probabilistic interpretation. Setting arbitrary post-hoc threshold cutoffs on regression scores does not map to true underlying event probabilities $P(Y=1|X)$. A probabilistic classifier (e.g., Logistic Regression or Calibrated XGBoost) trained via Log-Loss / Cross-Entropy directly estimates posterior class probabilities. This enables decision-theoretic threshold tuning (Neyman-Pearson framework) to strictly bound the False Positive Rate at $\\le 2\\%$ based on explicit risk-cost matrices."
     }
   ]
 }
