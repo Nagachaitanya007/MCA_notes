@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a distributed saga step implemented in a Spring Boot microservice fails to roll back database changes when a downstream invocation fails. The method snippet is as follows:\n\njava\n@Service\npublic class PaymentSagaService {\n\n    @Autowired\n    private AccountRepository accountRepository;\n    \n    @Autowired\n    private PaymentClient paymentClient;\n\n    @Transactional\n    public void processPayment(String accountId, BigDecimal amount) throws PaymentProcessingException {\n        accountRepository.reserveFunds(accountId, amount);\n        try {\n            paymentClient.executeRemotePayment(accountId, amount);\n        } catch (FeignException e) {\n            throw new PaymentProcessingException(\"Remote payment failed\", e);\n        }\n    }\n}\n\n\nWhen `FeignException` is caught and rethrown as `PaymentProcessingException` (which extends `java.lang.Exception`), the `accountRepository.reserveFunds` transaction commits successfully instead of rolling back.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "You are debugging a production issue where an order processing microservice fails to roll back local database transactions when a downstream REST call fails with a `HttpServerErrorException`. You inspect the Spring service implementation:\n\njava\n@Service\npublic class OrderService {\n    @Autowired\n    private OrderRepository orderRepo;\n    @Autowired\n    private PaymentClient paymentClient;\n\n    public void processOrder(Order order) {\n        try {\n            this.executeTransaction(order);\n        } catch (Exception e) {\n            log.error(\"Failed processing order\", e);\n            throw e;\n        }\n    }\n\n    @Transactional(rollbackFor = Exception.class)\n    public void executeTransaction(Order order) {\n        orderRepo.save(order);\n        paymentClient.charge(order.getAmount()); // Throws HttpServerErrorException\n    }\n}\n",
+      "question": "What is the primary cause of the local database transaction failing to roll back when an exception occurs?",
       "options": [
-        "A) Spring AOP proxies cannot intercept exceptions caught within internal `try-catch` blocks.",
-        "B) By default, Spring's `@Transactional` aspect only triggers a rollback for unchecked exceptions (`RuntimeException` and `Error`), not checked exceptions like `PaymentProcessingException`.",
-        "C) `FeignException` is executed in a separate HTTP worker thread pool, causing the Spring transaction context to be detached.",
-        "D) The database driver automatically commits the transaction when a checked exception crosses the boundary of a `@Service` bean."
+        "A) `HttpServerErrorException` is caught in `processOrder`, which automatically clears the rollback status in `TransactionSynchronizationManager`.",
+        "B) Calling `executeTransaction` via `this` bypasses the Spring AOP proxy, preventing `@Transactional` from intercepting the method call and opening a transaction.",
+        "C) The `@Transactional` annotation requires `noRollbackFor` to be explicitly defined when integrating with remote HTTP clients.",
+        "D) `PaymentClient` executes on a separate thread, causing the exception to be thrown outside the scope of the thread-local transaction context."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) By default, Spring's `@Transactional` aspect only triggers a rollback for unchecked exceptions (`RuntimeException` and `Error`), not checked exceptions like `PaymentProcessingException`.",
-      "explanation": "In Spring's declarative transaction management, the `TransactionInterceptor` catches exceptions thrown from the `@Transactional` method. By default, it checks `RuleBasedTransactionAttribute.rollbackOn(Throwable ex)`, which returns `true` only for instances of `RuntimeException` or `Error`. Because `PaymentProcessingException` extends `Exception` (checked exception), Spring considers it an expected business outcome and commits the transaction. To fix this, you must specify `@Transactional(rollbackFor = PaymentProcessingException.class)` or extend `RuntimeException`."
+      "correct_answer_text": "B) Calling `executeTransaction` via `this` bypasses the Spring AOP proxy, preventing `@Transactional` from intercepting the method call and opening a transaction.",
+      "explanation": "Spring's declarative transaction management relies on dynamic proxies (CGLIB or JDK Dynamic Proxies). When `processOrder` invokes `this.executeTransaction(order)`, it performs a direct target-object method call in Java memory rather than going through the Spring proxy object. Consequently, the proxy's `TransactionInterceptor` never executes, no database transaction is started for `executeTransaction`, and no rollback behavior is triggered when the exception occurs."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where an asynchronous distributed worker microservice uses `Resilience4j` `@CircuitBreaker` on an asynchronous method returning `CompletableFuture<String>`. Under heavy downstream latency and HTTP 500 responses, the circuit breaker remains in the `CLOSED` state and fails to transition to `OPEN`, allowing cascading failures to overwhelm the system.\n\nThe method signature is:\n\njava\n@CircuitBreaker(name = \"downstreamService\")\npublic CompletableFuture<String> callDownstreamAsync() {\n    return CompletableFuture.supplyAsync(() -> restTemplate.getForObject(URL, String.class));\n}\n",
-      "question": "What is the underlying cause of the Circuit Breaker failing to record exceptions and transition to `OPEN`?",
+      "scenario": "You are debugging a production issue where a distributed saga orchestration service hangs indefinitely during failure recovery. The service uses `CompletableFuture.allOf()` to execute concurrent calls to inventory, payment, and shipping microservices. When the payment service throws a `TimeoutException`, the orchestrator fails to immediately trigger compensating transactions for the inventory service.",
+      "question": "What is the underlying mechanic in `CompletableFuture.allOf()` that causes the compensation workflow to delay or hang under failure conditions?",
       "options": [
-        "A) Resilience4j's Spring AOP aspect executes synchronously upon method invocation; because the method returns a non-null `CompletableFuture` instantly, the aspect treats the execution as successful before the async exception occurs.",
-        "B) `CompletableFuture` swallows all exceptions internally by default unless `.get()` or `.join()` is called within the same stack frame.",
-        "C) Spring AOP proxies cannot wrap methods that return parameterized generic types like `CompletableFuture<String>`.",
-        "D) The `RestTemplate` instance throws exceptions on a background thread that bypasses JVM thread local context required for Resilience4j metrics."
+        "A) `CompletableFuture.allOf()` immediately cancels pending futures on failure, but blocks the thread pool while running `System.gc()` to clean up incomplete references.",
+        "B) `CompletableFuture.allOf()` returns a future that completes only when ALL constituent futures complete (normally or exceptionally), failing to short-circuit if another future is blocked.",
+        "C) `CompletableFuture.allOf()` converts all checked exceptions to `ExecutionException` and suppresses uncaught exceptions thrown in `ForkJoinPool.commonPool()`.",
+        "D) `CompletableFuture.allOf()` wraps sub-tasks in a synchronized block that deadlocks when multiple futures throw exceptions concurrently."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Resilience4j's Spring AOP aspect executes synchronously upon method invocation; because the method returns a non-null `CompletableFuture` instantly, the aspect treats the execution as successful before the async exception occurs.",
-      "explanation": "Spring AOP aspects surround the synchronous invocation of `callDownstreamAsync()`. Since `CompletableFuture.supplyAsync()` immediately returns an uncompleted `CompletableFuture` reference, the aspect sees a successful, non-exceptional method execution and records a success in the circuit breaker metrics. The exception that occurs later when the asynchronous thread completes is missed unless Resilience4j's explicit asynchronous completion handling (`CompletionStage` support) or functional wrappers (e.g., `CircuitBreaker.decorateCompletionStage`) are configured to attach callbacks to the returned `CompletableFuture` stage."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) `CompletableFuture.allOf()` returns a future that completes only when ALL constituent futures complete (normally or exceptionally), failing to short-circuit if another future is blocked.",
+      "explanation": "`CompletableFuture.allOf(...)` yields a new future that completes only when *every* supplied future completes (either successfully or with an exception). It does not short-circuit on the first exception. If one remote service fails fast with an exception while another downstream network call hangs due to unconfigured socket timeouts, `allOf()` will remain uncompleted until the hung future finishes. This prevents downstream `.exceptionally()` or failure-handling blocks from executing immediately to trigger compensations."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a high-throughput Java microservice handling distributed events suddenly starts logging `java.lang.NullPointerException` with an completely empty stack trace (`java.lang.NullPointerException: null` without any `at com.example...` stack frames). This prevents distributed tracing and log aggregation tools from identifying which component thrown the exception.",
-      "question": "What is the underlying JVM mechanic causing this missing stack trace, and how can it be resolved?",
+      "scenario": "You are debugging a production issue where a Spring Kafka consumer processing financial events causes HikariCP database connection pool exhaustion during external gateway outages. The consumer method is marked with `@Transactional` and relies on Spring Kafka's `DefaultErrorHandler` configured with an `ExponentialBackOff` for in-flight retries.",
+      "question": "What is the root cause of the HikariCP pool exhaustion during repeated exception retries?",
       "options": [
-        "A) The Spring Cloud Sleuth/Micrometer Tracing context exceeded its max header size, causing the log appender to truncate the `Throwable` stack trace.",
-        "B) High memory pressure triggered the Garbage Collector to purge `Throwable.stackTrace` array fields from heap memory during concurrent mark-sweep.",
-        "C) The HotSpot JVM JIT compiler optimized fast-path exception throwing via `-XX:+OmitStackTraceInFastThrow`, reusing a pre-allocated stackless exception instance after identical exceptions occurred repeatedly.",
-        "D) The thread pool worker running the task threw an exception while holding a lock on `System.err`, causing thread deadlocks during stack trace rendering."
+        "A) The `DefaultErrorHandler` retries the listener method synchronously on the container thread while holding the active `@Transactional` JDBC connection open across sleep intervals.",
+        "B) Each failed retry attempt leaves an unclosed JDBC `Connection` object in the ThreadLocal context of the Kafka consumer, creating a memory leak in the JVM heap.",
+        "C) The `@KafkaListener` thread spawns new worker threads in `ForkJoinPool.commonPool()` on every exception, each acquiring an additional DB connection.",
+        "D) HikariCP automatically marks connections as broken when a `RuntimeException` crosses a `@Transactional` boundary, forcing the pool to recreate max connections."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The HotSpot JVM JIT compiler optimized fast-path exception throwing via `-XX:+OmitStackTraceInFastThrow`, reusing a pre-allocated stackless exception instance after identical exceptions occurred repeatedly.",
-      "explanation": "The HotSpot JVM JIT compiler includes an optimization controlled by `-XX:+OmitStackTraceInFastThrow` (enabled by default). When built-in exceptions such as `NullPointerException`, `ArithmeticException`, or `ArrayOutOfBoundsException` are thrown repeatedly from the exact same location, C2 compiler replaces the exception creation with a fast path that returns a single, pre-allocated exception instance without a stack trace to reduce creation overhead. To see the full stack trace in logs during debugging, the JVM flag `-XX:-OmitStackTraceInFastThrow` can be applied."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The `DefaultErrorHandler` retries the listener method synchronously on the container thread while holding the active `@Transactional` JDBC connection open across sleep intervals.",
+      "explanation": "When `@Transactional` wraps a `@KafkaListener` method, the transaction interceptor acquires a JDBC `Connection` from HikariCP before entering the listener method. If the method throws an exception and the `DefaultErrorHandler` handles it in-place using blocking retries (`FixedBackOff` or `ExponentialBackOff`), the retry loop pauses execution directly on the listener thread. Because the `@Transactional` context has not completed, the acquired JDBC connection remains bound to the thread during the entire backoff duration. Across multiple concurrent consumer threads experiencing failures, all pool connections become locked in sleeping retry states, causing connection pool exhaustion for the application."
     }
   ]
 }
