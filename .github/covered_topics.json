@@ -166,7 +166,8 @@
     "The CAP Theorem: Choosing between AP and CP in Distributed Systems",
     "Anatomy of the Partition: Engineering AP vs. CP Decisions in Distributed Systems",
     "CAP Theorem: Fault Isolation and Protocol Selection in CP vs. AP Architectures",
-    "CAP Theorem: Practical System Design for CP vs. AP Trade-offs"
+    "CAP Theorem: Practical System Design for CP vs. AP Trade-offs",
+    "The CAP Theorem: Engineering Trade-Offs Between AP and CP Architectures"
   ],
   "Design a Scalable File Storage System (S3 Internals, CDN)": [
     "Distributed Object Storage & Global Delivery Architecture",
