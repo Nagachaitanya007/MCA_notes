@@ -27,7 +27,8 @@
     "Scatter-Gather Aggregation: CompletableFuture Pipelines vs. Virtual Thread Parallel Streams",
     "Task Cancellation Mechanics: Clean Teardowns across Virtual Threads and CompletableFuture",
     "The JVM Network Poller: Bridging Virtual Threads and OS-Level Non-Blocking I/O",
-    "Observability and Diagnostics for Virtual Threads: JFR Events, Thread Dumps, and Pinning Detection"
+    "Observability and Diagnostics for Virtual Threads: JFR Events, Thread Dumps, and Pinning Detection",
+    "CompletableFuture Lock-Free State Machine: Treiber Stacks, Completion Chains, and AltResult Mechanics"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
