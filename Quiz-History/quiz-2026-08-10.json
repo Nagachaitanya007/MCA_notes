@@ -1,48 +1,48 @@
 {
-  "topic": "Exception Handling Strategies in Distributed Systems",
-  "mode": "Java",
+  "topic": "Machine Learning: Classification vs Regression Scenarios",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where payment status updates remain stuck in `PROCESSING` status in the database despite the remote payment gateway throwing a `PaymentException`. Database modifications are unexpectedly committing instead of rolling back. Here is the service snippet:\n\njava\n@Service\npublic class PaymentService {\n    @Autowired\n    private PaymentRepository paymentRepo;\n\n    public void processPayment(Payment payment) throws PaymentException {\n        try {\n            executePaymentTransaction(payment);\n        } catch (PaymentException e) {\n            log.error(\"Payment execution failed\", e);\n            throw e;\n        }\n    }\n\n    @Transactional(rollbackFor = PaymentException.class)\n    public void executePaymentTransaction(Payment payment) throws PaymentException {\n        paymentRepo.updateStatus(payment.getId(), \"PROCESSING\");\n        callRemoteGateway(payment); // Throws PaymentException on failure\n        paymentRepo.updateStatus(payment.getId(), \"SUCCESS\");\n    }\n}\n",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A logistics conglomerate wants to optimize fleet routing by predicting exact fuel consumption (in liters) per trip based on real-time vehicle telematics (average speed, payload weight, road elevation changes, and ambient temperature). However, the engineering team framed the problem as predicting discrete fuel efficiency tiers ('Low', 'Medium', 'High') using Ordinal Logistic Regression to simplify real-time dashboard visualization. During field trials, route optimization algorithms perform poorly because continuous cost-gradient calculations fail due to step-function outputs, leading to suboptimal sub-route assignments.",
+      "question": "From a machine learning system architecture perspective, what fundamental formulation error was made, and how should the pipeline be restructured to support fine-grained route optimization?",
       "options": [
-        "A) `PaymentException` is a checked exception, so Spring Transaction Manager ignores `rollbackFor` unless explicit transactional propagation is set.",
-        "B) Self-invocation of `executePaymentTransaction()` bypasses the Spring CGLIB proxy, preventing `@Transactional` aspect advice from executing.",
-        "C) Catching and re-throwing `PaymentException` inside `processPayment()` clears the transaction manager's rollback flag.",
-        "D) `@Transactional` requires `Propagation.REQUIRES_NEW` when invoked from a non-transactional caller method."
+        "A) Converting a continuous target into discrete ordinal classes resulted in loss of quantitative variance; the system must be reformulated as a Regression task (e.g., Gradient Boosted Regression Trees) evaluated via RMSE.",
+        "B) Ordinal Logistic Regression suffers from severe class imbalance in multi-tier outputs; the pipeline should be upgraded to a Multi-class Support Vector Machine (SVM) with an RBF kernel.",
+        "C) Telematics features are inherently collinear; applying Principal Component Analysis (PCA) prior to the classification model will restore continuous probability gradients.",
+        "D) Classification models inherently ignore temporal constraints; transforming the dataset into a time-series classification model using LSTM networks will restore exact fuel volume estimation."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Self-invocation of `executePaymentTransaction()` bypasses the Spring CGLIB proxy, preventing `@Transactional` aspect advice from executing.",
-      "explanation": "Spring AOP uses CGLIB dynamic proxies to intercept method calls and wrap them with transaction boundaries (e.g., `TransactionInterceptor`). When `processPayment()` calls `this.executePaymentTransaction()`, it is a direct internal method invocation (`this`), bypassing the Spring proxy wrapper entirely. Consequently, no transaction is created or intercepted, and auto-commit behavior persists individual repository updates, leaving the record committed in `PROCESSING` status when the exception occurs."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Converting a continuous target into discrete ordinal classes resulted in loss of quantitative variance; the system must be reformulated as a Regression task (e.g., Gradient Boosted Regression Trees) evaluated via RMSE.",
+      "explanation": "Route optimization algorithms (like Dijkstra's or dynamic programming solvers) rely on continuous loss/cost functions to calculate exact edge weights. Discretizing continuous target values (fuel consumption in liters) into ordinal bins collapses fine-grained variance into step functions. This discards critical functional relationships required by optimization solvers. Restructuring the task as a continuous regression problem allows the system to output smooth scalar estimations evaluated through metrics like Root Mean Squared Error (RMSE) or Mean Absolute Error (MAE)."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where an order fulfillment microservice uses the Transactional Outbox pattern with multiple background worker nodes to process failed event publishing retries. Under peak traffic, downstream services report processing duplicate events out-of-order, and worker nodes generate high volume of `DeadlockLoserDataAccessException` errors in the logs while attempting to mark outbox records as `PROCESSED`.",
-      "question": "What is the most effective architectural fix for the background outbox polling query to eliminate these lock deadlocks and duplicate event dispatching?",
+      "scenario": "A FinTech company processes 50 million transactions daily and aims to detect high-risk fraudulent events. The dataset features extreme class imbalance, with fraud occurring in only 0.01% of cases. A data scientist configures a Neural Network using a Sigmoid output layer, but trains it using Mean Squared Error (MSE) loss\u2014treating probability estimation as a continuous regression task\u2014hoping to capture fine-grained risk scores rather than binary decisions. In production, the model predictions heavily squash around 0.0001, failing to trigger security alerts even for obvious high-risk vectors.",
+      "question": "Why did framing the loss function as Mean Squared Error (MSE) for probability estimation in this imbalanced classification scenario lead to vanishing gradients and prediction squashing?",
       "options": [
-        "A) Wrap the polling execution block in `@Transactional(isolation = Isolation.SERIALIZABLE)` to enforce strict single-threaded serialization.",
-        "B) Configure the outbox table query to use `SELECT ... FOR UPDATE SKIP LOCKED` when fetching pending records.",
-        "C) Implement Optimistic Locking using a `@Version` annotation on the `Outbox` entity class.",
-        "D) Increase the Spring HikariCP pool size and set `Propagation.REQUIRES_NEW` on the publisher transactional method."
+        "A) Combining Sigmoid activation with MSE loss produces non-convex error surfaces with vanishing gradients for extreme misclassifications, unlike Binary Cross-Entropy which compensates via its logarithmic term.",
+        "B) MSE loss requires continuous target labels; because ground-truth labels are binary (0/1), MSE forces the output variance to zero via the Central Limit Theorem.",
+        "C) MSE assumes an underlying Gaussian distribution of errors, whereas probability outputs strictly follow a Poisson distribution, causing scale miscalibration.",
+        "D) MSE scales exponentially with high-dimensional feature spaces, forcing weight vectors to collapse to zero when handling sparse transactional data."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Configure the outbox table query to use `SELECT ... FOR UPDATE SKIP LOCKED` when fetching pending records.",
-      "explanation": "In multi-node distributed outbox architectures, concurrent worker threads query the same outbox table for pending records. Plain `SELECT ... FOR UPDATE` causes threads to block and deadlock when contending for overlapping row locks. Using `SELECT ... FOR UPDATE SKIP LOCKED` instructs the RDBMS to acquire row locks on available pending rows and immediately skip any rows already locked by other nodes/threads. This prevents lock contention, avoids deadlocks (`DeadlockLoserDataAccessException`), and guarantees that nodes do not pick up the same outbox records concurrently."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Combining Sigmoid activation with MSE loss produces non-convex error surfaces with vanishing gradients for extreme misclassifications, unlike Binary Cross-Entropy which compensates via its logarithmic term.",
+      "explanation": "When Sigmoid activation g(z) is paired with Mean Squared Error (MSE), the derivative of the loss with respect to weights contains the factor g'(z) = g(z)(1 - g(z)). When predicted outputs approach 0 or 1, g'(z) approaches zero, leading to vanishing gradients during backpropagation. This makes the loss surface non-convex and slow to learn, especially under severe class imbalance where predictions stay near zero. Binary Cross-Entropy (Log Loss) cancels out this derivative term in its gradient calculation, maintaining strong gradient signals even for extreme misclassifications."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a microservice uses Resilience4j `@Bulkhead(name = \"serviceA\", type = Bulkhead.Type.THREADPOOL)` alongside `@CircuitBreaker`. During network degradation, fallback methods fail unexpectedly with `NullPointerException` when attempting to fetch user session details from `TenantContext.getCurrentTenant()`, which uses `ThreadLocal` storage.",
-      "question": "Why is `TenantContext.getCurrentTenant()` returning `null` inside the bulkhead fallback execution context?",
+      "scenario": "A genomic diagnostics platform models patient Time-To-Progression (TTP in months) for cancer recurrence using a dataset containing 25,000 gene expression features but only 300 clinical samples (p >> n). A junior developer fits a Polynomial Ridge Regression model directly to raw features. The model yields an R-squared of 0.99 on training data but produces negative R-squared values on holdout validation sets, despite tuning the L2 regularization hyperparameter.",
+      "question": "Given the extreme high-dimensional constraint (p >> n), which methodological shift best addresses this overparameterization issue while preserving the continuous regression objective?",
       "options": [
-        "A) Resilience4j resets all thread-local storage upon exception throwing before handing execution over to the fallback method.",
-        "B) `ThreadPoolBulkhead` executes the wrapped method call and fallback within a separate thread pool worker, which does not automatically inherit the caller's `ThreadLocal` context.",
-        "C) The Spring Proxy clears thread contexts whenever a fallback method is invoked outside of the main `@Transactional` boundaries.",
-        "D) Resilience4j fallbacks execute asynchronously inside the JVM Garbage Collector reference queue thread, which operates with an isolated memory context."
+        "A) Transition to L1 Regularization (Lasso) or ElasticNet for embedded feature selection, combined with dimensionality reduction (e.g., PCA/UMAP) before regression modeling.",
+        "B) Reformulate the target into a binary classification task ('Early Recurrence' vs 'Late Recurrence') using a Decision Tree with unlimited depth to ignore irrelevant features.",
+        "C) Replace Ridge Regression with Standard Ordinary Least Squares (OLS) after applying Softmax normalization across sample dimensions.",
+        "D) Apply K-Means Clustering on the target variable TTP to convert the continuous output into regression clusters, then train independent Ridge models per cluster."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) `ThreadPoolBulkhead` executes the wrapped method call and fallback within a separate thread pool worker, which does not automatically inherit the caller's `ThreadLocal` context.",
-      "explanation": "`ThreadPoolBulkhead` isolates execution by dispatching the wrapped service call (and subsequent fallback handling) to a dedicated thread pool context. Standard Java `ThreadLocal` variables are bound strictly to the thread that instantiated/populated them. When execution switches to a Resilience4j bulkhead pool worker thread, the calling thread's `ThreadLocal` state (like tenant or security contexts) is absent (`null`). Resolving this requires using `ContextPropagator` extensions or custom `TaskDecorator` hooks to explicitly snapshot and transfer `ThreadLocal` state across thread boundaries."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Transition to L1 Regularization (Lasso) or ElasticNet for embedded feature selection, combined with dimensionality reduction (e.g., PCA/UMAP) before regression modeling.",
+      "explanation": "In high-dimensional settings where p >> n, L2 regularization (Ridge) shrinks weight magnitudes toward zero but keeps all 25,000 features in the model, retaining noise and leading to extreme overfitting (especially with polynomial expansion). L1 regularization (Lasso) introduces a diamond-shaped constraint region that sets non-informative feature coefficients to exactly zero, performing feature selection. Combining L1/ElasticNet with unsupervised feature extraction (PCA/UMAP) directly tackles the p >> n bottleneck while maintaining the exact continuous output (months to progression) required for clinical analysis."
     }
   ]
 }

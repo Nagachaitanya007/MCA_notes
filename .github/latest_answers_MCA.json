@@ -1,48 +1,48 @@
 {
-  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
+  "topic": "Machine Learning: Classification vs Regression Scenarios",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A smart city traffic monitoring system deploys a CNN on edge devices (Jetson Nano) to detect pedestrians and vehicles from high-resolution video feeds in real-time. The initial architecture uses standard 7x7 convolutional layers with large channel dimensions, leading to high latency (>65ms per frame) and frame drops. The edge engineering team needs to cut parameter counts and FLOPs significantly while maintaining the 7x7 receptive field size and feature representation capacity.",
-      "question": "Which architectural re-engineering strategy provides the best computational trade-off without reducing the spatial receptive field?",
+      "scenario": "A logistics conglomerate wants to optimize fleet routing by predicting exact fuel consumption (in liters) per trip based on real-time vehicle telematics (average speed, payload weight, road elevation changes, and ambient temperature). However, the engineering team framed the problem as predicting discrete fuel efficiency tiers ('Low', 'Medium', 'High') using Ordinal Logistic Regression to simplify real-time dashboard visualization. During field trials, route optimization algorithms perform poorly because continuous cost-gradient calculations fail due to step-function outputs, leading to suboptimal sub-route assignments.",
+      "question": "From a machine learning system architecture perspective, what fundamental formulation error was made, and how should the pipeline be restructured to support fine-grained route optimization?",
       "options": [
-        "A) Replace each 7x7 convolution with three stacked 3x3 depthwise separable convolutions.",
-        "B) Increase the stride of the 7x7 convolution from 1 to 4 and append a max-pooling layer.",
-        "C) Replace 7x7 convolutions with dilated 1x1 convolutions while doubling channel depth.",
-        "D) Apply Global Average Pooling directly to the input frame before applying 7x7 convolutions."
+        "A) Converting a continuous target into discrete ordinal classes resulted in loss of quantitative variance; the system must be reformulated as a Regression task (e.g., Gradient Boosted Regression Trees) evaluated via RMSE.",
+        "B) Ordinal Logistic Regression suffers from severe class imbalance in multi-tier outputs; the pipeline should be upgraded to a Multi-class Support Vector Machine (SVM) with an RBF kernel.",
+        "C) Telematics features are inherently collinear; applying Principal Component Analysis (PCA) prior to the classification model will restore continuous probability gradients.",
+        "D) Classification models inherently ignore temporal constraints; transforming the dataset into a time-series classification model using LSTM networks will restore exact fuel volume estimation."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Replace each 7x7 convolution with three stacked 3x3 depthwise separable convolutions.",
-      "explanation": "Stacking three 3x3 convolutions achieves the exact same effective receptive field (1 + 3*(3-1) = 7) as a single 7x7 convolution, but reduces parameter count from 49 to 27 per channel. Further converting them to depthwise separable convolutions separates spatial filtering from channel mixing, dramatically reducing FLOPs and latency to make real-time edge processing feasible."
+      "correct_answer_text": "A) Converting a continuous target into discrete ordinal classes resulted in loss of quantitative variance; the system must be reformulated as a Regression task (e.g., Gradient Boosted Regression Trees) evaluated via RMSE.",
+      "explanation": "Route optimization algorithms (like Dijkstra's or dynamic programming solvers) rely on continuous loss/cost functions to calculate exact edge weights. Discretizing continuous target values (fuel consumption in liters) into ordinal bins collapses fine-grained variance into step functions. This discards critical functional relationships required by optimization solvers. Restructuring the task as a continuous regression problem allows the system to output smooth scalar estimations evaluated through metrics like Root Mean Squared Error (RMSE) or Mean Absolute Error (MAE)."
     },
     {
       "id": 2,
-      "scenario": "An IoT-based predictive maintenance pipeline processes continuous vibration telemetry sampled at 100 Hz (10,000 timesteps per batch) to forecast heavy machinery failure 24 hours in advance. A standard Vanilla RNN architecture trained using Backpropagation Through Time (BPTT) fails completely: gradients either vanish to zero or explode to NaN after 50 timesteps, preventing the network from learning long-term cyclic stress patterns.",
-      "question": "Which system modification best resolves these gradient stability issues while preserving temporal dependencies across 10,000 timesteps?",
+      "scenario": "A FinTech company processes 50 million transactions daily and aims to detect high-risk fraudulent events. The dataset features extreme class imbalance, with fraud occurring in only 0.01% of cases. A data scientist configures a Neural Network using a Sigmoid output layer, but trains it using Mean Squared Error (MSE) loss\u2014treating probability estimation as a continuous regression task\u2014hoping to capture fine-grained risk scores rather than binary decisions. In production, the model predictions heavily squash around 0.0001, failing to trigger security alerts even for obvious high-risk vectors.",
+      "question": "Why did framing the loss function as Mean Squared Error (MSE) for probability estimation in this imbalanced classification scenario lead to vanishing gradients and prediction squashing?",
       "options": [
-        "A) Switch activation functions from Tanh to ReLU in the Vanilla RNN and disable recurrent dropout.",
-        "B) Implement an LSTM/GRU network with gradient clipping and truncated BPTT.",
-        "C) Increase the learning rate exponentially and apply L2 regularization to recurrent weight matrices.",
-        "D) Normalize the time-series using Min-Max scaling and train using standard Mean Squared Error loss."
+        "A) Combining Sigmoid activation with MSE loss produces non-convex error surfaces with vanishing gradients for extreme misclassifications, unlike Binary Cross-Entropy which compensates via its logarithmic term.",
+        "B) MSE loss requires continuous target labels; because ground-truth labels are binary (0/1), MSE forces the output variance to zero via the Central Limit Theorem.",
+        "C) MSE assumes an underlying Gaussian distribution of errors, whereas probability outputs strictly follow a Poisson distribution, causing scale miscalibration.",
+        "D) MSE scales exponentially with high-dimensional feature spaces, forcing weight vectors to collapse to zero when handling sparse transactional data."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Implement an LSTM/GRU network with gradient clipping and truncated BPTT.",
-      "explanation": "LSTM/GRU architectures mitigate the vanishing gradient problem through additive gating mechanisms (the constant error carousel). Gradient clipping explicitly prevents exploding gradients by capping norm thresholds during BPTT, and truncated BPTT bounds the unrolling horizon (e.g., to 100-200 steps), making long sequence training stable and computationally tractable."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Combining Sigmoid activation with MSE loss produces non-convex error surfaces with vanishing gradients for extreme misclassifications, unlike Binary Cross-Entropy which compensates via its logarithmic term.",
+      "explanation": "When Sigmoid activation g(z) is paired with Mean Squared Error (MSE), the derivative of the loss with respect to weights contains the factor g'(z) = g(z)(1 - g(z)). When predicted outputs approach 0 or 1, g'(z) approaches zero, leading to vanishing gradients during backpropagation. This makes the loss surface non-convex and slow to learn, especially under severe class imbalance where predictions stay near zero. Binary Cross-Entropy (Log Loss) cancels out this derivative term in its gradient calculation, maintaining strong gradient signals even for extreme misclassifications."
     },
     {
       "id": 3,
-      "scenario": "A healthcare AI startup is developing a real-time cardiac abnormality screening system using high-frame-rate Echocardiogram (ECG video) sequences. The training dataset suffers from extreme class imbalance (only 0.5% positive abnormal cases). Fully 3D-CNN models trained on the raw video clips suffer from GPU memory overflow and severe overfitting on the majority healthy class, yielding a high false-negative rate.",
-      "question": "To optimize GPU memory consumption and significantly improve minority class recall, which approach should be implemented?",
+      "scenario": "A genomic diagnostics platform models patient Time-To-Progression (TTP in months) for cancer recurrence using a dataset containing 25,000 gene expression features but only 300 clinical samples (p >> n). A junior developer fits a Polynomial Ridge Regression model directly to raw features. The model yields an R-squared of 0.99 on training data but produces negative R-squared values on holdout validation sets, despite tuning the L2 regularization hyperparameter.",
+      "question": "Given the extreme high-dimensional constraint (p >> n), which methodological shift best addresses this overparameterization issue while preserving the continuous regression objective?",
       "options": [
-        "A) Train a hybrid 2D-CNN-LSTM architecture using Focal Loss and spatio-temporal data augmentation.",
-        "B) Apply uniform random oversampling on frame clips and train a deeper 3D-ResNet using Standard Cross-Entropy loss.",
-        "C) Flatten temporal video frames into a single high-dimensional 2D image and feed it into a standard pre-trained VGG-16 network.",
-        "D) Pass raw frames through a 1D-CNN using Euclidean distance loss against reference normal templates."
+        "A) Transition to L1 Regularization (Lasso) or ElasticNet for embedded feature selection, combined with dimensionality reduction (e.g., PCA/UMAP) before regression modeling.",
+        "B) Reformulate the target into a binary classification task ('Early Recurrence' vs 'Late Recurrence') using a Decision Tree with unlimited depth to ignore irrelevant features.",
+        "C) Replace Ridge Regression with Standard Ordinary Least Squares (OLS) after applying Softmax normalization across sample dimensions.",
+        "D) Apply K-Means Clustering on the target variable TTP to convert the continuous output into regression clusters, then train independent Ridge models per cluster."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Train a hybrid 2D-CNN-LSTM architecture using Focal Loss and spatio-temporal data augmentation.",
-      "explanation": "A hybrid 2D-CNN-LSTM decouples spatial feature extraction (2D-CNN per frame) from temporal sequence learning (LSTM across frame embeddings), consuming far less GPU memory than 3D-CNNs. Focal Loss addresses severe class imbalance by dynamically down-weighting easy negative (normal) examples during gradient updates, focusing learning on hard minority cases and driving up recall."
+      "correct_answer_text": "A) Transition to L1 Regularization (Lasso) or ElasticNet for embedded feature selection, combined with dimensionality reduction (e.g., PCA/UMAP) before regression modeling.",
+      "explanation": "In high-dimensional settings where p >> n, L2 regularization (Ridge) shrinks weight magnitudes toward zero but keeps all 25,000 features in the model, retaining noise and leading to extreme overfitting (especially with polynomial expansion). L1 regularization (Lasso) introduces a diamond-shaped constraint region that sets non-informative feature coefficients to exactly zero, performing feature selection. Combining L1/ElasticNet with unsupervised feature extraction (PCA/UMAP) directly tackles the p >> n bottleneck while maintaining the exact continuous output (months to progression) required for clinical analysis."
     }
   ]
 }
