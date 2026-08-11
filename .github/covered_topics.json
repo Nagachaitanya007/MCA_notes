@@ -196,7 +196,8 @@
     "Database Sharding & Replication Strategies",
     "Read-After-Write Consistency: Mitigating Replication Lag in Primary-Replica Topologies",
     "Dynamic Resharding & Consistent Hashing: How to Scale Shards Without Downtime",
-    "Local vs. Global Secondary Indexes in Sharded Databases"
+    "Local vs. Global Secondary Indexes in Sharded Databases",
+    "Automated Failover & Split-Brain Prevention in Primary-Replica Replication"
   ],
   "Design a Notification System (Kafka + SQS + Webhooks)": [
     "Designing a Scalable Notification System (Kafka + SQS + Webhooks)",
