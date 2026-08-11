@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
-  "mode": "Java",
+  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot REST API experiences continuous Metaspace/Heap growth and eventual `OutOfMemoryError: Java heap space`. The service uses thread pooling for request handling. A code review reveals the following custom request filter:\n\njava\n@Component\npublic class RequestContextFilter implements Filter {\n    private static final ThreadLocal<RequestContext> CONTEXT_HOLDER = \n        ThreadLocal.withInitial(RequestContext::new);\n\n    @Override\n    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) \n            throws IOException, ServletException {\n        RequestContext context = CONTEXT_HOLDER.get();\n        context.setUserData(extractUserData(req));\n        try {\n            chain.doFilter(req, res);\n        } finally {\n            // Context reset logic omitted\n        }\n    }\n}\n",
-      "question": "What is the primary cause of this memory leak in the production environment?",
+      "scenario": "A smart healthcare enterprise system uses an OWL 2 DL (Description Logic) ontology to classify high-frequency real-time patient telemetry streams (>50,000 events/sec). When executing standard Tableau-based reasoners (e.g., HermiT) to perform dynamic subsumption and classification for emergency alerting, inference latency spikes exponentially (NEXPTIME complexity), violating sub-millisecond real-time constraints.",
+      "question": "Which architectural ontology adjustment allows the system to achieve deterministic polynomial-time (P-TIME) reasoning performance while retaining essential class expression capabilities?",
       "options": [
-        "A) The `RequestContext` object is retained in Metaspace due to static reference initialization by Spring Container.",
-        "B) Pooled Tomcat web threads survive long after the HTTP request completes, holding hard references to `RequestContext` instances via their `ThreadLocalMap` because `CONTEXT_HOLDER.remove()` was never invoked.",
-        "C) The Spring proxy for `RequestContextFilter` retains strong references to all requests in the JVM Young Generation.",
-        "D) `ThreadLocal.withInitial()` creates anonymous inner classes that leak class loaders across Garbage Collection cycles."
+        "A) Migrate the ontology profile to OWL 2 EL, which restricts disjunction and universal quantification to guarantee polynomial time reasoning complexity.",
+        "B) Replace Description Logics with First-Order Predicate Calculus using an unbounded Depth-First Search resolution refutation engine.",
+        "C) Convert the ontology to OWL 2 Full and disable the Unique Name Assumption (UNA) across all dynamic individual nodes.",
+        "D) Implement cyclic semantic nets with unbounded marker-passing algorithms for concurrent graph traversal."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Pooled Tomcat web threads survive long after the HTTP request completes, holding hard references to `RequestContext` instances via their `ThreadLocalMap` because `CONTEXT_HOLDER.remove()` was never invoked.",
-      "explanation": "In application servers using thread pools (like Tomcat's `http-nio-*` threads), threads are recycled rather than destroyed after an HTTP request finishes. `ThreadLocal` variables are stored inside each `Thread` instance's internal `ThreadLocalMap`. If `CONTEXT_HOLDER.remove()` is not explicitly called inside a `finally` block, the thread retains a strong reference to the `RequestContext` object even after the request completes, preventing Garbage Collection and causing a memory leak across millions of requests."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Migrate the ontology profile to OWL 2 EL, which restricts disjunction and universal quantification to guarantee polynomial time reasoning complexity.",
+      "explanation": "OWL 2 EL is specifically designed for applications requiring large-scale ontologies with sub-exponential reasoning constraints (e.g., SNOMED CT in healthcare). By omitting construct features like disjunction (ObjectUnionOf), universal quantification (ObjectAllValuesFrom), and non-simple roles, OWL 2 EL guarantees polynomial-time (P-TIME) reasoning complexity for subsumption and classification, overcoming the NEXPTIME worst-case complexity of Tableau algorithms in full OWL 2 DL."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where an ultra-low latency microservice utilizing G1GC experiences periodic latency spikes exceeding 600ms. Analysis of `-Xlog:gc*` reveals frequent `to-space exhausted` messages followed immediately by expensive `Full GC` cycles during peak traffic bursts.",
-      "question": "What is the root cause of `to-space exhausted` in G1GC, and what is the most appropriate initial JVM tuning flag to mitigate it?",
+      "scenario": "An autonomous supply chain platform uses a massive Semantic Network containing over 15 million nodes representing suppliers, logistics hubs, and inventory items. During real-time route optimization queries, standard Spreading Activation experiences catastrophic activation wave explosion when reaching high-degree hub nodes (e.g., 'Central Sorting Hub'), saturating memory and causing false-positive inference paths.",
+      "question": "Which strategy effectively mitigates this combinatorial explosion while maintaining high precision in dynamic relational path recovery?",
       "options": [
-        "A) The Metaspace region is full; increase `-XX:MetaspaceSize` to allow dynamic expansion.",
-        "B) Survivor and Old regions lack sufficient free space to accommodate evacuating live objects during a collection phase; decrease `-XX:InitiatingHeapOccupancyPercent` (IHOP) or increase `-XX:G1ReservePercent`.",
-        "C) The JVM Young Generation is too large; increase `-XX:NewRatio` to reduce Eden allocation and allocate more memory to Old Gen.",
-        "D) Concurrent marking cycles are running too fast; increase `-XX:ConcGCThreads` to throttle GC worker execution."
+        "A) Increase the activation decay factor to 1.0 to ensure activation reaches distant fringe nodes uniformly.",
+        "B) Replace typed relational edges with undirected scalar edges and execute pure Breadth-First Search (BFS).",
+        "C) Implement Constrained Spreading Activation using dynamic firing thresholds, edge-type filtering, and distance decay functions.",
+        "D) Convert the semantic graph into Propositional Logic and evaluate paths using an unconstrained DPLL SAT solver."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Survivor and Old regions lack sufficient free space to accommodate evacuating live objects during a collection phase; decrease `-XX:InitiatingHeapOccupancyPercent` (IHOP) or increase `-XX:G1ReservePercent`.",
-      "explanation": "`to-space exhausted` (or evacuation failure) occurs in G1GC when the garbage collector attempts to evacuate live objects from survivor/eden regions into destination regions (Survivor or Old), but no completely free regions remain. G1 then falls back to a costly full stop-the-world Full GC. Lowering `-XX:InitiatingHeapOccupancyPercent` (IHOP) causes the concurrent marking cycle to start earlier at lower heap occupancy, and increasing `-XX:G1ReservePercent` (default is 10%) reserves a larger buffer of heap specifically to prevent allocation failures during evacuation."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Implement Constrained Spreading Activation using dynamic firing thresholds, edge-type filtering, and distance decay functions.",
+      "explanation": "Standard Spreading Activation on scale-free graphs suffers from severe performance degradation at high-degree nodes (hubs). Constrained Spreading Activation mitigates activation wave explosion by applying: 1) Firing thresholds (nodes only fire if cumulative input activation exceeds a limit), 2) Decay factors (activation attenuates with path length), and 3) Edge-type constraints (restricting activation propagation to specific semantic link types like 'part-of' or 'connected-to')."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a batch job built with Spring Boot and Spring Data JPA/Hibernate crashes with an `OutOfMemoryError` when processing 1,000,000 records inside a single `@Transactional` service method. The code fetches records in paginated batches of 1,000 using `Pageable`.",
-      "question": "Why does paginating the repository queries fail to prevent `OutOfMemoryError` inside the `@Transactional` boundary?",
+      "scenario": "An enterprise anti-money laundering (AML) detection platform uses First-Order Logic (FOL) rules over a massive transactional database. The dataset exhibits severe class imbalance: confirmed fraudulent instances are explicitly recorded, but millions of legitimate transactions remain unflagged (implicit negative data). Operating under the Open World Assumption (OWA), classical FOL reasoners fail to deduce that unflagged transactions are safe, creating millions of unresolved threat candidates.",
+      "question": "Which non-monotonic knowledge representation mechanism correctly resolves this data skew without requiring explicit manual negative labeling of millions of safe transactions?",
       "options": [
-        "A) Hibernate's First-Level Cache (`PersistenceContext`) remains tied to the active Spring transaction, retaining strong references to all 1,000,000 managed entities until the transaction completes.",
-        "B) Spring's `@Transactional` proxy buffers all SQL query execution results in memory to enforce ACID rollback guarantees.",
-        "C) CGLIB dynamic proxies generate dynamic class definitions for every batch page, exhausting Metaspace memory.",
-        "D) Database connection pools duplicate entity instances per page when executing nested SQL queries within transaction boundaries."
+        "A) Monotonic First-Order Logic with strict classical negation explicitly instantiated for all database records.",
+        "B) Negation as Failure (NAF) under the Closed World Assumption (CWA) within a Default Logic framework.",
+        "C) Fuzzy Logic reasoning with a static global membership threshold set at 0.5 for all transactions.",
+        "D) Resolution Refutation utilizing an unindexed forward-chaining Rete algorithm."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Hibernate's First-Level Cache (`PersistenceContext`) remains tied to the active Spring transaction, retaining strong references to all 1,000,000 managed entities until the transaction completes.",
-      "explanation": "In Spring Data JPA, a active `@Transactional` boundary binds the Hibernate `Session` (and its First-Level Cache / `PersistenceContext`) to the current thread for the duration of the transaction. Even though queries are executed in pages of 1,000, every fetched entity becomes managed and stored in the First-Level Cache to track state changes. Over 1,000,000 records, the persistence context holds strong references to all entities until the top-level method exits and the transaction commits, eventually exhausting the JVM heap. The fix involves breaking transactions into smaller chunks or invoking `EntityManager.clear()` / `detach()` periodically."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Negation as Failure (NAF) under the Closed World Assumption (CWA) within a Default Logic framework.",
+      "explanation": "In real-world relational databases with extreme class skew where negative instances are unrecorded, the Open World Assumption (OWA) treats missing facts as 'unknown', leading to an explosion of candidate states. Adopting the Closed World Assumption (CWA) alongside Negation as Failure (NAF) allows the reasoning engine to safely infer that if a transaction cannot be proven fraudulent within a given rulebase, it is default-assumed legitimate, restoring computational efficiency."
     }
   ]
 }
