@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot microservice encounters continuous performance degradation and eventually throws `java.lang.OutOfMemoryError: Java heap space` during nightly batch operations. A developer wrote the following service logic to process thousands of database records in smaller isolated transactions:\n\njava\n@Service\npublic class UserProcessingService {\n    @Autowired\n    private UserRepository userRepository;\n\n    public void processBatch() {\n        try (Stream<User> userStream = userRepository.streamAllBy()) {\n            userStream.forEach(this::processSingleUser);\n        }\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void processSingleUser(User user) {\n        user.setStatus(\"PROCESSED\");\n        userRepository.save(user);\n    }\n}\n",
-      "question": "What is the root cause of the memory retention and subsequent `OutOfMemoryError` in this design?",
+      "scenario": "You are debugging a production issue where a high-throughput Spring Boot REST API experiences continuous Metaspace/Heap growth and eventual `OutOfMemoryError: Java heap space`. The service uses thread pooling for request handling. A code review reveals the following custom request filter:\n\njava\n@Component\npublic class RequestContextFilter implements Filter {\n    private static final ThreadLocal<RequestContext> CONTEXT_HOLDER = \n        ThreadLocal.withInitial(RequestContext::new);\n\n    @Override\n    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) \n            throws IOException, ServletException {\n        RequestContext context = CONTEXT_HOLDER.get();\n        context.setUserData(extractUserData(req));\n        try {\n            chain.doFilter(req, res);\n        } finally {\n            // Context reset logic omitted\n        }\n    }\n}\n",
+      "question": "What is the primary cause of this memory leak in the production environment?",
       "options": [
-        "A) `userStream.forEach` maintains strong references to all processed `User` entities in the Java Heap until the stream is explicitly terminated.",
-        "B) The self-invocation of `processSingleUser` bypasses the Spring CGLIB proxy, executing everything in a non-transactional context where the underlying Hibernate Persistence Context holds all managed entities in memory until the method completes.",
-        "C) Declaring `Propagation.REQUIRES_NEW` creates a separate database connection pool thread per entity, causing thread-local stack memory to exhaust the JVM heap space.",
-        "D) The `streamAllBy()` method executes a native query that bypasses JVM Garbage Collection, forcing objects into the Metaspace region."
+        "A) The `RequestContext` object is retained in Metaspace due to static reference initialization by Spring Container.",
+        "B) Pooled Tomcat web threads survive long after the HTTP request completes, holding hard references to `RequestContext` instances via their `ThreadLocalMap` because `CONTEXT_HOLDER.remove()` was never invoked.",
+        "C) The Spring proxy for `RequestContextFilter` retains strong references to all requests in the JVM Young Generation.",
+        "D) `ThreadLocal.withInitial()` creates anonymous inner classes that leak class loaders across Garbage Collection cycles."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The self-invocation of `processSingleUser` bypasses the Spring CGLIB proxy, executing everything in a non-transactional context where the underlying Hibernate Persistence Context holds all managed entities in memory until the method completes.",
-      "explanation": "Spring declarative transaction management relies on AOP proxies (e.g., CGLIB). Calling `this.processSingleUser(...)` from within `processBatch()` is a self-invocation that bypasses the Spring proxy. Consequently, `@Transactional(propagation = Propagation.REQUIRES_NEW)` is never intercepted or applied. All entity operations execute within the ambient non-transactional or single-transaction scope where Hibernate's First-Level (L1) cache continues to track every attached `User` entity instance across the entire stream iteration. Because the L1 cache retains strong references to these managed entities, GC cannot reclaim them, ultimately causing a Java Heap `OutOfMemoryError`."
+      "correct_answer_text": "B) Pooled Tomcat web threads survive long after the HTTP request completes, holding hard references to `RequestContext` instances via their `ThreadLocalMap` because `CONTEXT_HOLDER.remove()` was never invoked.",
+      "explanation": "In application servers using thread pools (like Tomcat's `http-nio-*` threads), threads are recycled rather than destroyed after an HTTP request finishes. `ThreadLocal` variables are stored inside each `Thread` instance's internal `ThreadLocalMap`. If `CONTEXT_HOLDER.remove()` is not explicitly called inside a `finally` block, the thread retains a strong reference to the `RequestContext` object even after the request completes, preventing Garbage Collection and causing a memory leak across millions of requests."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a high-throughput reactive gRPC microservice using Netty exhibits a steadily rising Resident Set Size (RSS) on Linux. Over 48 hours, the OS terminates the container due to an Out-Of-Memory (OOM) killer event. However, JVM heap usage logs from `-Xlog:gc*` indicate that Java Heap consumption is perfectly stable (hovering around 30% of `-Xmx`), and Metaspace consumption is constant. `-XX:MaxDirectMemorySize` was left at its default value.",
-      "question": "Which issue is most likely causing this non-heap memory leak?",
+      "scenario": "You are debugging a production issue where an ultra-low latency microservice utilizing G1GC experiences periodic latency spikes exceeding 600ms. Analysis of `-Xlog:gc*` reveals frequent `to-space exhausted` messages followed immediately by expensive `Full GC` cycles during peak traffic bursts.",
+      "question": "What is the root cause of `to-space exhausted` in G1GC, and what is the most appropriate initial JVM tuning flag to mitigate it?",
       "options": [
-        "A) Unreleased Netty `ByteBuf` allocations utilizing native direct memory via `PooledByteBufAllocator`, escaping standard Garbage Collection cycles.",
-        "B) Memory fragmentation inside the JVM's Compressed Class Space triggered by high concurrent GC thread allocation.",
-        "C) Thread stack allocation leak caused by creating excessive platform threads using `-Xss2m`.",
-        "D) G1 GC region allocation failure leaking Humongous Objects into the native OS virtual memory space."
+        "A) The Metaspace region is full; increase `-XX:MetaspaceSize` to allow dynamic expansion.",
+        "B) Survivor and Old regions lack sufficient free space to accommodate evacuating live objects during a collection phase; decrease `-XX:InitiatingHeapOccupancyPercent` (IHOP) or increase `-XX:G1ReservePercent`.",
+        "C) The JVM Young Generation is too large; increase `-XX:NewRatio` to reduce Eden allocation and allocate more memory to Old Gen.",
+        "D) Concurrent marking cycles are running too fast; increase `-XX:ConcGCThreads` to throttle GC worker execution."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Unreleased Netty `ByteBuf` allocations utilizing native direct memory via `PooledByteBufAllocator`, escaping standard Garbage Collection cycles.",
-      "explanation": "Netty heavily utilizes Off-Heap Direct Memory via `ByteBuf` and its `PooledByteBufAllocator` for zero-copy I/O operations. Direct memory allocations exist outside the standard JVM heap and are not subject to standard Heap GC routines unless explicitly freed using reference counting (`ReferenceCountUtil.release(msg)` or `byteBuf.release()`) or cleaned up via `Cleaner` instances during explicit GC cycles. If code fails to release reference-counted buffers, native direct memory accumulates without inflating the JVM heap usage metrics, leading to RSS growth until the OS kernel OOM Killer kills the process."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Survivor and Old regions lack sufficient free space to accommodate evacuating live objects during a collection phase; decrease `-XX:InitiatingHeapOccupancyPercent` (IHOP) or increase `-XX:G1ReservePercent`.",
+      "explanation": "`to-space exhausted` (or evacuation failure) occurs in G1GC when the garbage collector attempts to evacuate live objects from survivor/eden regions into destination regions (Survivor or Old), but no completely free regions remain. G1 then falls back to a costly full stop-the-world Full GC. Lowering `-XX:InitiatingHeapOccupancyPercent` (IHOP) causes the concurrent marking cycle to start earlier at lower heap occupancy, and increasing `-XX:G1ReservePercent` (default is 10%) reserves a larger buffer of heap specifically to prevent allocation failures during evacuation."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a latency-sensitive application running on Java 17 with G1 GC (`-Xms32g -Xmx32g`) experiences random 3-second latency spikes. Analysis of the `-Xlog:gc*` output reveals frequent `To-space exhausted` warnings followed immediately by `Evacuation Failure` and expensive multi-second Full GC events during peak traffic.",
-      "question": "Which combination of JVM arguments is the most effective tuning strategy to prevent `To-space exhausted` failures in G1 GC?",
+      "scenario": "You are debugging a production issue where a batch job built with Spring Boot and Spring Data JPA/Hibernate crashes with an `OutOfMemoryError` when processing 1,000,000 records inside a single `@Transactional` service method. The code fetches records in paginated batches of 1,000 using `Pageable`.",
+      "question": "Why does paginating the repository queries fail to prevent `OutOfMemoryError` inside the `@Transactional` boundary?",
       "options": [
-        "A) Increase `-XX:G1ReservePercent` to allocate a larger head-room buffer and decrease `-XX:InitiatingHeapOccupancyPercent` (IHOP) to trigger concurrent marking cycles earlier.",
-        "B) Switch to `-XX:+UseParallelGC` and set `-XX:NewRatio=1` to double the size of the Young Generation survivor spaces.",
-        "C) Set `-XX:MaxGCPauseMillis=5` to force G1 GC to abort evacuation early before running out of free regions.",
-        "D) Increase `-XX:ConcGCThreads` to match total logical CPU cores and disable `-XX:+UseG1GC`."
+        "A) Hibernate's First-Level Cache (`PersistenceContext`) remains tied to the active Spring transaction, retaining strong references to all 1,000,000 managed entities until the transaction completes.",
+        "B) Spring's `@Transactional` proxy buffers all SQL query execution results in memory to enforce ACID rollback guarantees.",
+        "C) CGLIB dynamic proxies generate dynamic class definitions for every batch page, exhausting Metaspace memory.",
+        "D) Database connection pools duplicate entity instances per page when executing nested SQL queries within transaction boundaries."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Increase `-XX:G1ReservePercent` to allocate a larger head-room buffer and decrease `-XX:InitiatingHeapOccupancyPercent` (IHOP) to trigger concurrent marking cycles earlier.",
-      "explanation": "`To-space exhausted` (or Evacuation Failure) happens when G1 GC attempts to evacuate objects from Eden/Survivor regions into Survivor/Old regions during a collection pause, but cannot find any completely empty free regions. Decreasing `InitiatingHeapOccupancyPercent` (IHOP) forces G1 to start the Concurrent Marking Cycle at a lower overall heap usage threshold, reclaiming Old Gen regions sooner before space becomes constrained. Increasing `G1ReservePercent` (default is 10%) reserves a larger percentage of heap memory explicitly as a safety buffer against allocation spikes during evacuation phases, preventing the collector from resorting to expensive STW Full GCs."
+      "correct_answer_text": "A) Hibernate's First-Level Cache (`PersistenceContext`) remains tied to the active Spring transaction, retaining strong references to all 1,000,000 managed entities until the transaction completes.",
+      "explanation": "In Spring Data JPA, a active `@Transactional` boundary binds the Hibernate `Session` (and its First-Level Cache / `PersistenceContext`) to the current thread for the duration of the transaction. Even though queries are executed in pages of 1,000, every fetched entity becomes managed and stored in the First-Level Cache to track state changes. Over 1,000,000 records, the persistence context holds strong references to all entities until the top-level method exits and the transaction commits, eventually exhausting the JVM heap. The fix involves breaking transactions into smaller chunks or invoking `EntityManager.clear()` / `detach()` periodically."
     }
   ]
 }
