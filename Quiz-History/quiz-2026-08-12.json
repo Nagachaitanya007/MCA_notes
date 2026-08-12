@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
-  "mode": "Java",
+  "topic": "Clustering Scenarios: K-Means vs DBSCAN vs Hierarchical",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where an inventory service experiences race conditions and inventory drift under high concurrency. The following Spring service manages stock updates:\n\njava\n@Service\npublic class InventoryCache {\n    private final Map<String, Integer> stockMap = new ConcurrentHashMap<>();\n\n    @Transactional\n    public void deductStock(String itemId, int amount) {\n        Integer current = stockMap.get(itemId);\n        if (current != null && current >= amount) {\n            stockMap.put(itemId, current - amount);\n        }\n    }\n}\n",
-      "question": "What is the primary cause of this bug under high concurrency?",
+      "scenario": "A smart-city logistics enterprise is designing an automated dispatch system to group vehicle GPS locations into dense delivery zones across a city separated by rivers, non-linear highway corridors, and irregular geographic barriers. The raw dataset contains approximately 500,000 spatial coordinates corrupted by intermittent GPS signal noise and multipath reflections (outliers). When the data team evaluated K-Means with Euclidean distance, the resulting clusters crossed natural river boundaries and generated balanced convex blobs that missed actual street-level density patterns.",
+      "question": "Which clustering algorithm should be selected for this deployment, and what architectural reason explains why it outperforms K-Means and Hierarchical Clustering in this scenario?",
       "options": [
-        "A) While individual operations on `ConcurrentHashMap` are atomic, the compound check-then-act sequence (`get` followed by `put`) is not atomic.",
-        "B) Spring `@Transactional` creates a CGLIB proxy that synchronizes execution across threads, causing lock contention and lost updates.",
-        "C) `ConcurrentHashMap` requires explicit calls to `lock()` and `unlock()` when mutated inside a `@Transactional` context.",
-        "D) Unboxing `Integer` causes memory barriers to fail across CPU caches, corrupting the shared `ConcurrentHashMap` state."
+        "A) Agglomerative Hierarchical Clustering with Single Linkage, because it links nearby points across rivers faster than K-Means.",
+        "B) DBSCAN, because it identifies density-connected regions of arbitrary non-spherical shapes while explicitly classifying GPS multipath noise as outliers.",
+        "C) K-Means with Manhattan Distance, because changing the distance metric forces the centroids to respect grid-based city roads.",
+        "D) Bisecting K-Means with Voronoi Tesselation, because it recursively splits spatial boundaries to adapt to river contours."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) While individual operations on `ConcurrentHashMap` are atomic, the compound check-then-act sequence (`get` followed by `put`) is not atomic.",
-      "explanation": "`ConcurrentHashMap` guarantees thread safety for individual method calls like `get` and `put`. However, combining them into a non-atomic check-then-act idiom (`get` -> conditional check -> `put`) creates a race condition. Two threads reading the same `current` value simultaneously will both succeed in the check and overwrite each other's updates. To fix this, atomic concurrent operations such as `computeIfPresent` or `merge` should be used."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) DBSCAN, because it identifies density-connected regions of arbitrary non-spherical shapes while explicitly classifying GPS multipath noise as outliers.",
+      "explanation": "K-Means assumes spherical clusters of similar size and minimizes variance around centroids, making it fail on non-convex, arbitrary geometric shapes like river-separated roads. DBSCAN relies on local density reachability (controlled by epsilon and MinPts), enabling it to trace arbitrary non-linear shapes. Furthermore, DBSCAN natively designates low-density isolated points (GPS noise) as noise/outliers rather than forcing them into a cluster center as K-Means or Hierarchical methods do."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where an in-memory caching component causes high Garbage Collection (GC) latency and eventually crashes with `java.lang.OutOfMemoryError: Java heap space`. Profiling reveals that millions of entries persist in the cache despite reaching its configured maximum capacity:\n\njava\npublic class LruCache<K, V> extends LinkedHashMap<K, V> {\n    private final int maxCapacity;\n\n    public LruCache(int maxCapacity) {\n        super(16, 0.75f, true);\n        this.maxCapacity = maxCapacity;\n    }\n}\n",
-      "question": "What is the primary cause of this memory leak?",
+      "scenario": "An e-commerce platform processing high-throughput streaming clickstream data (60,000 events/second) requires real-time user session clustering to personalize dynamic front-end layouts. The data engineering team initially attempted to run standard DBSCAN and Agglomerative Hierarchical Clustering on batch micro-buffers. However, the pipeline experienced severe memory saturation and latency spikes, failing the SLAs.",
+      "question": "What fundamental computational trade-off causes DBSCAN and Hierarchical Clustering to fail under these real-time streaming constraints, and what alternative strategy is optimal?",
       "options": [
-        "A) Setting `accessOrder` to `true` disables GC reclaiming for `LinkedHashMap.Entry` nodes.",
-        "B) The cache fails to override `LinkedHashMap.removeEldestEntry()`, which defaults to returning `false`, causing the map to grow indefinitely.",
-        "C) `LinkedHashMap` uses `SoftReference` wrappers internally when constructed with `accessOrder = true`, preventing immediate memory collection.",
-        "D) `LinkedHashMap` is not thread-safe, causing its doubly-linked list pointers to loop endlessly and prevent node removal."
+        "A) DBSCAN and Hierarchical Clustering have high computational and space complexities (O(N^2) to O(N^3)) due to pairwise distance evaluations; Mini-Batch K-Means should be used instead for O(N) streaming performance.",
+        "B) Hierarchical Clustering fails because streaming data cannot produce a dendrogram; standard K-Means with k-means++ initialization should be run on every incoming stream item.",
+        "C) DBSCAN fails because the epsilon parameter changes dynamically with stream velocity, whereas Hierarchical Clustering requires O(N) time but excessive disk I/O.",
+        "D) DBSCAN and Hierarchical Clustering are non-deterministic, causing stream state corruption; Spectral Clustering with GPU acceleration should be used."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The cache fails to override `LinkedHashMap.removeEldestEntry()`, which defaults to returning `false`, causing the map to grow indefinitely.",
-      "explanation": "In `LinkedHashMap`, automatic eviction of old entries occurs during `put` or `putAll` execution only if `removeEldestEntry(Map.Entry)` returns `true`. The default implementation in `LinkedHashMap` always returns `false`. Without overriding this method to evaluate `size() > maxCapacity`, the map acts as a standard unbounded map regardless of the `maxCapacity` field."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) DBSCAN and Hierarchical Clustering have high computational and space complexities (O(N^2) to O(N^3)) due to pairwise distance evaluations; Mini-Batch K-Means should be used instead for O(N) streaming performance.",
+      "explanation": "Standard Agglomerative Hierarchical Clustering requires O(N^3) time (or O(N^2) with optimized spatial trees) and O(N^2) space complexity to maintain the distance matrix. Standard DBSCAN requires O(N^2) time without spatial indexes (or O(N log N) with spatial indexing, which degrades in higher dimensions). In a 60,000 events/sec streaming context, maintaining pairwise distance matrices creates catastrophic overhead. Mini-Batch K-Means uses small, random batches of data to incrementally update cluster centroids with O(N) time complexity, making it suitable for low-latency, real-time streaming."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where an event publishing framework uses `IdentityHashMap` to track active listener instances. When beans wrapped in Spring dynamic proxies (e.g., annotated with `@Async` or `@Transactional`) attempt to unregister themselves using `listeners.remove(this)`, the registry fails to locate and remove the entries, leading to unbounded memory growth.",
-      "question": "What is the primary cause of this cleanup failure?",
+      "scenario": "A bioinformatics research institute is analyzing a dataset of 3,000 novel genomic expressions to discover drug-target taxonomies. The domain experts require a deterministic method that reveals nested multi-level parent-child sub-relationships (e.g., Super-family -> Family -> Sub-family) without pre-specifying an arbitrary total number of clusters (K), as the baseline biological categories are completely unknown.",
+      "question": "Which clustering approach and configuration is best suited for generating this multi-level taxonomy, and why?",
       "options": [
-        "A) `IdentityHashMap` relies on reference equality (`==`) rather than Object `equals()`, so comparing target instances (`this`) with CGLIB/JDK dynamic proxy references fails.",
-        "B) Spring CGLIB proxies override `System.identityHashCode()`, breaking `IdentityHashMap` bucket indexing.",
-        "C) `IdentityHashMap` mutates internal table buckets when proxies undergo garbage collection re-mapping.",
-        "D) Spring dynamic proxies override `hashCode()` dynamically on every invocation, causing `IdentityHashMap` lookups to target wrong buckets."
+        "A) DBSCAN with varying Epsilon parameters, because it generates deterministic centroid vectors for each taxonomy level.",
+        "B) K-Means combined with the Elbow Method, because the elbow point deterministically isolates parent-child hierarchy levels.",
+        "C) Agglomerative Hierarchical Clustering with Ward's Linkage, because it deterministically builds a dendrogram showing nested multi-level relationships without requiring a predefined K.",
+        "D) Gaussian Mixture Models (GMM) with Expectation-Maximization, because soft assignment naturally models biological parent-child overlap."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) `IdentityHashMap` relies on reference equality (`==`) rather than Object `equals()`, so comparing target instances (`this`) with CGLIB/JDK dynamic proxy references fails.",
-      "explanation": "`IdentityHashMap` uses reference equality (`key1 == key2`) and `System.identityHashCode()` instead of `equals()` and `hashCode()`. When a Spring component annotated with `@Async` or `@Transactional` is registered, Spring injects a proxy instance into the container. Calling `listeners.remove(this)` from inside the unproxied target object attempts to match `this` against the proxy reference stored in the map. Because `this != proxy`, `IdentityHashMap` fails to remove the entry."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Agglomerative Hierarchical Clustering with Ward's Linkage, because it deterministically builds a dendrogram showing nested multi-level relationships without requiring a predefined K.",
+      "explanation": "Agglomerative Hierarchical Clustering produces a tree-based hierarchical representation called a dendrogram, which explicitly visualizes multi-level nested taxonomies (parent-child relationships) across different height cutoffs. Unlike K-Means, it does not require pre-specifying K prior to execution. Ward's linkage minimizes the total within-cluster variance during merge steps, producing tight, well-separated hierarchical structures. Additionally, standard Agglomerative clustering is deterministic, unlike random-centroid initialization in K-Means."
     }
   ]
 }
