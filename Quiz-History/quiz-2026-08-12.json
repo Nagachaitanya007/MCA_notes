@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
+  "topic": "Advanced Collections Framework & Custom Implementations",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where high-throughput migration to Java 21 Virtual Threads (`Executors.newVirtualThreadPerTaskExecutor()`) caused severe throughput degradation and thread starvation under heavy load. Profiling reveals that carrier platform threads are stuck in `TIMED_WAITING` or `BLOCKED` states.\n\njava\n@Component\npublic class RemoteDataFetcher {\n    private final Map<String, String> cache = new ConcurrentHashMap<>();\n\n    public String getData(String key) {\n        return cache.computeIfAbsent(key, k -> fetchFromExternalApi(k));\n    }\n\n    private synchronized String fetchFromExternalApi(String key) {\n        // Blocking I/O over HTTP\n        return restTemplate.getForObject(\"https://api.internal/data/\" + key, String.class);\n    }\n}\n",
-      "question": "What is the primary cause of the platform thread starvation when using Virtual Threads in this scenario?",
+      "scenario": "You are debugging a production issue where an inventory service experiences race conditions and inventory drift under high concurrency. The following Spring service manages stock updates:\n\njava\n@Service\npublic class InventoryCache {\n    private final Map<String, Integer> stockMap = new ConcurrentHashMap<>();\n\n    @Transactional\n    public void deductStock(String itemId, int amount) {\n        Integer current = stockMap.get(itemId);\n        if (current != null && current >= amount) {\n            stockMap.put(itemId, current - amount);\n        }\n    }\n}\n",
+      "question": "What is the primary cause of this bug under high concurrency?",
       "options": [
-        "A) `ConcurrentHashMap.computeIfAbsent()` creates a re-entrant lock that prevents Virtual Threads from unmounting during garbage collection.",
-        "B) Executing blocking I/O operations inside a `synchronized` method pins the Virtual Thread to its underlying OS carrier thread, preventing the carrier thread from executing other Virtual Threads.",
-        "C) The `RestTemplate` instance is not thread-safe and locks all carrier threads when called concurrently by Virtual Threads.",
-        "D) Virtual Threads do not support socket-level I/O operations and synchronously block the entire JVM thread pool upon network calls."
+        "A) While individual operations on `ConcurrentHashMap` are atomic, the compound check-then-act sequence (`get` followed by `put`) is not atomic.",
+        "B) Spring `@Transactional` creates a CGLIB proxy that synchronizes execution across threads, causing lock contention and lost updates.",
+        "C) `ConcurrentHashMap` requires explicit calls to `lock()` and `unlock()` when mutated inside a `@Transactional` context.",
+        "D) Unboxing `Integer` causes memory barriers to fail across CPU caches, corrupting the shared `ConcurrentHashMap` state."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Executing blocking I/O operations inside a `synchronized` method pins the Virtual Thread to its underlying OS carrier thread, preventing the carrier thread from executing other Virtual Threads.",
-      "explanation": "In Java 21, a Virtual Thread becomes 'pinned' to its carrier platform thread if it performs a blocking operation (like blocking network I/O) while inside a `synchronized` block or method, or when calling a native method. When pinned, the carrier thread cannot unmount the Virtual Thread to process other scheduled tasks. Under high concurrent load, all platform carrier threads in the `ForkJoinPool` become pinned and blocked, leading to complete thread starvation. The fix is to replace `synchronized` with `ReentrantLock`, which allows Virtual Threads to unmount freely during blocking I/O operations."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) While individual operations on `ConcurrentHashMap` are atomic, the compound check-then-act sequence (`get` followed by `put`) is not atomic.",
+      "explanation": "`ConcurrentHashMap` guarantees thread safety for individual method calls like `get` and `put`. However, combining them into a non-atomic check-then-act idiom (`get` -> conditional check -> `put`) creates a race condition. Two threads reading the same `current` value simultaneously will both succeed in the check and overwrite each other's updates. To fix this, atomic concurrent operations such as `computeIfPresent` or `merge` should be used."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where database records updated asynchronously inside a Spring application are missing changes. The method is annotated with Spring's `@Transactional`, but operations chained inside `CompletableFuture` do not roll back on error and fail to persist database changes reliably.\n\njava\n@Service\npublic class OrderProcessingService {\n    @Autowired\n    private OrderRepository orderRepository;\n\n    @Transactional\n    public CompletableFuture<Void> processOrderAsync(Order order) {\n        return CompletableFuture.supplyAsync(() -> {\n            order.setStatus(\"PROCESSING\");\n            return orderRepository.save(order);\n        }).thenAcceptAsync(savedOrder -> {\n            // External RPC service call\n            paymentGateway.charge(savedOrder);\n            savedOrder.setStatus(\"COMPLETED\");\n            orderRepository.save(savedOrder);\n        });\n    }\n}\n",
-      "question": "Why does the Spring `@Transactional` context fail to manage database interactions within the `CompletableFuture` pipeline?",
+      "scenario": "You are debugging a production issue where an in-memory caching component causes high Garbage Collection (GC) latency and eventually crashes with `java.lang.OutOfMemoryError: Java heap space`. Profiling reveals that millions of entries persist in the cache despite reaching its configured maximum capacity:\n\njava\npublic class LruCache<K, V> extends LinkedHashMap<K, V> {\n    private final int maxCapacity;\n\n    public LruCache(int maxCapacity) {\n        super(16, 0.75f, true);\n        this.maxCapacity = maxCapacity;\n    }\n}\n",
+      "question": "What is the primary cause of this memory leak?",
       "options": [
-        "A) Spring's `@Transactional` annotation only works on methods returning `void` or `String` primitive types, ignoring `CompletableFuture` return values.",
-        "B) `CompletableFuture.supplyAsync` runs on a separate worker thread (`ForkJoinPool.commonPool()`) which does not inherit the `ThreadLocal` transaction context established by Spring's AOP proxy on the initiating thread.",
-        "C) The `OrderRepository` interface loses its Spring proxy wrapper when accessed within lambda expressions passed to asynchronous stage callbacks.",
-        "D) `thenAcceptAsync` executes transactional code inside a read-only database snapshot that automatically discards uncommitted mutations."
+        "A) Setting `accessOrder` to `true` disables GC reclaiming for `LinkedHashMap.Entry` nodes.",
+        "B) The cache fails to override `LinkedHashMap.removeEldestEntry()`, which defaults to returning `false`, causing the map to grow indefinitely.",
+        "C) `LinkedHashMap` uses `SoftReference` wrappers internally when constructed with `accessOrder = true`, preventing immediate memory collection.",
+        "D) `LinkedHashMap` is not thread-safe, causing its doubly-linked list pointers to loop endlessly and prevent node removal."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) `CompletableFuture.supplyAsync` runs on a separate worker thread (`ForkJoinPool.commonPool()`) which does not inherit the `ThreadLocal` transaction context established by Spring's AOP proxy on the initiating thread.",
-      "explanation": "Spring's declarative transaction management (`@Transactional`) relies on thread-bound state managed via `ThreadLocal` variables (specifically `TransactionSynchronizationManager`). When `CompletableFuture.supplyAsync()` or `thenAcceptAsync()` delegates execution to background worker threads (like `ForkJoinPool.commonPool()`), those threads do not possess the `ThreadLocal` transaction context created by the Spring proxy on the calling thread. Consequently, database calls inside these asynchronous stages execute outside the original transaction scope, leading to uncommitted reads/writes or missing rollback semantics upon failure."
+      "correct_answer_text": "B) The cache fails to override `LinkedHashMap.removeEldestEntry()`, which defaults to returning `false`, causing the map to grow indefinitely.",
+      "explanation": "In `LinkedHashMap`, automatic eviction of old entries occurs during `put` or `putAll` execution only if `removeEldestEntry(Map.Entry)` returns `true`. The default implementation in `LinkedHashMap` always returns `false`. Without overriding this method to evaluate `size() > maxCapacity`, the map acts as a standard unbounded map regardless of the `maxCapacity` field."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where an aggregator service calling 15 downstream services via `CompletableFuture.allOf()` experiences severe memory growth and lingering socket connections whenever a single downstream service fails with a timeout exception.\n\njava\nList<CompletableFuture<Response>> futures = services.stream()\n    .map(service -> CompletableFuture.supplyAsync(() -> service.callRemoteEndpoint()))\n    .toList();\n\nCompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));\n\ntry {\n    allFutures.join();\n} catch (Exception e) {\n    log.error(\"Aggregation failed\", e);\n    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);\n}\n",
-      "question": "Which failure behavior of `CompletableFuture.allOf()` causes the remaining downstream service calls to continue running and leaking resources when one future fails?",
+      "scenario": "You are debugging a production issue where an event publishing framework uses `IdentityHashMap` to track active listener instances. When beans wrapped in Spring dynamic proxies (e.g., annotated with `@Async` or `@Transactional`) attempt to unregister themselves using `listeners.remove(this)`, the registry fails to locate and remove the entries, leading to unbounded memory growth.",
+      "question": "What is the primary cause of this cleanup failure?",
       "options": [
-        "A) `CompletableFuture.allOf()` throws a `CompletionException` immediately on first failure, but does not automatically send cancellation signals or interrupt the remaining running futures in the array.",
-        "B) `CompletableFuture.allOf()` blocks the calling thread permanently until ALL futures complete, even if one throws an exception.",
-        "C) Calling `.join()` on an exceptionally completed `CompletableFuture` converts remaining active futures into unkillable daemon threads in `ForkJoinPool.commonPool()`.",
-        "D) `CompletableFuture.allOf()` swallows exceptions raised by individual futures and requires explicit calls to `CompletableFuture.getNow()` to detect failures."
+        "A) `IdentityHashMap` relies on reference equality (`==`) rather than Object `equals()`, so comparing target instances (`this`) with CGLIB/JDK dynamic proxy references fails.",
+        "B) Spring CGLIB proxies override `System.identityHashCode()`, breaking `IdentityHashMap` bucket indexing.",
+        "C) `IdentityHashMap` mutates internal table buckets when proxies undergo garbage collection re-mapping.",
+        "D) Spring dynamic proxies override `hashCode()` dynamically on every invocation, causing `IdentityHashMap` lookups to target wrong buckets."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) `CompletableFuture.allOf()` throws a `CompletionException` immediately on first failure, but does not automatically send cancellation signals or interrupt the remaining running futures in the array.",
-      "explanation": "`CompletableFuture.allOf()` returns a new `CompletableFuture` that completes exceptionally as soon as any of the input futures complete exceptionally. However, it does NOT automatically propagate cancellation or interruption to the other futures in the array. When `allFutures.join()` throws a `CompletionException`, the application catches it and returns an error response, but the remaining 14 underlying background tasks continue executing their network I/O calls to completion in the background, consuming memory, worker threads, and socket resources. To fix this, explicit exception handling must iterate over the futures and call `future.cancel(true)` on remaining incomplete tasks."
+      "correct_answer_text": "A) `IdentityHashMap` relies on reference equality (`==`) rather than Object `equals()`, so comparing target instances (`this`) with CGLIB/JDK dynamic proxy references fails.",
+      "explanation": "`IdentityHashMap` uses reference equality (`key1 == key2`) and `System.identityHashCode()` instead of `equals()` and `hashCode()`. When a Spring component annotated with `@Async` or `@Transactional` is registered, Spring injects a proxy instance into the container. Calling `listeners.remove(this)` from inside the unproxied target object attempts to match `this` against the proxy reference stored in the map. Because `this != proxy`, `IdentityHashMap` fails to remove the entry."
     }
   ]
 }
