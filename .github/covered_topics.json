@@ -78,7 +78,8 @@
     "The Roaring Bitmap: Custom Compressed Sets for Massive Integer Collections",
     "The QuadTree: Custom Spatial Indexing Collection",
     "The Fenwick Tree (Binary Indexed Tree): Mastering Dynamic Prefix Sums & Point Updates",
-    "The Splay Tree: Mastering Cache-Conscious Self-Adjusting Collections"
+    "The Splay Tree: Mastering Cache-Conscious Self-Adjusting Collections",
+    "The Cuckoo Hash Table: Custom Constant Worst-Case Lookup Collections"
   ],
   "JVM Internals (Memory Model, G1/ZGC, Class Loading)": [
     "JVM Internals: The Lifecycle of a Java Object",
