@@ -1,48 +1,48 @@
 {
-  "topic": "Clustering Scenarios: K-Means vs DBSCAN vs Hierarchical",
+  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A smart-city logistics enterprise is designing an automated dispatch system to group vehicle GPS locations into dense delivery zones across a city separated by rivers, non-linear highway corridors, and irregular geographic barriers. The raw dataset contains approximately 500,000 spatial coordinates corrupted by intermittent GPS signal noise and multipath reflections (outliers). When the data team evaluated K-Means with Euclidean distance, the resulting clusters crossed natural river boundaries and generated balanced convex blobs that missed actual street-level density patterns.",
-      "question": "Which clustering algorithm should be selected for this deployment, and what architectural reason explains why it outperforms K-Means and Hierarchical Clustering in this scenario?",
+      "scenario": "A tier-1 fintech corporation deploys a deep neural network for automated credit scoring using high-dimensional historical transaction logs. During a regulatory audit, the system demonstrates severe disparate impact against a protected demographic group. Explicit demographic attributes were removed prior to training, but the audit reveals that high-dimensional spatial and merchant transaction features act as implicit proxy variables. To comply with regulatory mandates without incurring the high computational cost of retraining the primary deep architecture from scratch, the lead engineer must implement a post-processing fair-inference mechanism.",
+      "question": "Which post-processing fairness technique effectively mitigates disparate impact while operating directly on the output probability space without requiring full model retraining?",
       "options": [
-        "A) Agglomerative Hierarchical Clustering with Single Linkage, because it links nearby points across rivers faster than K-Means.",
-        "B) DBSCAN, because it identifies density-connected regions of arbitrary non-spherical shapes while explicitly classifying GPS multipath noise as outliers.",
-        "C) K-Means with Manhattan Distance, because changing the distance metric forces the centroids to respect grid-based city roads.",
-        "D) Bisecting K-Means with Voronoi Tesselation, because it recursively splits spatial boundaries to adapt to river contours."
+        "A) Adversarial Debiasing by training a joint min-max discriminator on the latent bottleneck representations.",
+        "B) Reject Option Based Classification (ROBC) by modifying decision boundaries in the high-uncertainty region near the critical probability threshold for sensitive groups.",
+        "C) Fair Kernel PCA feature projection to project high-dimensional transaction features onto a subspace orthogonal to proxy variables.",
+        "D) Disparate Impact Remover pre-processing via rank-preserving edit distance transformations on numerical feature distributions."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) DBSCAN, because it identifies density-connected regions of arbitrary non-spherical shapes while explicitly classifying GPS multipath noise as outliers.",
-      "explanation": "K-Means assumes spherical clusters of similar size and minimizes variance around centroids, making it fail on non-convex, arbitrary geometric shapes like river-separated roads. DBSCAN relies on local density reachability (controlled by epsilon and MinPts), enabling it to trace arbitrary non-linear shapes. Furthermore, DBSCAN natively designates low-density isolated points (GPS noise) as noise/outliers rather than forcing them into a cluster center as K-Means or Hierarchical methods do."
+      "correct_answer_text": "B) Reject Option Based Classification (ROBC) by modifying decision boundaries in the high-uncertainty region near the critical probability threshold for sensitive groups.",
+      "explanation": "Reject Option Based Classification (ROBC) is a post-processing bias mitigation method that operates strictly on the predicted output probabilities of an already trained model. It targets instances that fall within an edit region (zone of high uncertainty around the decision boundary, e.g., 0.5 \u00b1 e). By giving preference to underprivileged group instances within this uncertain band, it improves fairness metrics (like Equal Opportunity or Disparate Impact) without requiring model retraining. Options A and C are in-processing and pre-processing techniques respectively that require retraining or altering the latent representation pipeline."
     },
     {
       "id": 2,
-      "scenario": "An e-commerce platform processing high-throughput streaming clickstream data (60,000 events/second) requires real-time user session clustering to personalize dynamic front-end layouts. The data engineering team initially attempted to run standard DBSCAN and Agglomerative Hierarchical Clustering on batch micro-buffers. However, the pipeline experienced severe memory saturation and latency spikes, failing the SLAs.",
-      "question": "What fundamental computational trade-off causes DBSCAN and Hierarchical Clustering to fail under these real-time streaming constraints, and what alternative strategy is optimal?",
+      "scenario": "A critical care hospital network integrates a 3D DenseNet deep learning model to detect acute pulmonary embolisms from CT pulmonary angiography scans in emergency departments. Emergency physicians demand real-time instance-level explainability (<300ms) before making high-risk surgical decisions. The XAI module must satisfy the axiomatic properties of Completeness (attributions sum to the difference between output and baseline) and Implementation Invariance without resorting to slow, perturbation-based sampling.",
+      "question": "Which Explainable AI algorithm satisfies these theoretical constraints while remaining computationally viable for high-dimensional tensor inputs in real-time clinical workflows?",
       "options": [
-        "A) DBSCAN and Hierarchical Clustering have high computational and space complexities (O(N^2) to O(N^3)) due to pairwise distance evaluations; Mini-Batch K-Means should be used instead for O(N) streaming performance.",
-        "B) Hierarchical Clustering fails because streaming data cannot produce a dendrogram; standard K-Means with k-means++ initialization should be run on every incoming stream item.",
-        "C) DBSCAN fails because the epsilon parameter changes dynamically with stream velocity, whereas Hierarchical Clustering requires O(N) time but excessive disk I/O.",
-        "D) DBSCAN and Hierarchical Clustering are non-deterministic, causing stream state corruption; Spectral Clustering with GPU acceleration should be used."
+        "A) KernelSHAP evaluated over 5,000 Monte Carlo background image permutations.",
+        "B) Local Interpretable Model-agnostic Explanations (LIME) using sparse linear surrogate models over superpixel segmentations.",
+        "C) Integrated Gradients calculated via Riemann sum approximation along a straight-line path from a neutral baseline image.",
+        "D) TreeSHAP computed by transforming the 3D DenseNet into an ensemble of gradient-boosted decision trees."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) DBSCAN and Hierarchical Clustering have high computational and space complexities (O(N^2) to O(N^3)) due to pairwise distance evaluations; Mini-Batch K-Means should be used instead for O(N) streaming performance.",
-      "explanation": "Standard Agglomerative Hierarchical Clustering requires O(N^3) time (or O(N^2) with optimized spatial trees) and O(N^2) space complexity to maintain the distance matrix. Standard DBSCAN requires O(N^2) time without spatial indexes (or O(N log N) with spatial indexing, which degrades in higher dimensions). In a 60,000 events/sec streaming context, maintaining pairwise distance matrices creates catastrophic overhead. Mini-Batch K-Means uses small, random batches of data to incrementally update cluster centroids with O(N) time complexity, making it suitable for low-latency, real-time streaming."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Integrated Gradients calculated via Riemann sum approximation along a straight-line path from a neutral baseline image.",
+      "explanation": "Integrated Gradients (IG) is a gradient-based attribution method specifically designed for deep neural networks. It mathematically guarantees two key axioms: Completeness and Implementation Invariance. Because IG computes path integrals of gradients along the straight line from a reference baseline to the input image using backpropagation (approximated via Riemann sums or Gauss-Legendre quadrature), it is orders of magnitude faster than model-agnostic sampling techniques like KernelSHAP (Option A) and LIME (Option B), making it uniquely suited for real-time high-dimensional medical imaging."
     },
     {
       "id": 3,
-      "scenario": "A bioinformatics research institute is analyzing a dataset of 3,000 novel genomic expressions to discover drug-target taxonomies. The domain experts require a deterministic method that reveals nested multi-level parent-child sub-relationships (e.g., Super-family -> Family -> Sub-family) without pre-specifying an arbitrary total number of clusters (K), as the baseline biological categories are completely unknown.",
-      "question": "Which clustering approach and configuration is best suited for generating this multi-level taxonomy, and why?",
+      "scenario": "An enterprise recruitment platform utilizes a Transformer-based NLP architecture (BERT fine-tuned) to screen resume vectors against candidate job descriptions. Audit metrics show that despite removing gender indicators, the model's contextual embeddings implicitly preserve gender direction vectors through associations with gender-coded verbs and technical domain keywords. The team aims to implement an in-processing mitigation strategy during fine-tuning that explicitly unlearns these proxy associations at the latent layer level.",
+      "question": "Which in-processing algorithmic framework mathematically forces the Transformer's encoder representations to become invariant to protected demographic attributes while maximizing target task performance?",
       "options": [
-        "A) DBSCAN with varying Epsilon parameters, because it generates deterministic centroid vectors for each taxonomy level.",
-        "B) K-Means combined with the Elbow Method, because the elbow point deterministically isolates parent-child hierarchy levels.",
-        "C) Agglomerative Hierarchical Clustering with Ward's Linkage, because it deterministically builds a dendrogram showing nested multi-level relationships without requiring a predefined K.",
-        "D) Gaussian Mixture Models (GMM) with Expectation-Maximization, because soft assignment naturally models biological parent-child overlap."
+        "A) Hard De-biasing via post-hoc geometric projection of output static token embeddings onto an orthogonal null-space.",
+        "B) Adversarial Representation Neutralization (ARN) utilizing an auxiliary discriminator that minimizes protected attribute prediction accuracy while maximizing primary screening classification performance through a Gradient Reversal Layer (GRL).",
+        "C) Equalized Odds Post-processing adjustment via randomized threshold tuning on target class conditional probabilities.",
+        "D) Demographic Parity Re-weighting applied exclusively to the cross-entropy loss function based on inverse class frequencies."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Agglomerative Hierarchical Clustering with Ward's Linkage, because it deterministically builds a dendrogram showing nested multi-level relationships without requiring a predefined K.",
-      "explanation": "Agglomerative Hierarchical Clustering produces a tree-based hierarchical representation called a dendrogram, which explicitly visualizes multi-level nested taxonomies (parent-child relationships) across different height cutoffs. Unlike K-Means, it does not require pre-specifying K prior to execution. Ward's linkage minimizes the total within-cluster variance during merge steps, producing tight, well-separated hierarchical structures. Additionally, standard Agglomerative clustering is deterministic, unlike random-centroid initialization in K-Means."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Adversarial Representation Neutralization (ARN) utilizing an auxiliary discriminator that minimizes protected attribute prediction accuracy while maximizing primary screening classification performance through a Gradient Reversal Layer (GRL).",
+      "explanation": "Adversarial Representation Neutralization leverages adversarial training dynamics via a Gradient Reversal Layer (GRL). During backpropagation, the main network minimizes the task loss (resume fit) while reversing the gradients coming from an auxiliary discriminator network trying to predict sensitive demographic attributes from the latent representation. This min-max game forces the encoder to extract features that are informative for the downstream task but mathematically invariant (orthogonal) to the sensitive attribute proxies. Option A is a post-hoc static method (ineffective for dynamic Transformer context), while C and D do not alter internal latent representations."
     }
   ]
 }
