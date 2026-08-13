@@ -228,7 +228,8 @@
     "Engineering the Traffic Gate: Token Bucket vs. Leaky Bucket Rate Limiters",
     "Systems Design Strategy: Token Bucket vs Leaky Bucket Rate Limiters",
     "Traffic Regulation Mechanics: Token Bucket vs. Leaky Bucket Rate Limiters",
-    "High-Throughput API Throttling: Token Bucket vs. Leaky Bucket Mechanics"
+    "High-Throughput API Throttling: Token Bucket vs. Leaky Bucket Mechanics",
+    "Scalable Rate Limiting: Token Bucket vs. Leaky Bucket Algorithmic Trade-offs"
   ],
   "Design a Distributed Cache (Consistent Hashing, LRU)": [
     "Distributed Cache Design: Consistent Hashing & LRU",
