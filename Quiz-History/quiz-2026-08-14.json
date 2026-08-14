@@ -1,48 +1,48 @@
 {
-  "topic": "Exception Handling Strategies in Distributed Systems",
+  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `@Transactional` method in a Spring application occasionally throws a `JdbcConnectionException` due to a `SocketTimeoutException`. The method updates multiple tables using a `JdbcTemplate` and you've noticed that when the exception is thrown, the database changes are only partially rolled back.",
+      "scenario": "You are debugging a production issue where a `CompletableFuture` is not completing as expected. The code uses `CompletableFuture.runAsync()` to perform an I/O operation and `CompletableFuture.thenApply()` to process the result.",
       "question": "What is the primary cause of this issue?",
       "options": [
-        "A) The `@Transactional` annotation is not properly configured to handle `JdbcConnectionException`.",
-        "B) The `JdbcTemplate` is not properly synchronized, leading to concurrent modifications.",
-        "C) The database connection pool is too small, causing connections to timeout.",
-        "D) The `SocketTimeoutException` is not a checked exception and therefore not caught by the `@Transactional` rollback mechanism."
+        "A) The `CompletableFuture.runAsync()` is not properly handling exceptions.",
+        "B) The `CompletableFuture.thenApply()` is not properly chained to the `runAsync()` call.",
+        "C) The I/O operation in `runAsync()` is blocking the `CompletableFuture` from completing.",
+        "D) The `CompletableFuture` is not properly configured to handle asynchronous operations."
       ],
-      "correct_answer_letter": "D",
-      "correct_answer_text": "D) The `SocketTimeoutException` is not a checked exception and therefore not caught by the `@Transactional` rollback mechanism.",
-      "explanation": "In Spring, `@Transactional` methods only roll back on checked exceptions by default. Since `SocketTimeoutException` is an unchecked exception (it extends `RuntimeException`), it does not trigger a rollback unless the `@Transactional` annotation is configured to also roll back on unchecked exceptions or the specific exception type."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The `CompletableFuture.runAsync()` is not properly handling exceptions.",
+      "explanation": "When using `CompletableFuture.runAsync()`, any uncaught exceptions are not propagated to the `thenApply()` call. This is because `runAsync()` does not return a result, and therefore cannot propagate exceptions. To handle this, the `exceptionally()` method should be used to catch and handle exceptions."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where the following `@Repository` class method is occasionally throwing a `NullPointerException` when trying to call `findAll()` on the `@Autowired` `JpaRepository` instance `userRepository`. The `User` class is properly annotated with `@Entity` and has the necessary getters and setters.",
-      "question": "What is the most likely cause of this issue?",
+      "scenario": "You are debugging a production issue where a Spring application using `@Transactional` annotations is experiencing unpredictable behavior when using `CompletableFuture`. The code looks like this: `@Transactional public CompletableFuture<List<String>> performOperation() { return CompletableFuture.supplyAsync(this::doWork); }`",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) The `JpaRepository` interface is not properly extended by a Spring Data JPA repository.",
-        "B) The `@Autowired` annotation is not properly placed on the `userRepository` field.",
-        "C) The Spring application context is not properly configured to scan for repository interfaces.",
-        "D) A proxy object is being created for `UserRepository` but it's not being properly initialized before being autowired into the service class."
+        "A) The `@Transactional` annotation is not properly configured to handle asynchronous operations.",
+        "B) The `CompletableFuture.supplyAsync()` call is not properly handling transactions.",
+        "C) The `doWork()` method is not properly synchronized to handle concurrent access.",
+        "D) The Spring proxy is not properly configured to handle the `@Transactional` annotation."
       ],
-      "correct_answer_letter": "D",
-      "correct_answer_text": "D) A proxy object is being created for `UserRepository` but it's not being properly initialized before being autowired into the service class.",
-      "explanation": "In some cases, especially when using Spring's component scanning and `@Autowired`, proxy objects (like those created by Spring AOP for transaction management) may not be fully initialized when they are injected into other components. This can lead to `NullPointerException` when trying to use the proxy object before it has been fully initialized."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The `@Transactional` annotation is not properly configured to handle asynchronous operations.",
+      "explanation": "The `@Transactional` annotation only works within the scope of the current thread. Since `CompletableFuture.supplyAsync()` creates a new thread, the transaction is not propagated to the new thread. To handle this, the `@Transactional` annotation should be applied to the `doWork()` method or a separate transaction should be created for the asynchronous operation."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where the following code snippet is causing unexpected behavior: `public class UserService { @Autowired private `UserRepository` userRepository; public `List`<`User`> getUsers() { try { return userRepository.findAll(); } catch (`Exception` e) { Thread.sleep(100); throw e; } } }`. The method is supposed to fetch all users from the database but occasionally throws a `JdbcConnectionException`.",
+      "scenario": "You are debugging a production issue where a bug in the code is causing the `VirtualThread` to leak. The code snippet looks like this: `try (var thread = `Thread.startVirtualThread`(new MyRunnable())) { thread.join(); }`",
       "question": "What is the primary cause of this issue?",
       "options": [
-        "A) The `Thread.sleep(100)` call is blocking the main thread, preventing the database connection from being properly closed.",
-        "B) The `throw e` statement is re-throwing the exception, causing the transaction to be rolled back.",
-        "C) The `try-catch` block is hiding the real exception, making it difficult to diagnose the issue.",
-        "D) The `userRepository` instance is not properly synchronized, leading to concurrent access issues."
+        "A) The `MyRunnable` class is not properly implementing the `Runnable` interface.",
+        "B) The `Thread.startVirtualThread()` call is not properly handling the thread's lifecycle.",
+        "C) The `try`-`with`-`resources` statement is not properly releasing the `VirtualThread` resources.",
+        "D) The `join()` method is not properly waiting for the `VirtualThread` to complete."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The `Thread.sleep(100)` call is blocking the main thread, preventing the database connection from being properly closed.",
-      "explanation": "By calling `Thread.sleep(100)` within the `try-catch` block, the main thread is being blocked for a short period. This can lead to database connections not being properly closed or released back to the connection pool, resulting in `JdbcConnectionException` being thrown when the method tries to fetch data from the database."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) The `try`-`with`-`resources` statement is not properly releasing the `VirtualThread` resources.",
+      "explanation": "The `try`-`with`-`resources` statement is not properly releasing the `VirtualThread` resources because `Thread.startVirtualThread()` does not return an `AutoCloseable` object. To handle this, the `Thread.startVirtualThread()` call should be manually closed or a custom `AutoCloseable` object should be created to manage the `VirtualThread` resources."
     }
   ]
 }
