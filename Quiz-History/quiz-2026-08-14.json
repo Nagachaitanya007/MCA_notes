@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
-  "mode": "Java",
+  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `CompletableFuture` is not completing as expected. The code uses `CompletableFuture.runAsync()` to perform an I/O operation and `CompletableFuture.thenApply()` to process the result.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "Real-world Industrial Problem Statement: An e-commerce company is developing an image recognition system to categorize products based on images. The dataset contains 100,000 images of various products, but 80% of the images are of electronic devices, while the remaining 20% are of other products like clothing, home goods, etc.",
+      "question": "What approach should be taken to handle the class imbalance in the dataset for better CNN model performance?",
       "options": [
-        "A) The `CompletableFuture.runAsync()` is not properly handling exceptions.",
-        "B) The `CompletableFuture.thenApply()` is not properly chained to the `runAsync()` call.",
-        "C) The I/O operation in `runAsync()` is blocking the `CompletableFuture` from completing.",
-        "D) The `CompletableFuture` is not properly configured to handle asynchronous operations."
+        "A) Oversample the minority class",
+        "B) Use class weighting during training",
+        "C) Use transfer learning with pre-trained models",
+        "D) Collect more data for the minority class"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The `CompletableFuture.runAsync()` is not properly handling exceptions.",
-      "explanation": "When using `CompletableFuture.runAsync()`, any uncaught exceptions are not propagated to the `thenApply()` call. This is because `runAsync()` does not return a result, and therefore cannot propagate exceptions. To handle this, the `exceptionally()` method should be used to catch and handle exceptions."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Use class weighting during training",
+      "explanation": "Class weighting during training helps to assign more weight to the minority class, which can help the model to generalize better on the minority class. This approach is particularly useful when there is a significant class imbalance in the dataset."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a Spring application using `@Transactional` annotations is experiencing unpredictable behavior when using `CompletableFuture`. The code looks like this: `@Transactional public CompletableFuture<List<String>> performOperation() { return CompletableFuture.supplyAsync(this::doWork); }`",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "Real-world Industrial Problem Statement: A chatbot is being developed to predict the next word in a sentence based on the context of the conversation. The chatbot uses RNNs to model the sequence data. However, the model is taking too long to respond to user queries due to the high dimensionality of the input data.",
+      "question": "What technique can be employed to reduce the dimensionality of the input data and improve the response time of the chatbot?",
       "options": [
-        "A) The `@Transactional` annotation is not properly configured to handle asynchronous operations.",
-        "B) The `CompletableFuture.supplyAsync()` call is not properly handling transactions.",
-        "C) The `doWork()` method is not properly synchronized to handle concurrent access.",
-        "D) The Spring proxy is not properly configured to handle the `@Transactional` annotation."
+        "A) Word embedding using Word2Vec",
+        "B) Word embedding using GloVe",
+        "C) Dimensionality reduction using PCA",
+        "D) Using a smaller RNN model with fewer layers"
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) The `@Transactional` annotation is not properly configured to handle asynchronous operations.",
-      "explanation": "The `@Transactional` annotation only works within the scope of the current thread. Since `CompletableFuture.supplyAsync()` creates a new thread, the transaction is not propagated to the new thread. To handle this, the `@Transactional` annotation should be applied to the `doWork()` method or a separate transaction should be created for the asynchronous operation."
+      "correct_answer_text": "A) Word embedding using Word2Vec",
+      "explanation": "Word2Vec is a word embedding technique that can reduce the dimensionality of the input data by representing words as vectors in a lower dimensional space. This can significantly reduce the computational cost and improve the response time of the chatbot."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a bug in the code is causing the `VirtualThread` to leak. The code snippet looks like this: `try (var thread = `Thread.startVirtualThread`(new MyRunnable())) { thread.join(); }`",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "Real-world Industrial Problem Statement: A self-driving car is being developed to recognize and respond to traffic signals in real-time. The car uses a CNN-based system to recognize traffic signals. However, the system is experiencing difficulty in recognizing traffic signals at night or in low light conditions due to the poor quality of the input images.",
+      "question": "What approach can be taken to improve the performance of the CNN-based system in low light conditions?",
       "options": [
-        "A) The `MyRunnable` class is not properly implementing the `Runnable` interface.",
-        "B) The `Thread.startVirtualThread()` call is not properly handling the thread's lifecycle.",
-        "C) The `try`-`with`-`resources` statement is not properly releasing the `VirtualThread` resources.",
-        "D) The `join()` method is not properly waiting for the `VirtualThread` to complete."
+        "A) Collect more data for the minority class (low light conditions)",
+        "B) Use image preprocessing techniques like histogram equalization",
+        "C) Use data augmentation techniques like random brightness and contrast adjustment",
+        "D) Use a more complex CNN model with more layers"
       ],
       "correct_answer_letter": "C",
-      "correct_answer_text": "C) The `try`-`with`-`resources` statement is not properly releasing the `VirtualThread` resources.",
-      "explanation": "The `try`-`with`-`resources` statement is not properly releasing the `VirtualThread` resources because `Thread.startVirtualThread()` does not return an `AutoCloseable` object. To handle this, the `Thread.startVirtualThread()` call should be manually closed or a custom `AutoCloseable` object should be created to manage the `VirtualThread` resources."
+      "correct_answer_text": "C) Use data augmentation techniques like random brightness and contrast adjustment",
+      "explanation": "Data augmentation techniques like random brightness and contrast adjustment can artificially increase the size of the dataset by generating new images with different lighting conditions. This can help the model to generalize better and improve its performance in low light conditions."
     }
   ]
 }

@@ -1,48 +1,48 @@
 {
-  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
+  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A tier-1 fintech corporation deploys a deep neural network for automated credit scoring using high-dimensional historical transaction logs. During a regulatory audit, the system demonstrates severe disparate impact against a protected demographic group. Explicit demographic attributes were removed prior to training, but the audit reveals that high-dimensional spatial and merchant transaction features act as implicit proxy variables. To comply with regulatory mandates without incurring the high computational cost of retraining the primary deep architecture from scratch, the lead engineer must implement a post-processing fair-inference mechanism.",
-      "question": "Which post-processing fairness technique effectively mitigates disparate impact while operating directly on the output probability space without requiring full model retraining?",
+      "scenario": "Real-world Industrial Problem Statement: An e-commerce company is developing an image recognition system to categorize products based on images. The dataset contains 100,000 images of various products, but 80% of the images are of electronic devices, while the remaining 20% are of other products like clothing, home goods, etc.",
+      "question": "What approach should be taken to handle the class imbalance in the dataset for better CNN model performance?",
       "options": [
-        "A) Adversarial Debiasing by training a joint min-max discriminator on the latent bottleneck representations.",
-        "B) Reject Option Based Classification (ROBC) by modifying decision boundaries in the high-uncertainty region near the critical probability threshold for sensitive groups.",
-        "C) Fair Kernel PCA feature projection to project high-dimensional transaction features onto a subspace orthogonal to proxy variables.",
-        "D) Disparate Impact Remover pre-processing via rank-preserving edit distance transformations on numerical feature distributions."
+        "A) Oversample the minority class",
+        "B) Use class weighting during training",
+        "C) Use transfer learning with pre-trained models",
+        "D) Collect more data for the minority class"
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Reject Option Based Classification (ROBC) by modifying decision boundaries in the high-uncertainty region near the critical probability threshold for sensitive groups.",
-      "explanation": "Reject Option Based Classification (ROBC) is a post-processing bias mitigation method that operates strictly on the predicted output probabilities of an already trained model. It targets instances that fall within an edit region (zone of high uncertainty around the decision boundary, e.g., 0.5 \u00b1 e). By giving preference to underprivileged group instances within this uncertain band, it improves fairness metrics (like Equal Opportunity or Disparate Impact) without requiring model retraining. Options A and C are in-processing and pre-processing techniques respectively that require retraining or altering the latent representation pipeline."
+      "correct_answer_text": "B) Use class weighting during training",
+      "explanation": "Class weighting during training helps to assign more weight to the minority class, which can help the model to generalize better on the minority class. This approach is particularly useful when there is a significant class imbalance in the dataset."
     },
     {
       "id": 2,
-      "scenario": "A critical care hospital network integrates a 3D DenseNet deep learning model to detect acute pulmonary embolisms from CT pulmonary angiography scans in emergency departments. Emergency physicians demand real-time instance-level explainability (<300ms) before making high-risk surgical decisions. The XAI module must satisfy the axiomatic properties of Completeness (attributions sum to the difference between output and baseline) and Implementation Invariance without resorting to slow, perturbation-based sampling.",
-      "question": "Which Explainable AI algorithm satisfies these theoretical constraints while remaining computationally viable for high-dimensional tensor inputs in real-time clinical workflows?",
+      "scenario": "Real-world Industrial Problem Statement: A chatbot is being developed to predict the next word in a sentence based on the context of the conversation. The chatbot uses RNNs to model the sequence data. However, the model is taking too long to respond to user queries due to the high dimensionality of the input data.",
+      "question": "What technique can be employed to reduce the dimensionality of the input data and improve the response time of the chatbot?",
       "options": [
-        "A) KernelSHAP evaluated over 5,000 Monte Carlo background image permutations.",
-        "B) Local Interpretable Model-agnostic Explanations (LIME) using sparse linear surrogate models over superpixel segmentations.",
-        "C) Integrated Gradients calculated via Riemann sum approximation along a straight-line path from a neutral baseline image.",
-        "D) TreeSHAP computed by transforming the 3D DenseNet into an ensemble of gradient-boosted decision trees."
+        "A) Word embedding using Word2Vec",
+        "B) Word embedding using GloVe",
+        "C) Dimensionality reduction using PCA",
+        "D) Using a smaller RNN model with fewer layers"
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Integrated Gradients calculated via Riemann sum approximation along a straight-line path from a neutral baseline image.",
-      "explanation": "Integrated Gradients (IG) is a gradient-based attribution method specifically designed for deep neural networks. It mathematically guarantees two key axioms: Completeness and Implementation Invariance. Because IG computes path integrals of gradients along the straight line from a reference baseline to the input image using backpropagation (approximated via Riemann sums or Gauss-Legendre quadrature), it is orders of magnitude faster than model-agnostic sampling techniques like KernelSHAP (Option A) and LIME (Option B), making it uniquely suited for real-time high-dimensional medical imaging."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Word embedding using Word2Vec",
+      "explanation": "Word2Vec is a word embedding technique that can reduce the dimensionality of the input data by representing words as vectors in a lower dimensional space. This can significantly reduce the computational cost and improve the response time of the chatbot."
     },
     {
       "id": 3,
-      "scenario": "An enterprise recruitment platform utilizes a Transformer-based NLP architecture (BERT fine-tuned) to screen resume vectors against candidate job descriptions. Audit metrics show that despite removing gender indicators, the model's contextual embeddings implicitly preserve gender direction vectors through associations with gender-coded verbs and technical domain keywords. The team aims to implement an in-processing mitigation strategy during fine-tuning that explicitly unlearns these proxy associations at the latent layer level.",
-      "question": "Which in-processing algorithmic framework mathematically forces the Transformer's encoder representations to become invariant to protected demographic attributes while maximizing target task performance?",
+      "scenario": "Real-world Industrial Problem Statement: A self-driving car is being developed to recognize and respond to traffic signals in real-time. The car uses a CNN-based system to recognize traffic signals. However, the system is experiencing difficulty in recognizing traffic signals at night or in low light conditions due to the poor quality of the input images.",
+      "question": "What approach can be taken to improve the performance of the CNN-based system in low light conditions?",
       "options": [
-        "A) Hard De-biasing via post-hoc geometric projection of output static token embeddings onto an orthogonal null-space.",
-        "B) Adversarial Representation Neutralization (ARN) utilizing an auxiliary discriminator that minimizes protected attribute prediction accuracy while maximizing primary screening classification performance through a Gradient Reversal Layer (GRL).",
-        "C) Equalized Odds Post-processing adjustment via randomized threshold tuning on target class conditional probabilities.",
-        "D) Demographic Parity Re-weighting applied exclusively to the cross-entropy loss function based on inverse class frequencies."
+        "A) Collect more data for the minority class (low light conditions)",
+        "B) Use image preprocessing techniques like histogram equalization",
+        "C) Use data augmentation techniques like random brightness and contrast adjustment",
+        "D) Use a more complex CNN model with more layers"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Adversarial Representation Neutralization (ARN) utilizing an auxiliary discriminator that minimizes protected attribute prediction accuracy while maximizing primary screening classification performance through a Gradient Reversal Layer (GRL).",
-      "explanation": "Adversarial Representation Neutralization leverages adversarial training dynamics via a Gradient Reversal Layer (GRL). During backpropagation, the main network minimizes the task loss (resume fit) while reversing the gradients coming from an auxiliary discriminator network trying to predict sensitive demographic attributes from the latent representation. This min-max game forces the encoder to extract features that are informative for the downstream task but mathematically invariant (orthogonal) to the sensitive attribute proxies. Option A is a post-hoc static method (ineffective for dynamic Transformer context), while C and D do not alter internal latent representations."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Use data augmentation techniques like random brightness and contrast adjustment",
+      "explanation": "Data augmentation techniques like random brightness and contrast adjustment can artificially increase the size of the dataset by generating new images with different lighting conditions. This can help the model to generalize better and improve its performance in low light conditions."
     }
   ]
 }
