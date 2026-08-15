@@ -246,7 +246,8 @@
     "Production-Grade Distributed Cache Routing: Mastering Consistent Hashing Ring Mechanics and Node-Level LRU Eviction",
     "Low-Latency Distributed Caching: Harmonizing Consistent Hashing Ring Routing with Local LRU Eviction",
     "Distributed Cache Internals: Implementing Key-to-Node Ring Routing and O(1) Memory Eviction",
-    "Building a Resilient Distributed Cache: Key Ring Routing and Node-Level Memory Eviction"
+    "Building a Resilient Distributed Cache: Key Ring Routing and Node-Level Memory Eviction",
+    "Designing a Distributed Cache with Consistent Hashing and LRU"
   ],
   "Design a Distributed ID Generator (Snowflake ID)": [
     "Design a Distributed ID Generator (Snowflake ID)",
