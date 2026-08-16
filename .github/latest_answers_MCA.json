@@ -1,48 +1,48 @@
 {
-  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
+  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "Real-world Industrial Problem Statement: An e-commerce company is developing an image recognition system to categorize products based on images. The dataset contains 100,000 images of various products, but 80% of the images are of electronic devices, while the remaining 20% are of other products like clothing, home goods, etc.",
-      "question": "What approach should be taken to handle the class imbalance in the dataset for better CNN model performance?",
+      "scenario": "A real-world industrial problem statement involves a company that produces various types of electronic devices. Their production line generates a large amount of data, including device types, component lists, and production dates. To effectively manage this data and provide recommendations for new device development, the company decides to implement an ontology-based knowledge representation system. However, they face a challenge in selecting the most suitable algorithm for reasoning over their ontology, considering the high dimensionality of the data and the need for real-time inference.",
+      "question": "What type of reasoning algorithm would be most appropriate for this use case, given the requirement for handling high-dimensional data and real-time constraints?",
       "options": [
-        "A) Oversample the minority class",
-        "B) Use class weighting during training",
-        "C) Use transfer learning with pre-trained models",
-        "D) Collect more data for the minority class"
+        "A) Description Logics (DL) based reasoning",
+        "B) First-Order Logic (FOL) based reasoning",
+        "C) Propositional Logic based reasoning",
+        "D) Semantic Net based reasoning"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Use class weighting during training",
-      "explanation": "Class weighting during training helps to assign more weight to the minority class, which can help the model to generalize better on the minority class. This approach is particularly useful when there is a significant class imbalance in the dataset."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Description Logics (DL) based reasoning",
+      "explanation": "Description Logics (DL) are particularly suited for handling high-dimensional data and real-time constraints due to their ability to balance expressivity and tractability. DL-based reasoning can efficiently manage large ontologies and perform inference tasks, such as classification and instance checking, in real-time, making it the most appropriate choice for this scenario."
     },
     {
       "id": 2,
-      "scenario": "Real-world Industrial Problem Statement: A chatbot is being developed to predict the next word in a sentence based on the context of the conversation. The chatbot uses RNNs to model the sequence data. However, the model is taking too long to respond to user queries due to the high dimensionality of the input data.",
-      "question": "What technique can be employed to reduce the dimensionality of the input data and improve the response time of the chatbot?",
+      "scenario": "In the development of an artificial intelligence system for medical diagnosis, a team of researchers encounters a real-world industrial problem. They have a large dataset of patient records, including symptoms, medical histories, and diagnoses. The dataset is highly skewed, with a significant majority of patients having common diseases and a small minority having rare conditions. The researchers aim to implement a semantic net to represent the complex relationships between symptoms, diseases, and treatments, but they face challenges in handling the skewed distribution of the data.",
+      "question": "What strategy would be most effective in handling the skewed data distribution in the context of the semantic net, ensuring that the system can accurately diagnose both common and rare diseases?",
       "options": [
-        "A) Word embedding using Word2Vec",
-        "B) Word embedding using GloVe",
-        "C) Dimensionality reduction using PCA",
-        "D) Using a smaller RNN model with fewer layers"
+        "A) Oversampling the minority class",
+        "B) Undersampling the majority class",
+        "C) Using class weights to adjust the loss function",
+        "D) Implementing a ensemble method with multiple semantic nets"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Word embedding using Word2Vec",
-      "explanation": "Word2Vec is a word embedding technique that can reduce the dimensionality of the input data by representing words as vectors in a lower dimensional space. This can significantly reduce the computational cost and improve the response time of the chatbot."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Using class weights to adjust the loss function",
+      "explanation": "Using class weights to adjust the loss function is an effective strategy for handling skewed data distributions in the context of semantic nets. By assigning higher weights to the minority class (rare diseases) and lower weights to the majority class (common diseases), the system can learn to recognize patterns in both classes more effectively, improving its ability to accurately diagnose both common and rare conditions."
     },
     {
       "id": 3,
-      "scenario": "Real-world Industrial Problem Statement: A self-driving car is being developed to recognize and respond to traffic signals in real-time. The car uses a CNN-based system to recognize traffic signals. However, the system is experiencing difficulty in recognizing traffic signals at night or in low light conditions due to the poor quality of the input images.",
-      "question": "What approach can be taken to improve the performance of the CNN-based system in low light conditions?",
+      "scenario": "A company specializing in e-commerce platforms faces a real-world industrial problem in designing an ontology for product categorization. They have a vast and diverse set of products, including electronics, clothing, and home goods, each with numerous attributes and relationships. The goal is to develop an ontology that can efficiently represent these complex relationships and facilitate real-time product recommendations. However, the company is concerned about the performance trade-offs between different logic-based reasoning approaches.",
+      "question": "Given the need for efficient real-time reasoning over the product ontology, which logic-based approach would offer the best performance trade-off between expressivity and computational efficiency?",
       "options": [
-        "A) Collect more data for the minority class (low light conditions)",
-        "B) Use image preprocessing techniques like histogram equalization",
-        "C) Use data augmentation techniques like random brightness and contrast adjustment",
-        "D) Use a more complex CNN model with more layers"
+        "A) Using Horn clauses for logic programming",
+        "B) Employing Description Logics (DL) for ontology reasoning",
+        "C) Utilizing First-Order Logic (FOL) for maximum expressivity",
+        "D) Implementing a hybrid approach combining DL and FOL"
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Use data augmentation techniques like random brightness and contrast adjustment",
-      "explanation": "Data augmentation techniques like random brightness and contrast adjustment can artificially increase the size of the dataset by generating new images with different lighting conditions. This can help the model to generalize better and improve its performance in low light conditions."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Employing Description Logics (DL) for ontology reasoning",
+      "explanation": "Description Logics (DL) offer a balance between expressivity and computational efficiency, making it suitable for real-time reasoning over large and complex ontologies like the one described for product categorization. DL can efficiently handle the trade-off between the need for expressive power to represent complex relationships and the necessity for fast reasoning to support real-time product recommendations."
     }
   ]
 }

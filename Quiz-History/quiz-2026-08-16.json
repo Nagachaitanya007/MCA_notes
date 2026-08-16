@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
-  "mode": "Java",
+  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a `CompletableFuture` chain is not completing as expected. The code looks like this: `CompletableFuture.supplyAsync(() -> { throw new RuntimeException(\"Test Exception\"); }).thenApply(result -> { return \"Result: \" + result; });`. No exception is logged, and the application doesn't terminate, but the result is never processed.",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "A real-world industrial problem statement involves a company that produces various types of electronic devices. Their production line generates a large amount of data, including device types, component lists, and production dates. To effectively manage this data and provide recommendations for new device development, the company decides to implement an ontology-based knowledge representation system. However, they face a challenge in selecting the most suitable algorithm for reasoning over their ontology, considering the high dimensionality of the data and the need for real-time inference.",
+      "question": "What type of reasoning algorithm would be most appropriate for this use case, given the requirement for handling high-dimensional data and real-time constraints?",
       "options": [
-        "A) The exception is swallowed by the `thenApply` method.",
-        "B) The `RuntimeException` is caught by the JVM and handled internally.",
-        "C) The `CompletableFuture` is not properly chained to handle exceptions.",
-        "D) The `supplyAsync` method is not designed to throw exceptions."
+        "A) Description Logics (DL) based reasoning",
+        "B) First-Order Logic (FOL) based reasoning",
+        "C) Propositional Logic based reasoning",
+        "D) Semantic Net based reasoning"
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) The `CompletableFuture` is not properly chained to handle exceptions.",
-      "explanation": "When an exception occurs in a `CompletableFuture` chain, it is wrapped in a `CompletionException` and propagated to the next stage. If no explicit exception handling is provided (e.g., using `exceptionally` or `handle`), the exception is not logged by default, and the chain is terminated without further processing. This is due to the internal mechanics of how `CompletableFuture` handles uncaught exceptions in asynchronous operations."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Description Logics (DL) based reasoning",
+      "explanation": "Description Logics (DL) are particularly suited for handling high-dimensional data and real-time constraints due to their ability to balance expressivity and tractability. DL-based reasoning can efficiently manage large ontologies and perform inference tasks, such as classification and instance checking, in real-time, making it the most appropriate choice for this scenario."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a Spring application using `@Transactional` annotations is not correctly rolling back database transactions when exceptions occur. The relevant code snippet is: `@Service public class MyService { @Transactional public void myMethod() { // Database operations using Spring Data JPA } }`. It seems that when an exception is thrown from within `myMethod`, the transaction is not rolled back.",
-      "question": "What could be the primary cause of this issue?",
+      "scenario": "In the development of an artificial intelligence system for medical diagnosis, a team of researchers encounters a real-world industrial problem. They have a large dataset of patient records, including symptoms, medical histories, and diagnoses. The dataset is highly skewed, with a significant majority of patients having common diseases and a small minority having rare conditions. The researchers aim to implement a semantic net to represent the complex relationships between symptoms, diseases, and treatments, but they face challenges in handling the skewed distribution of the data.",
+      "question": "What strategy would be most effective in handling the skewed data distribution in the context of the semantic net, ensuring that the system can accurately diagnose both common and rare diseases?",
       "options": [
-        "A) The `@Transactional` annotation is not enabled for the Spring application context.",
-        "B) The `myMethod` is called from within the same class, bypassing the Spring proxy.",
-        "C) The exception thrown is not a subtype of `RuntimeException`, which is required for rollback.",
-        "D) The database operations are not properly configured to support transactions."
+        "A) Oversampling the minority class",
+        "B) Undersampling the majority class",
+        "C) Using class weights to adjust the loss function",
+        "D) Implementing a ensemble method with multiple semantic nets"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The `myMethod` is called from within the same class, bypassing the Spring proxy.",
-      "explanation": "Spring's `@Transactional` support relies on the use of proxies to intercept method calls and manage transactions. When a method annotated with `@Transactional` is called from within the same class, the call bypasses the proxy and thus the transactional aspect is not applied. This means that no transaction is begun or managed, leading to unexpected behavior when exceptions occur."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Using class weights to adjust the loss function",
+      "explanation": "Using class weights to adjust the loss function is an effective strategy for handling skewed data distributions in the context of semantic nets. By assigning higher weights to the minority class (rare diseases) and lower weights to the majority class (common diseases), the system can learn to recognize patterns in both classes more effectively, improving its ability to accurately diagnose both common and rare conditions."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a Java application utilizing `VirtualThread` from Project Loom for concurrent execution is experiencing performance issues. The relevant code snippet involves executing tasks asynchronously using `Thread.startVirtualThread(() -> { // Task execution }).join();`. The performance bottleneck seems to be related to the improper use of `join()` on the virtual threads.",
-      "question": "What could be the primary cause of this performance issue?",
+      "scenario": "A company specializing in e-commerce platforms faces a real-world industrial problem in designing an ontology for product categorization. They have a vast and diverse set of products, including electronics, clothing, and home goods, each with numerous attributes and relationships. The goal is to develop an ontology that can efficiently represent these complex relationships and facilitate real-time product recommendations. However, the company is concerned about the performance trade-offs between different logic-based reasoning approaches.",
+      "question": "Given the need for efficient real-time reasoning over the product ontology, which logic-based approach would offer the best performance trade-off between expressivity and computational efficiency?",
       "options": [
-        "A) The use of `join()` on virtual threads blocks the carrier thread, preventing other tasks from being executed concurrently.",
-        "B) Virtual threads are not designed for I/O-bound operations.",
-        "C) The application is not properly configured to take advantage of the JVM's concurrency features.",
-        "D) The task execution within the virtual thread is not properly synchronized."
+        "A) Using Horn clauses for logic programming",
+        "B) Employing Description Logics (DL) for ontology reasoning",
+        "C) Utilizing First-Order Logic (FOL) for maximum expressivity",
+        "D) Implementing a hybrid approach combining DL and FOL"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The use of `join()` on virtual threads blocks the carrier thread, preventing other tasks from being executed concurrently.",
-      "explanation": "When `join()` is called on a virtual thread, it blocks the carrier thread (the thread that started the virtual thread) until the virtual thread completes. This can lead to a significant performance issue if the application is heavily reliant on concurrency, as it prevents the carrier thread from executing other tasks. Virtual threads are designed to provide lightweight concurrency without the overhead of traditional threads, but improper use of synchronization or blocking methods like `join()` can negate these benefits."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Employing Description Logics (DL) for ontology reasoning",
+      "explanation": "Description Logics (DL) offer a balance between expressivity and computational efficiency, making it suitable for real-time reasoning over large and complex ontologies like the one described for product categorization. DL can efficiently handle the trade-off between the need for expressive power to represent complex relationships and the necessity for fast reasoning to support real-time product recommendations."
     }
   ]
 }
