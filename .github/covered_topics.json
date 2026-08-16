@@ -105,7 +105,8 @@
     "JVM Memory Model: Cache Line Padding, Field Layout, and False Sharing",
     "JVM G1 Collector: Mixed GC Cycles, Adaptive IHOP, and Evacuation Failure",
     "JVM Class Loading: SystemDictionary Resolution, Parallel Class Loaders, and Concurrent Loading Locks",
-    "JVM Memory Pacing and Allocation Stalls: How G1 and ZGC Prevent Allocation Failures"
+    "JVM Memory Pacing and Allocation Stalls: How G1 and ZGC Prevent Allocation Failures",
+    "JVM Memory Model: Safe Publication, Final Field Semantics, and Constructor Freeze Actions"
   ],
   "Design a Real-time Chat System (WebSockets, Redis Pub/Sub)": [
     "Scalable Real-time Chat: WebSockets & Redis Pub/Sub",
