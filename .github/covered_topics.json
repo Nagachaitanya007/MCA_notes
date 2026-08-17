@@ -28,7 +28,8 @@
     "Task Cancellation Mechanics: Clean Teardowns across Virtual Threads and CompletableFuture",
     "The JVM Network Poller: Bridging Virtual Threads and OS-Level Non-Blocking I/O",
     "Observability and Diagnostics for Virtual Threads: JFR Events, Thread Dumps, and Pinning Detection",
-    "CompletableFuture Lock-Free State Machine: Treiber Stacks, Completion Chains, and AltResult Mechanics"
+    "CompletableFuture Lock-Free State Machine: Treiber Stacks, Completion Chains, and AltResult Mechanics",
+    "Introduction to Java Concurrency & Multithreading with Virtual Threads and CompletableFuture"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
