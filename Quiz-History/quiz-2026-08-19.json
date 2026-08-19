@@ -1,48 +1,48 @@
 {
-  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
-  "mode": "Java",
+  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where an existing high-throughput microservice was migrated to Java 21 Virtual Threads using `Executors.newVirtualThreadPerTaskExecutor()`. Instead of achieving expected scalability improvements, thread dumps during peak traffic reveal widespread carrier thread starvation, high latency, and degraded throughput. Profiling shows heavy contention around a legacy caching library that executes database queries inside `synchronized` methods.",
-      "question": "What is the primary cause of the carrier thread starvation under this workload?",
+      "scenario": "An Automated Optical Inspection (AOI) system deployed on an edge computing gateway in a semiconductor fabrication plant inspects silicon wafers for sub-micron surface cracks. The edge device has strict compute limits (maximum latency of 18ms per frame, memory footprint under 45MB). The initial baseline architecture using a standard ResNet-50 with 7x7 stride-2 convolutions and multiple MaxPool layers fails because it misses sub-pixel micro-defects due to aggressive spatial downsampling, while also exceeding the inference latency budget.",
+      "question": "Which architectural re-engineering strategy best preserves fine-grained spatial micro-defect detection while adhering strictly to the edge latency and parameter constraints?",
       "options": [
-        "A) Virtual threads are pinned to their underlying carrier platform threads when executing blocking operations inside a `synchronized` block or method, preventing the carrier thread from being released to schedule other virtual threads.",
-        "B) Virtual threads automatically convert to platform threads if a blocking I/O operation takes longer than 100 milliseconds.",
-        "C) The default `ForkJoinPool` carrier pool is limited to 1 thread when running with the standard JVM flag `-XX:+UseVirtualThreads`.",
-        "D) `Executors.newVirtualThreadPerTaskExecutor()` disables non-blocking context switching across all standard Java networking libraries."
+        "A) Replace standard convolutions with Depthwise Separable Convolutions, remove early aggressive stride pooling, and integrate Dilated (Atrous) Convolutions with a multi-scale Feature Pyramid Network (FPN) neck.",
+        "B) Increase the network depth by replacing ResNet-50 with ResNet-152 while applying aggressive L1 weight regularization to zero-out redundant filter channels.",
+        "C) Substitute convolutional layers with a standard Vision Transformer (ViT-Base) using large patch sizes (e.g., 32x32) to compute global self-attention directly.",
+        "D) Apply 4x bilinear upsampling directly at the input stage and append stacked Global Average Pooling layers before every residual block."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Virtual threads are pinned to their underlying carrier platform threads when executing blocking operations inside a `synchronized` block or method, preventing the carrier thread from being released to schedule other virtual threads.",
-      "explanation": "In Java 21, virtual threads are scheduled on carrier platform threads managed by a `ForkJoinPool`. When a virtual thread encounters a blocking operation (like socket I/O), it normally unmounts from its carrier thread. However, if the blocking operation is executed inside a `synchronized` block/method or native frame (JNI), the virtual thread is 'pinned' to the carrier thread. Under high concurrency, pinned carrier threads cannot be reused for other virtual threads, leading to carrier pool starvation. Refactoring to `java.util.concurrent.locks.ReentrantLock` resolves this issue."
+      "correct_answer_text": "A) Replace standard convolutions with Depthwise Separable Convolutions, remove early aggressive stride pooling, and integrate Dilated (Atrous) Convolutions with a multi-scale Feature Pyramid Network (FPN) neck.",
+      "explanation": "Depthwise Separable Convolutions (as seen in MobileNet architectures) factorize standard convolution into depthwise and pointwise operations, drastically reducing computational complexity (FLOPs) and parameter count by a factor of roughly (1/N + 1/D_k^2), meeting the <18ms edge latency threshold. Avoiding early aggressive stride-pooling preserves low-level spatial resolution essential for tiny sub-micron defects. Dilated (atrous) convolutions expand the receptive field without downsampling or increasing parameter counts, and an FPN enables multi-scale feature aggregation so small micro-cracks retain spatial localization across feature hierarchies."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue involving an asynchronous order processing pipeline. Under load, operations inside `enrichAndPersist()` fail to access the authenticated user's credentials, and database mutations fail to roll back when an exception occurs inside `persistOrder()`.\n\njava\n@Service\npublic class OrderService {\n\n    @Transactional\n    public CompletableFuture<Order> processOrder(Order order) {\n        return CompletableFuture.supplyAsync(() -> enrichAndPersist(order))\n            .thenApply(this::notifyCustomer);\n    }\n\n    private Order enrichAndPersist(Order order) {\n        // Relies on SecurityContextHolder and local database transaction\n        User user = SecurityContextHolder.getContext().getAuthentication().getPrincipal();\n        return persistOrder(order, user);\n    }\n\n    private Order notifyCustomer(Order order) { ... }\n}\n",
-      "question": "What is the primary flaw in this implementation?",
+      "scenario": "A predictive maintenance platform in an energy plant monitors telemetry from turbine vibration sensors sampled at 200 Hz. The engineering objective is to detect bearing degradation signatures that span temporal contexts exceeding 8,000 timesteps. A deployed multi-layer Vanilla RNN model suffers from catastrophic vanishing gradients during Backpropagation Through Time (BPTT). While switching to a stacked LSTM mitigates vanishing gradients, training remains computationally intractable due to strictly sequential hidden state transitions, and the cell state suffers from saturation over long horizons.",
+      "question": "Which sequence modeling architecture and configuration provides parallelizable training along with an exponentially expanding receptive field to capture these long-term temporal dependencies without recurrent bottlenecking?",
       "options": [
-        "A) `CompletableFuture.supplyAsync()` by default runs on `ForkJoinPool.commonPool()`, which does not inherit the caller's `ThreadLocal`-bound `SecurityContext` or the active Spring transaction context created by `@Transactional`.",
-        "B) `@Transactional` methods returning `CompletableFuture` must be declared as `static` for Spring CGLIB proxies to intercept asynchronous downstream stages.",
-        "C) The `thenApply` method executes synchronously on the main thread, clearing the transaction context created by `supplyAsync()`.",
-        "D) Spring's `@Transactional` annotation does not support public methods that return `CompletableFuture<T>`."
+        "A) A Bidirectional Elman RNN with Leaky ReLU activations and gradient clipping set to a threshold of 0.01.",
+        "B) A Temporal Convolutional Network (TCN) employing 1D Dilated Causal Convolutions with residual connections and exponentially growing dilation factors (d = 2^k).",
+        "C) A Gated Recurrent Unit (GRU) with all reset gates permanently clamped to zero to maximize gradient highway flow across all 8,000 steps.",
+        "D) A standard Jordan Network with hidden-to-output feedback loops operating under full-sequence unrolling without truncated BPTT."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) `CompletableFuture.supplyAsync()` by default runs on `ForkJoinPool.commonPool()`, which does not inherit the caller's `ThreadLocal`-bound `SecurityContext` or the active Spring transaction context created by `@Transactional`.",
-      "explanation": "Spring's `@Transactional` and `SecurityContextHolder` (by default mode `MODE_THREADLOCAL`) rely on `ThreadLocal` storage. When `CompletableFuture.supplyAsync()` is called without specifying an executor, tasks execute asynchronously in the common `ForkJoinPool` worker threads. These threads lack the caller's `ThreadLocal` context, leading to `NullPointerException` when querying `SecurityContextHolder` and causing database queries in `enrichAndPersist` to run outside the `@Transactional` boundary initiated on the calling thread."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) A Temporal Convolutional Network (TCN) employing 1D Dilated Causal Convolutions with residual connections and exponentially growing dilation factors (d = 2^k).",
+      "explanation": "Temporal Convolutional Networks (TCNs) overcome RNN/LSTM sequential bottlenecks because 1D convolutions can be computed fully in parallel across all time steps during training. Causal convolutions ensure no future information leakage (preserving the temporal causal order). By stacking dilated convolutions with exponentially increasing dilation factors (d = 1, 2, 4, 8, ...), the receptive field grows exponentially with network depth (O(2^k * K)), allowing the model to effortlessly encompass 8,000+ timesteps without the memory overhead, gradient degradation, or step-by-step recurrent saturation inherent to BPTT in LSTMs."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where an API aggregator executes multiple downstream microservice calls concurrently. When any single downstream service experiences network latency or fails, the entire application's custom thread pool becomes saturated, causing cascading request timeouts across the entire platform.\n\njava\npublic List<Response> fetchAggregatedData(List<ServiceTask> tasks, ExecutorService customExecutor) {\n    List<CompletableFuture<Response>> futures = tasks.stream()\n        .map(task -> CompletableFuture.supplyAsync(task::callExternalService, customExecutor))\n        .toList();\n\n    CompletableFuture<Void> allOf = CompletableFuture.allOf(\n        futures.toArray(new CompletableFuture[0])\n    );\n\n    allOf.join();\n\n    return futures.stream()\n        .map(CompletableFuture::join)\n        .toList();\n}\n",
-      "question": "What is the primary cause of thread pool exhaustion and cascading failures during partial downstream outages?",
+      "scenario": "A medical diagnostic pipeline processes high-resolution 3D lung CT scans for malignant nodule classification. Malignant nodules occupy fewer than 0.05% of the total volumetric voxels in the dataset (extreme foreground-background class imbalance). When training a 3D-CNN with standard Categorical Cross-Entropy loss, the model rapidly converges to a trivial local minimum where it predicts 'healthy tissue' for 99.95% of voxels, achieving deceptive nominal accuracy but near-zero recall for malignant lesions.",
+      "question": "Which loss function formulation dynamically suppresses the loss contribution from easy-to-classify background voxels and forces the 3D-CNN optimization landscape to prioritize hard, ambiguous nodule boundaries?",
       "options": [
-        "A) If one future fails or times out, `allOf.join()` throws a `CompletionException`, but the remaining running `CompletableFuture` tasks are not automatically cancelled and continue occupying worker threads in `customExecutor` indefinitely until their own blocking I/O completes.",
-        "B) `CompletableFuture.allOf()` forces all sub-tasks to execute sequentially on the thread that calls `allOf.join()`.",
-        "C) Passing an array into `CompletableFuture.allOf` creates a strong reference loop that prevents GC from reclaiming completed futures in `customExecutor`.",
-        "D) Calling `CompletableFuture::join` inside a Stream pipeline disables OS-level socket timeouts for underlying HTTP connections."
+        "A) Mean Squared Logarithmic Error (MSLE) with a fixed L2 weight penalty applied to the final classification dense layer.",
+        "B) Focal Loss with a modulating factor (1 - p_t)^gamma and an alpha-balanced weighting parameter.",
+        "C) Standard Hinge Loss optimized via stochastic gradient descent with momentum set to zero.",
+        "D) Negative Log-Likelihood loss combined with dynamic temperature softmax scaling set to infinity."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) If one future fails or times out, `allOf.join()` throws a `CompletionException`, but the remaining running `CompletableFuture` tasks are not automatically cancelled and continue occupying worker threads in `customExecutor` indefinitely until their own blocking I/O completes.",
-      "explanation": "`CompletableFuture.allOf()` completes exceptionally as soon as any one of the constituent futures completes exceptionally. However, it does not propagate cancellation to the remaining unfinished futures in the array. Those uncancelled tasks continue executing on `customExecutor` threads. Under heavy traffic with partial downstream degradation, threads remain blocked on slow I/O, rapidly exhausting `customExecutor`'s thread queue and causing system-wide latency."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Focal Loss with a modulating factor (1 - p_t)^gamma and an alpha-balanced weighting parameter.",
+      "explanation": "Focal Loss addresses extreme class imbalance by adding a modulating factor (1 - p_t)^gamma to the standard cross-entropy loss, where p_t is the model's estimated probability for the ground truth class. When gamma > 0 (typically gamma = 2), the loss contribution of well-classified easy examples (p_t -> 1, such as dominant background voxels) is exponentially down-weighted towards zero. This prevents the cumulative gradient of massive numbers of easy negative samples from overwhelming the gradient signal, dynamically focusing the backpropagation updates on hard, ambiguous minority class instances (the 0.05% malignant nodules)."
     }
   ]
 }
