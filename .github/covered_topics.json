@@ -121,7 +121,8 @@
     "Message Delivery Guarantees and Offline Buffering in Distributed WebSocket Systems",
     "Connection Lifecycle, Heartbeats, and Distributed Presence in Real-Time Chat Systems",
     "Handling Mass Fan-out and Redis Memory Limits in Large-Scale Group Chat Systems",
-    "Decoupling Real-Time WebSocket Delivery from Database Persistence"
+    "Decoupling Real-Time WebSocket Delivery from Database Persistence",
+    "Real-Time Ephemeral Message Routing and Channel Multiplexing with Redis Pub/Sub"
   ],
   "Memory Management & Garbage Collection Tuning": [
     "Java Memory Management & Garbage Collection Tuning",
