@@ -55,7 +55,8 @@
     "Transient vs. Permanent Distributed Error Classification",
     "Two-Phase Commit (2PC) Exception Recovery: Managing Coordinator and Participant Failures",
     "The Try-Confirm-Cancel (TCC) Pattern: Business-Level Exception Recovery",
-    "Centralized Exception Handling in Distributed Systems"
+    "Centralized Exception Handling in Distributed Systems",
+    "The Store-and-Forward Pattern: Local Durable Spooling for Remote Outages"
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections",
