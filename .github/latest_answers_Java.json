@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput caching service experiences an unexpected `OutOfMemoryError: Java heap space` over several days, despite using `WeakHashMap` to cache metadata mapped to transactional domain entities.\n\njava\n@Service\npublic class TransactionalMetadataCache {\n    private final Map<OrderKey, OrderMetadata> cache = Collections.synchronizedMap(new WeakHashMap<>());\n\n    @Transactional(readOnly = true)\n    public void cacheMetadata(Long orderId, String region) {\n        OrderKey key = new OrderKey(orderId, region);\n        OrderMetadata metadata = new OrderMetadata(key, fetchDetails(orderId));\n        cache.put(key, metadata);\n    }\n}\n",
-      "question": "What is the primary cause of the memory leak in this implementation?",
+      "scenario": "You are debugging a production issue where an in-memory session cache backed by a custom `WeakHashMap` implementation is causing an unexpected `OutOfMemoryError` on the JVM metaspace/tenured heap. The cache was designed to automatically evict sessions when user tokens are no longer strongly referenced elsewhere:\n\njava\npublic class SessionCache {\n    private final Map<Token, SessionData> cache = new WeakHashMap<>();\n\n    public synchronized void putSession(Token token, User user) {\n        cache.put(token, new SessionData(user, token));\n    }\n\n    public synchronized SessionData getSession(Token token) {\n        return cache.get(token);\n    }\n}\n",
+      "question": "What is the primary architectural flaw preventing the entries from being collected by the Garbage Collector?",
       "options": [
-        "A) `Collections.synchronizedMap` creates hard references to the map entries, preventing GC reclamation of weak keys.",
-        "B) The value object (`OrderMetadata`) holds a strong reference back to the key (`OrderKey`), preventing the weak key from being collected.",
-        "C) The Spring `@Transactional` proxy creates a CGLIB delegate that captures the `OrderKey` in thread-local storage.",
-        "D) `WeakHashMap` only clears keys during concurrent mutation calls, and `readOnly = true` prevents key expunging."
+        "A) `WeakHashMap` only cleans up stale references when the `size()` method is invoked, which is never called.",
+        "B) The `SessionData` value holds a strong reference back to the `Token` key, creating a strong reachability path that prevents key garbage collection.",
+        "C) The `synchronized` keyword causes monitor retention on the `SessionCache` instance, artificially elevating the reference strength of keys inside the JVM.",
+        "D) `WeakHashMap` uses soft references internally for values, which are only cleared when the JVM experiences catastrophic memory pressure."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The value object (`OrderMetadata`) holds a strong reference back to the key (`OrderKey`), preventing the weak key from being collected.",
-      "explanation": "In a `WeakHashMap`, the keys are stored as `WeakReference` instances, but the values are held via strong references within the `Entry` table. If a value directly or indirectly holds a strong reference back to its corresponding key (as `OrderMetadata` holds `OrderKey`), the key will never become weakly reachable. As a result, the garbage collector will never clear the `WeakReference`, entries are never enqueued to the map's internal `ReferenceQueue`, and automatic expunging never occurs, causing a silent heap leak."
+      "correct_answer_text": "B) The `SessionData` value holds a strong reference back to the `Token` key, creating a strong reachability path that prevents key garbage collection.",
+      "explanation": "In `WeakHashMap`, the keys are held via `WeakReference`, but the values are held via strong references. If a value directly or indirectly maintains a strong reference to its corresponding key (here, `new SessionData(user, token)` stores `token`), the key remains strongly reachable through the map's own internal entry table (`Entry.value -> Token`). As a result, the GC will never clear the `WeakReference`, rendering the automatic eviction mechanism completely ineffective and leading to an uncontrolled memory leak."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where an in-memory aggregation pipeline occasionally serves stale, partially mutated states during peak concurrent reads. The pipeline uses a custom copy-on-write composite collection exposed through a Spring-managed bean:\n\njava\n@Component\npublic class RoutingRegistry {\n    private volatile Map<String, List<Route>> routeTable = new HashMap<>();\n\n    public void registerRoute(String gateway, Route route) {\n        Map<String, List<Route>> newTable = new HashMap<>(routeTable);\n        List<Route> routes = newTable.computeIfAbsent(gateway, k -> new ArrayList<>());\n        routes.add(route);\n        routeTable = newTable;\n    }\n\n    public List<Route> getRoutes(String gateway) {\n        return routeTable.getOrDefault(gateway, Collections.emptyList());\n    }\n}\n",
-      "question": "What is the primary concurrency flaw leading to data inconsistency in this collection implementation?",
+      "scenario": "You are debugging a production issue where a high-throughput microservice using a custom lock-free `ConcurrentLinkedQueue` implementation encounters massive CPU spikes (100% utilization across multiple cores) and thread contention during peak loads, despite minimal actual I/O. Thread dumps show dozens of worker threads stuck in `ConcurrentLinkedQueue.poll()` within the inner traversal loop. Profiling reveals severe cache-line bouncing on modern multi-socket NUMA hardware.",
+      "question": "Which of the following explains the root cause of this performance collapse?",
       "options": [
-        "A) The shallow copy of `routeTable` copies existing references to mutable `ArrayList` values, allowing concurrent mutations to affect ongoing reads.",
-        "B) Assigning to the `volatile` variable `routeTable` does not establish a happens-before relationship for read operations in `getRoutes`.",
-        "C) The `computeIfAbsent` method on `HashMap` causes bucket collisions to lock table resizing across separate worker threads.",
-        "D) `Collections.emptyList()` is immutable and throws an `UnsupportedOperationException` when referenced across classloaders."
+        "A) Lock coarsening triggers OS-level mutex acquisition when CAS retries exceed the JVM threshold defined by `-XX:LoopUnrollLimit`.",
+        "B) Frequent unsuccessful compare-and-swap (CAS) loops invalidate the L1/L2 CPU cache lines containing the head and tail pointers across cores, triggering high cache-coherency traffic (false sharing / bus snooping).",
+        "C) The JVM JIT compiler de-optimizes the volatile read inside `ConcurrentLinkedQueue` into a synchronized monitor block under heavy read concurrency.",
+        "D) The `poll()` method inherently falls back to `LockSupport.parkNanos()` when the queue contains fewer than 16 items, causing excessive kernel context switching."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The shallow copy of `routeTable` copies existing references to mutable `ArrayList` values, allowing concurrent mutations to affect ongoing reads.",
-      "explanation": "While `new HashMap<>(routeTable)` creates a new outer map instance, it performs a shallow copy: existing `gateway` keys continue to reference the exact same mutable `ArrayList<Route>` instances. When `registerRoute` fetches an existing list and executes `routes.add(route)`, it directly mutates the list instance that concurrent readers are currently iterating over or reading from via `getRoutes`. This violates copy-on-write isolation and introduces data races on non-thread-safe `ArrayList` instances."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Frequent unsuccessful compare-and-swap (CAS) loops invalidate the L1/L2 CPU cache lines containing the head and tail pointers across cores, triggering high cache-coherency traffic (false sharing / bus snooping).",
+      "explanation": "In high-contention non-blocking queues like `ConcurrentLinkedQueue`, multiple threads concurrently perform CAS operations on the shared `head` and `tail` pointers. When contention is high, frequent CAS failures force the MESI/MOESI cache-coherency protocol to continually invalidate cache lines across CPU sockets (bus snooping and memory interconnect traffic). This cache-line bouncing saturates the hardware memory bus and causes extreme CPU spinning without useful progress."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a service utilizing `ConcurrentHashMap` for high-throughput transactional session tracking exhibits high CPU usage and lock contention. Worker threads execute Spring `@Transactional` rollbacks, and heap profiling reveals hundreds of threads parked inside `ConcurrentHashMap.compute`:\n\njava\n@Service\npublic class SessionCoordinator {\n    private final ConcurrentHashMap<String, UserSession> activeSessions = new ConcurrentHashMap<>();\n\n    @Transactional\n    public void refreshSession(String userId) {\n        activeSessions.compute(userId, (key, currentSession) -> {\n            if (currentSession != null && currentSession.isExpired()) {\n                auditService.logEviction(currentSession); // Performs a synchronous RPC / DB query\n                return null;\n            }\n            return currentSession != null ? currentSession.touch() : new UserSession(userId);\n        });\n    }\n}\n",
-      "question": "What internal behavior of `ConcurrentHashMap` causes this performance degradation and thread starvation?",
+      "scenario": "You are debugging a production issue where a transactional Spring service fails to commit bulk operations correctly. A custom collection processor updates records in batches within a `@Transactional` boundary, but nested rollback events are being silently ignored, or operations run outside the transaction:\n\njava\n@Service\npublic class InventoryBatchService {\n\n    @Transactional(propagation = Propagation.REQUIRED)\n    public void processBatch(List<Item> items) {\n        items.forEach(this::updateItemInventory);\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void updateItemInventory(Item item) {\n        // Database modification and validation checks\n        if (item.isInvalid()) {\n            throw new InventoryException(\"Invalid item\");\n        }\n    }\n}\n",
+      "question": "What is the primary mechanism causing the `@Transactional(propagation = Propagation.REQUIRES_NEW)` configuration to be ignored?",
       "options": [
-        "A) `ConcurrentHashMap.compute` locks the entire table array using a global reentrant monitor whenever the remapping function returns `null`.",
-        "B) Invoking `@Transactional` within a remapping lambda forces Spring to enlist the `ConcurrentHashMap` internal segment into the JTA transaction tree.",
-        "C) `ConcurrentHashMap.compute` synchronizes on the root node (head) of the specific hash bin for the duration of the remapping function, stalling all access to keys colliding on that bin.",
-        "D) The remapping function triggers immediate rehashing of the underlying table if an external RPC exceeds the default JVM keep-alive timeout."
+        "A) `List.forEach()` runs parallel stream workers under the hood, escaping the parent thread's `ThreadLocal` transaction context.",
+        "B) Self-invocation of `this::updateItemInventory` bypasses the Spring AOP dynamic proxy, invoking the raw target method directly without interceptor interception.",
+        "C) Spring transaction interceptors do not support `Propagation.REQUIRES_NEW` when using default CGLIB proxy subclasses.",
+        "D) Unchecked exceptions like `InventoryException` cause automatic commit unless explicitly specified in `rollbackFor`."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) `ConcurrentHashMap.compute` synchronizes on the root node (head) of the specific hash bin for the duration of the remapping function, stalling all access to keys colliding on that bin.",
-      "explanation": "In Java 8+, `ConcurrentHashMap.compute` synchronizes on the head node (`Node` or `TreeBin`) of the bucket corresponding to the hash of the key. Performing long-running, blocking operations like remote network calls (`auditService.logEviction`) or database transactions inside the remapping function holds the bin lock for an extended period. Any other thread attempting to read, write, or compute against any key that hashes to that same bucket will be blocked, causing severe thread starvation and thread pool exhaustion."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Self-invocation of `this::updateItemInventory` bypasses the Spring AOP dynamic proxy, invoking the raw target method directly without interceptor interception.",
+      "explanation": "Spring's declarative transaction management relies on AOP proxies (either JDK dynamic proxies or CGLIB). When a method calls another method on the same class instance using `this::method` or `this.method()`, the call is executed against the local object reference, completely bypassing the surrounding AOP proxy interceptor stack. Consequently, the `Propagation.REQUIRES_NEW` advice on `updateItemInventory` is never executed, and it runs under the caller's existing transaction context without the expected isolation or independent commit/rollback behavior."
     }
   ]
 }
