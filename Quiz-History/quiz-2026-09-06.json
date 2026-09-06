@@ -1,48 +1,48 @@
 {
-  "topic": "Advanced Collections Framework & Custom Implementations",
+  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot gateway service encounters intermittent `ArrayIndexOutOfBoundsException` and lost elements under heavy load. A code review reveals the following custom collection-based aggregation logic inside a singleton service:\n\njava\n@Service\npublic class UserSessionTracker {\n    private final ConcurrentHashMap<String, List<String>> activeUserTokens = new ConcurrentHashMap<>();\n\n    public void trackSession(String userId, String token) {\n        activeUserTokens.computeIfAbsent(userId, k -> new ArrayList<>())\n                        .add(token);\n    }\n\n    public List<String> getSessions(String userId) {\n        return activeUserTokens.getOrDefault(userId, Collections.emptyList());\n    }\n}\n",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "You are debugging a production issue where a high-throughput payment microservice running on JDK 17 with the `G1GC` garbage collector experiences intermittent, catastrophic latency spikes (multi-second pauses) under heavy load. A heap dump analysis reveals that the total live set is well below 50% of the 32GB maximum heap size, yet GC logs consistently report `To-space exhausted` followed by Full GC cycles triggered by `Allocation Failure`. The team recently added a feature that writes large, encrypted audit trails formatted as raw `byte[]` arrays (averaging 4MB to 12MB each) directly to disk during each transaction.",
+      "question": "What is the primary architectural cause of these `To-space exhausted` and Full GC events?",
       "options": [
-        "A) `ConcurrentHashMap.computeIfAbsent` locks the entire map during execution, starving incoming worker threads.",
-        "B) While retrieving or initializing the bucket list is atomic, the resulting `ArrayList` is not thread-safe; concurrent threads sharing the same `userId` mutate the underlying list concurrently.",
-        "C) The lambda inside `computeIfAbsent` causes a memory leak because it captures an implicit reference to the Spring proxy context.",
-        "D) `Collections.emptyList()` returns a mutable list on older JVMs, causing race conditions in read pathways."
+        "A) The default `G1ReservePercent` is completely exhausted by thread stack allocations, forcing G1 to fall back to a serial mark-sweep-compact Full GC.",
+        "B) Rapid allocation of Humongous Objects directly into the Old Generation creates contiguous region fragmentation and prematurely exhausts available regions before concurrent marking completes.",
+        "C) The JVM Card Table overflowed because write barriers cannot track references spanning across non-adjacent Survivor spaces during bursty allocations.",
+        "D) The `InitiatingHeapOccupancyPercent` (IHOP) calculation was automatically triggered too early, causing Mixed GC pause times to exceed the target `MaxGCPauseMillis`."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) While retrieving or initializing the bucket list is atomic, the resulting `ArrayList` is not thread-safe; concurrent threads sharing the same `userId` mutate the underlying list concurrently.",
-      "explanation": "Although `ConcurrentHashMap.computeIfAbsent` guarantees that the mapping function is executed atomically per key, the returned value is a standard `ArrayList`. Multiple threads for the same `userId` will obtain the same `ArrayList` instance and invoke `.add(token)` simultaneously without synchronization. Because `ArrayList` is unsynchronized, concurrent resizing and structural modifications trigger race conditions, resulting in silent element overwrites or `ArrayIndexOutOfBoundsException`."
+      "correct_answer_text": "B) Rapid allocation of Humongous Objects directly into the Old Generation creates contiguous region fragmentation and prematurely exhausts available regions before concurrent marking completes.",
+      "explanation": "In G1GC, any allocation larger than 50% of a G1 region size (defaulting between 1MB and 32MB depending on heap size, commonly 16MB for a 32GB heap) is classified as a Humongous Object. Humongous objects bypass the Young generation (Eden/Survivor) and are allocated directly into a contiguous set of regions in the Old generation. High allocation rates of 4MB-12MB byte arrays cause severe heap fragmentation because finding contiguous free regions becomes impossible. When free regions run out and an allocation cannot proceed, G1 cannot evacuate survivor objects (triggering `To-space exhausted`) and degrades into a stop-the-world Full GC to defragment the heap."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a service utilizing a custom metadata cache encounters severe `java.lang.OutOfMemoryError: Java heap space`. The cache is built around `java.util.WeakHashMap<SessionKey, SessionContext>` with the intent that whenever external threads discard their `SessionKey` reference, the JVM Garbage Collector will automatically reclaim the associated `WeakHashMap$Entry` and `SessionContext` values. Heap dump analysis reveals that thousands of expired `SessionKey` objects remain firmly anchored in the heap.",
-      "question": "What is the root cause preventing the Garbage Collector from cleaning up the map entries?",
+      "scenario": "You are debugging a production issue involving a multi-threaded data pipeline. The following service was designed to initialize a shared resource lazily without global synchronization on every read:\n\njava\n@Component\npublic class ConfigurationRegistry {\n    private Map<String, String> runtimeConfig;\n    private boolean initialized = false;\n\n    public void loadConfiguration(Map<String, String> configs) {\n        this.runtimeConfig = new HashMap<>(configs);\n        this.initialized = true;\n    }\n\n    public String getProperty(String key) {\n        if (!initialized) {\n            return null;\n        }\n        return runtimeConfig.get(key);\n    }\n}\n\n\nUnder high concurrency, worker threads occasionally throw a `NullPointerException` inside `runtimeConfig.get(key)`, or retrieve `null` even though the key was guaranteed to be present in `configs`.",
+      "question": "What is the subtle JMM (Java Memory Model) bug causing this behavior?",
       "options": [
-        "A) `WeakHashMap` references are cleaned up only when `System.gc()` is called explicitly by an application thread.",
-        "B) Each `SessionContext` object maintains a strong reference back to its corresponding `SessionKey`, forming an indirect strong reference path from the entry value back to the key.",
-        "C) The JVM Garbage Collector ignores weak references if objects reside in the Old Generation (Tenured space).",
-        "D) `WeakHashMap` maintains strong references to all keys until `WeakHashMap.expungeStaleEntries()` is invoked via an asynchronous background daemon."
+        "A) The method `loadConfiguration` executes inside a CGLIB proxy that fails to synchronize on class metadata during class reloading.",
+        "B) Due to the absence of memory barriers on `initialized` and `runtimeConfig`, instructions may be reordered, or writes to `runtimeConfig` may remain in CPU store buffers, allowing other threads to observe `initialized == true` before seeing the populated `HashMap` contents.",
+        "C) The `HashMap` instance escapes into Metaspace before its internal bucket array is allocated by the JIT compiler.",
+        "D) Non-atomic 64-bit reference writes in 64-bit HotSpot cause tearing of the pointer reference to `runtimeConfig` unless the object is marked `@Transactional`."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Each `SessionContext` object maintains a strong reference back to its corresponding `SessionKey`, forming an indirect strong reference path from the entry value back to the key.",
-      "explanation": "In `WeakHashMap`, the internal `Entry` inherits from `WeakReference<K>` while holding a strong reference to the value `V`. If the value `SessionContext` stores a reference to `SessionKey` (directly or indirectly), a strong reference path exists: `Entry -> SessionContext -> SessionKey`. As long as the `WeakHashMap` is reachable, the value cannot be collected, and its strong back-reference keeps the key alive, defeating the weak reference mechanism and causing an unbounded memory leak."
+      "correct_answer_text": "B) Due to the absence of memory barriers on `initialized` and `runtimeConfig`, instructions may be reordered, or writes to `runtimeConfig` may remain in CPU store buffers, allowing other threads to observe `initialized == true` before seeing the populated `HashMap` contents.",
+      "explanation": "Under the Java Memory Model (JMM), plain non-volatile field reads and writes do not establish a *happens-before* relationship. The compiler and CPU out-of-order execution units are free to reorder the assignment `this.initialized = true` before the internal array initialization and entries of `new HashMap<>(configs)` are fully published to main memory. Reader threads can see `initialized == true` while `runtimeConfig` is still `null`, or observe a partially initialized `HashMap` whose internal table array contains null pointers, triggering a `NullPointerException` or lost updates."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a batch pipeline consumes millions of database rows, wrapping them into a custom stream-backed collection within an `@Transactional(propagation = Propagation.REQUIRED)` service method. Even though the custom collection eagerly discards processed elements, memory usage climbs monotonically until GC pauses bring the service to a halt. Profiling confirms millions of entity instances are pinned in memory.",
-      "question": "Why are the processed entity instances retained in memory despite being removed from the custom collection?",
+      "scenario": "You are debugging a production issue in an enterprise Spring Boot application that dynamically loads custom tenant plugins at runtime using custom `URLClassLoader` instances. During performance testing where plugins are frequently loaded, executed, and unloaded, the application crashes with `java.lang.OutOfMemoryError: Metaspace`. Memory metrics show that Metaspace usage grows monotonically. Heap dumps reveal that thousands of `PluginClassLoader` instances and class metadata records are pinned in memory, even though the application explicitly removes all references to the `URLClassLoader` instances and invokes `close()` on them.",
+      "question": "Which of the following JVM class loading mechanics explains why the `PluginClassLoader` and its loaded classes cannot be garbage collected?",
       "options": [
-        "A) The Spring transaction aspect proxies create dynamic CGLIB interceptors that hold hard references to each collection argument until the JVM terminates.",
-        "B) JPA/Hibernate's First-Level Cache (`PersistenceContext`) within the active transaction maintains strong references to all loaded entities for dirty checking until the transaction commits.",
-        "C) The JVM JIT compiler automatically optimizes away collection removals within active transactional interceptors to preserve rollbacks.",
-        "D) The database JDBC driver holds all fetched cursor rows in native memory buffers until the transaction isolation boundary resets."
+        "A) Metaspace allocations are managed exclusively by the OS C-heap and are only freed upon complete JVM process termination.",
+        "B) Instances of classes loaded by `PluginClassLoader` registered a thread or static field tied to a JVM system class loader, or an unclosed `ThreadLocal` on a shared thread pool references a class/instance from that class loader.",
+        "C) The G1GC concurrent cycle ignores Metaspace unless explicitly configured with `-XX:+ClassUnloadingWithConcurrentMark` and `-XX:+UseZGC` simultaneously.",
+        "D) CGLIB dynamic subclasses generated inside Spring `@Configuration` classes cannot be unloaded if Spring's `DefaultListableBeanFactory` is instantiated in a parent loader."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) JPA/Hibernate's First-Level Cache (`PersistenceContext`) within the active transaction maintains strong references to all loaded entities for dirty checking until the transaction commits.",
-      "explanation": "Within an open Spring `@Transactional` boundary, Hibernate binds a `PersistenceContext` (L1 cache) to the current thread. Every entity loaded into memory is tracked with snapshot copies for dirty-checking purposes. Removing entities from a custom local collection does not decouple them from the `EntityManager`. Consequently, they cannot be garbage-collected until the transaction completes, or unless `EntityManager.detach(entity)` or `EntityManager.clear()` is called explicitly to purge the persistence context."
+      "correct_answer_text": "B) Instances of classes loaded by `PluginClassLoader` registered a thread or static field tied to a JVM system class loader, or an unclosed `ThreadLocal` on a shared thread pool references a class/instance from that class loader.",
+      "explanation": "A class loader can only be garbage-collected along with its loaded classes and Metaspace native memory if all three conditions are met: (1) 0 instances of any class loaded by that classloader exist on the heap, (2) 0 references to the `ClassLoader` itself exist, and (3) no loaded `Class` objects are referenced. A common culprit in plugin architectures is shared thread pools (e.g., Tomcat/Netty request threads): if code executed by the plugin sets a `ThreadLocal` containing a plugin object or class and fails to call `remove()`, the long-lived worker thread maintains a strong reference to that object. The object points to its `Class`, which points to its `PluginClassLoader`, transitively pinning all classes and their associated Metaspace metadata."
     }
   ]
 }
