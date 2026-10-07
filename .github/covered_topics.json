@@ -112,7 +112,8 @@
     "JVM Class Loading: SystemDictionary Resolution, Parallel Class Loaders, and Concurrent Loading Locks",
     "JVM Memory Pacing and Allocation Stalls: How G1 and ZGC Prevent Allocation Failures",
     "JVM Memory Model: Safe Publication, Final Field Semantics, and Constructor Freeze Actions",
-    "JVM Memory Model: VarHandle Memory Orders, Acquire/Release Semantics, and Hardware Fences"
+    "JVM Memory Model: VarHandle Memory Orders, Acquire/Release Semantics, and Hardware Fences",
+    "Generational ZGC Internals: Store Barriers, Metadata Bits, and Ultra-Low Latency Young Collections"
   ],
   "Design a Real-time Chat System (WebSockets, Redis Pub/Sub)": [
     "Scalable Real-time Chat: WebSockets & Redis Pub/Sub",
