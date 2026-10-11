@@ -30,7 +30,8 @@
     "Observability and Diagnostics for Virtual Threads: JFR Events, Thread Dumps, and Pinning Detection",
     "CompletableFuture Lock-Free State Machine: Treiber Stacks, Completion Chains, and AltResult Mechanics",
     "Introduction to Java Concurrency & Multithreading with Virtual Threads and CompletableFuture",
-    "Stack Chunk Slicing and Continuation Suspension: The Memory Engine Behind Virtual Threads"
+    "Stack Chunk Slicing and Continuation Suspension: The Memory Engine Behind Virtual Threads",
+    "Context Propagation & Distributed Tracing: Managing MDC and Request Scope across CompletableFuture and Virtual Threads"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
