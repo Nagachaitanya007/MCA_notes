@@ -1,0 +1,48 @@
+{
+  "topic": "Exception Handling Strategies in Distributed Systems",
+  "mode": "Java",
+  "questions": [
+    {
+      "id": 1,
+      "scenario": "You are debugging a production issue where an order processing workflow fails to persist fallback records. When downstream payment fails, the service catches the exception and attempts to update the order status to `FAILED_PAYMENT` in the database, but the client receives an unexpected `500 Internal Server Error` and the database transaction is completely aborted.\n\njava\n@Service\npublic class OrderWorkflowService {\n    @Autowired\n    private PaymentProcessingService paymentProcessingService;\n    @Autowired\n    private OrderRepository orderRepository;\n\n    @Transactional\n    public void processOrder(Order order) {\n        try {\n            paymentProcessingService.executePayment(order);\n        } catch (PaymentFailedException ex) {\n            order.setStatus(OrderStatus.PAYMENT_RETRY_PENDING);\n            orderRepository.save(order);\n        }\n    }\n}\n\n@Service\npublic class PaymentProcessingService {\n    @Transactional(propagation = Propagation.REQUIRED)\n    public void executePayment(Order order) {\n        if (!externalPaymentGateway.charge(order)) {\n            throw new PaymentFailedException(\"Declined by payment processor\"); // Extends RuntimeException\n        }\n    }\n}\n",
+      "question": "What is the primary cause of this issue?",
+      "options": [
+        "A) The Spring transaction interceptor on `PaymentProcessingService` marks the underlying physical transaction as rollback-only upon receiving `PaymentFailedException`; when `OrderWorkflowService` attempts to commit, the transaction manager throws `UnexpectedRollbackException`.",
+        "B) Because `PaymentProcessingService` is injected via `@Autowired`, Spring creates a JDK dynamic proxy that silently suppresses checked exceptions, causing transaction synchronization to desynchronize.",
+        "C) The `catch (PaymentFailedException ex)` block catches a runtime exception, which causes the database connection pool (`HikariCP`) to forcibly kill the socket connection to avoid dirty reads.",
+        "D) The outer `@Transactional` annotation defaults to `Propagation.SUPPORTS`, which cannot inherit the transactional context created by `Propagation.REQUIRED`."
+      ],
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The Spring transaction interceptor on `PaymentProcessingService` marks the underlying physical transaction as rollback-only upon receiving `PaymentFailedException`; when `OrderWorkflowService` attempts to commit, the transaction manager throws `UnexpectedRollbackException`.",
+      "explanation": "In Spring's declarative transaction management with `Propagation.REQUIRED`, inner and outer methods participate in the exact same physical transaction. When `PaymentProcessingService.executePayment()` throws a `RuntimeException` (`PaymentFailedException`), the transaction interceptor catches it, determines it matches default rollback rules, and marks the underlying `TransactionStatus` as `rollback-only` before rethrowing. Even though `OrderWorkflowService.processOrder()` catches the exception and attempts to perform additional writes, the physical transaction is already poisoned. When the outer method boundary finishes and the transaction coordinator calls `commit()`, Spring detects the `rollback-only` flag and throws an `org.springframework.transaction.UnexpectedRollbackException`, aborting all state changes."
+    },
+    {
+      "id": 2,
+      "scenario": "You are debugging a production issue where an API gateway orchestrates distributed microservice calls using a scatter-gather pattern. During peak hours, an intermittent downstream network outage causes connection timeouts. Shortly thereafter, the entire JVM becomes completely unresponsive: all health checks fail, pending asynchronous requests stall indefinitely, and thread dumps reveal dozens of worker threads stuck in `WAITING`.\n\njava\npublic CompletableFuture<BookingResponse> aggregateBooking(BookingRequest request) {\n    CompletableFuture<FlightResponse> flightFuture = \n        CompletableFuture.supplyAsync(() -> flightServiceClient.reserve(request));\n    CompletableFuture<HotelResponse> hotelFuture = \n        CompletableFuture.supplyAsync(() -> hotelServiceClient.reserve(request));\n\n    return CompletableFuture.allOf(flightFuture, hotelFuture)\n        .thenApply(v -> new BookingResponse(flightFuture.join(), hotelFuture.join()))\n        .exceptionally(ex -> {\n            compensatePartialReservations(request);\n            throw new BookingFailedException(\"Failed to complete reservation\", ex);\n        });\n}\n",
+      "question": "What is the primary architectural cause of this cascading JVM collapse?",
+      "options": [
+        "A) `CompletableFuture.allOf()` registers unmanaged listeners on the OS kernel epoll selector, leading to file descriptor exhaustion.",
+        "B) Overloaded methods without an explicit `Executor` use `ForkJoinPool.commonPool()` by default; blocking I/O calls starve the shared pool, preventing asynchronous exception handling and compensation logic across the entire JVM.",
+        "C) The `join()` method throws an unhandled `InterruptedException` that kills underlying platform threads permanently without replenishment.",
+        "D) `CompletableFuture.exceptionally()` swallows downstream `SocketTimeoutException` instances, causing garbage collection pauses due to uncollected futures."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Overloaded methods without an explicit `Executor` use `ForkJoinPool.commonPool()` by default; blocking I/O calls starve the shared pool, preventing asynchronous exception handling and compensation logic across the entire JVM.",
+      "explanation": "By calling `CompletableFuture.supplyAsync(Supplier)` without providing a dedicated `Executor`, tasks are dispatched to the JVM-wide `ForkJoinPool.commonPool()`. The common pool is sized based on CPU cores (`Runtime.getRuntime().availableProcessors() - 1`) and is designed strictly for non-blocking compute-bound workloads. When downstream microservices degrade and introduce blocking network I/O timeouts, all common pool worker threads become saturated and blocked. This starves not only subsequent booking requests and their compensation logic (`.exceptionally(...)`), but also any other framework or application component relying on the shared common pool, leading to complete JVM stall."
+    },
+    {
+      "id": 3,
+      "scenario": "You are debugging a production issue in a high-throughput financial distributed settlement engine. A critical downstream RPC dependency experiences recurring transient failures. When reviewing logs in your centralized observability platform (e.g., Datadog/Elasticsearch), you observe that for the first several minutes after deployment, the service outputs comprehensive logs with full stack traces for `RemoteTimeoutException`. However, under sustained high error rates, the logs suddenly degrade to outputting only `com.example.RemoteTimeoutException` with an empty stack trace: zero stack frames are attached.",
+      "question": "What JVM internal optimization causes the stack trace to disappear under high error rates?",
+      "options": [
+        "A) The JVM garbage collector switches to conservative mode during high allocation rates and drops `Throwable.backtrace` references to mitigate GC pause times.",
+        "B) The HotSpot C2 JIT compiler optimizes frequently thrown built-in or compiled exceptions using `-XX:+OmitStackTraceInFastThrow`, reusing a pre-allocated stackless exception instance.",
+        "C) The Logback/Log4j2 appender automatically strips stack traces when its internal ring buffer (`Disruptor`) reaches 80% capacity to prevent thread contention.",
+        "D) The operating system stops propagating context frames when signals exceed the configured POSIX stack trace limit in `/proc/sys/kernel/core_pattern`."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The HotSpot C2 JIT compiler optimizes frequently thrown built-in or compiled exceptions using `-XX:+OmitStackTraceInFastThrow`, reusing a pre-allocated stackless exception instance.",
+      "explanation": "The HotSpot C2 JIT compiler features an optimization controlled by the flag `-XX:+OmitStackTraceInFastThrow` (enabled by default). When an exception is thrown repeatedly at a specific code location (such as `NullPointerException`, `ArithmeticException`, or certain exceptions generated in hot compiled paths), the JIT compiler recompiles the method to use a fast-throw mechanism. Instead of allocating a new exception and capturing the execution stack via `Throwable.fillInStackTrace()`, the runtime reuses a single, pre-allocated exception instance without stack trace information to reduce overhead. In distributed systems with sustained transient failures, this creates an operational blind spot unless explicitly disabled with `-XX:-OmitStackTraceInFastThrow`."
+    }
+  ]
+}
