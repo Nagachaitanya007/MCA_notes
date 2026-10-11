@@ -216,7 +216,8 @@
     "Dynamic Resharding & Consistent Hashing: How to Scale Shards Without Downtime",
     "Local vs. Global Secondary Indexes in Sharded Databases",
     "Automated Failover & Split-Brain Prevention in Primary-Replica Replication",
-    "Geo-Partitioning and Locality-Aware Replication"
+    "Geo-Partitioning and Locality-Aware Replication",
+    "Write-Ahead Log (WAL) Streaming: LSNs, Engine Internals, and Replication Pipelines"
   ],
   "Design a Notification System (Kafka + SQS + Webhooks)": [
     "Designing a Scalable Notification System (Kafka + SQS + Webhooks)",
