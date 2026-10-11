@@ -1,48 +1,48 @@
 {
-  "topic": "Deep Learning: CNNs for Image Recognition & RNNs for Sequence Data",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A smart manufacturing company deploys an automated optical inspection (AOI) system using a Convolutional Neural Network (CNN) to detect micro-cracks on PCB surfaces. The conveyor belt delivers 120 high-resolution images (4096x4096x3) per minute. During inference on edge-deployed hardware with strict latency constraints (<15 ms per frame) and restricted memory (4 GB VRAM), the standard ResNet-50 architecture fails due to Out-Of-Memory (OOM) errors and high FLOP counts. The engineering team must re-architect the feature extractor without sacrificing receptive field size or spatial resolution sensitivity for micron-level defects.",
-      "question": "Which architectural strategy best optimizes the model to satisfy both the computational budget and spatial representation requirements?",
+      "scenario": "A high-frequency FinTech fraud detection engine processes a continuous stream of credit card transactions featuring 65 continuous metrics per event. The system has a strict inference Service Level Agreement (SLA) of less than 15 milliseconds per transaction. Univariate Z-score and IQR-based filtering fail to capture sophisticated multi-attribute fraud patterns. Implementing Mahalanobis Distance resulted in runtime bottlenecks due to covariance matrix inversion overhead and rank deficiency from multicollinearity. Meanwhile, Local Outlier Factor (LOF) violated SLA limits due to O(N^2) pairwise distance computations against the dynamic reference buffer.",
+      "question": "Which outlier detection algorithm best satisfies the sub-15ms throughput constraint while effectively isolating multivariate anomalies without assuming parametric normality?",
       "options": [
-        "A) Replace standard 2D convolutions with Depthwise Separable Convolutions and utilize 1x1 convolutions for channel projection while maintaining early spatial dimensions.",
-        "B) Apply a global average pooling layer directly following the first convolutional block to downsample spatial features instantly.",
-        "C) Increase the stride parameter to 4 across all convolutional layers and remove residual skip connections to eliminate feature buffer caching.",
-        "D) Substitute all convolutional kernels with 1x1 convolutions exclusively to minimize parameter count and memory footprint."
+        "A) Minimum Covariance Determinant (MCD) estimator combined with robust Mahalanobis distance calculation",
+        "B) Isolation Forest utilizing fixed subsample sizes (psi = 256) per isolation tree",
+        "C) Density-Based Spatial Clustering of Applications with Noise (DBSCAN) using a Ball-Tree index",
+        "D) Elliptic Envelope fitted via online Stochastic Gradient Descent"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Replace standard 2D convolutions with Depthwise Separable Convolutions and utilize 1x1 convolutions for channel projection while maintaining early spatial dimensions.",
-      "explanation": "Depthwise Separable Convolutions (used in architectures like MobileNet) split the standard convolution into a depthwise spatial filter and a pointwise (1x1) channel projection. This reduces the computational cost and parameter count by approximately a factor of (1/N + 1/D_k^2), where D_k is the kernel size (typically saving 8-9x FLOPs for 3x3 kernels). This allows the network to maintain larger spatial dimensions necessary for micro-crack detection while strictly fitting within the VRAM and latency bounds of edge devices."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Isolation Forest utilizing fixed subsample sizes (psi = 256) per isolation tree",
+      "explanation": "Isolation Forest explicitly isolates anomalies instead of profiling normal data points. Because anomalies require fewer random recursive partitions along feature axes, they exhibit noticeably shorter path lengths in isolation trees. By capping the subsampling size to psi = 256, the algorithm achieves an inference time complexity of O(t * log(psi)), where t is the number of trees. This decouples inference latency from dataset size N, easily satisfying the 15ms latency constraint, while successfully capturing multivariate anomalies without assuming Gaussian distribution or inverting high-dimensional covariance matrices."
     },
     {
       "id": 2,
-      "scenario": "An algorithmic trading firm ingests tick-by-tick financial limit order book (LOB) data, generating high-frequency sequence lengths of T = 1,500 continuous time-steps. A vanilla Recurrent Neural Network (RNN) is implemented to forecast volatility over the next 30 seconds. During backpropagation through time (BPTT), the gradients associated with long-term dependencies vanish, rendering the model incapable of learning intraday multi-minute structural shifts. Concurrently, the inference pipeline experiences latency degradation when batch sizes scale during market open.",
-      "question": "What architectural adaptation addresses the vanishing gradient over this sequence length while optimizing for low-latency sequential inference?",
+      "scenario": "A healthcare analytics platform predicts septic shock onset in Intensive Care Units (ICU) across 40 continuous biomarkers. A key clinical biomarker, Serum Lactate, contains 38% missing values. Statistical diagnostics determine that the data mechanism is Missing Not At Random (MNAR); physicians systematically order lactate assays only when patients manifest overt signs of physiological distress. The engineering team observes that applying standard Multivariate Imputation by Chained Equations (MICE) with Predictive Mean Matching artificially shifts the hazard ratio distribution and introduces severe selection bias into the downstream generalized linear model.",
+      "question": "What is the most statistically sound strategy to process this feature without violating clinical assumptions and biasing the linear model coefficients?",
       "options": [
-        "A) Switch to a standard Bidirectional LSTM with truncated BPTT set to 1,500 steps and double the hidden dimension size.",
-        "B) Adopt a Gated Recurrent Unit (GRU) with gradient clipping, or deploy a Temporal Convolutional Network (TCN) with dilated causal convolutions.",
-        "C) Introduce higher-order polynomial activation functions like ReLU^2 within the vanilla RNN hidden recurrence updates.",
-        "D) Remove gating mechanisms and initialize the recurrent weight matrix with values sampled uniformly from U(-2.0, 2.0)."
+        "A) Apply K-Nearest Neighbors (KNN) imputation weighted by Euclidean distance over non-missing physiological vitals",
+        "B) Perform Complete Case Analysis (listwise deletion) to ensure zero synthetic data corruption",
+        "C) Generate an explicit binary missingness indicator column and impute missing values with a domain-neutral baseline or conditional median",
+        "D) Impute missing values using Mean substitution combined with standard Min-Max scaling"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Adopt a Gated Recurrent Unit (GRU) with gradient clipping, or deploy a Temporal Convolutional Network (TCN) with dilated causal convolutions.",
-      "explanation": "Vanilla RNNs suffer from vanishing gradients when unrolled over long sequences (T=1500) due to repeated multiplication by the recurrent weight matrix W_hh, causing eigenvalues less than 1 to decay exponentially. A GRU resolves this via additive update gates that create linear shortcut paths for gradient flow, while having fewer parameters and lower latency than an LSTM. Alternatively, a TCN with dilated causal convolutions avoids sequential processing bottlenecks entirely during training/inference and provides an exponentially expanding receptive field without recurrent vanishing gradients."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Generate an explicit binary missingness indicator column and impute missing values with a domain-neutral baseline or conditional median",
+      "explanation": "Standard imputation algorithms (such as MICE, Mean, and KNN) operate under the assumption of Missing Completely At Random (MCAR) or Missing At Random (MAR). When data is Missing Not At Random (MNAR), the probability of missingness is causally linked to unobserved or clinical intent variables (i.e., missingness itself carries predictive information regarding the patient's low acuity). Under the Missing Indicator Method (Pattern-Mixture Modeling framework), appending a binary indicator flag (1 if missing, 0 otherwise) alongside an imputed conditional value preserves the informative missingness pattern, enabling downstream linear models to learn the distinct risks associated with test non-ordering."
     },
     {
       "id": 3,
-      "scenario": "A medical imaging platform is training a CNN to classify rare malignant pulmonary nodules in low-dose CT scans. The dataset exhibits severe class imbalance: 98.5% benign samples and 1.5% malignant nodules. The baseline ResNet-101 trained with standard Categorical Cross-Entropy (CCE) loss achieves 98.6% overall accuracy, but exhibits a catastrophic 91% False Negative Rate on malignant cases. The team also observes that easy-to-classify background slices dominate the cumulative gradient updates.",
-      "question": "Which loss function formulation and data strategy should be integrated to force the CNN to focus on the hard-to-classify minority class instances?",
+      "scenario": "An enterprise supply chain platform is designing a demand forecasting pipeline for replacement aircraft components. The target feature, Daily Part Demand, exhibits extreme positive skewness (skewness coefficient = 5.8) and contains exact zero values on 32% of operational days (intermittent demand). The downstream architecture relies on L1/L2 regularized linear regression (ElasticNet), which strictly requires homoscedasticity and approximately normally distributed error terms. The team attempts a Box-Cox power transform, which immediately raises an arithmetic domain error.",
+      "question": "Which transformation strategy mathematically resolves the domain failure while optimizing parameter estimation to stabilize error variance and normalize the feature distribution?",
       "options": [
-        "A) Implement Mean Squared Error (MSE) loss combined with standard L1 weight regularization.",
-        "B) Apply Focal Loss with an alpha-balanced modulating factor (1 - p_t)^gamma to suppress the gradient contribution of well-classified examples.",
-        "C) Downsample the minority class until it matches the majority class and evaluate using categorical accuracy.",
-        "D) Utilize standard Cross-Entropy Loss with an inverted Softmax temperature parameter (tau < 0.1)."
+        "A) Apply the Yeo-Johnson power transformation optimized via profile Maximum Likelihood Estimation (MLE)",
+        "B) Apply Box-Cox after adding an arbitrarily large empirical constant offset (c = 1000) to all observations",
+        "C) Apply standard Log1p transformation (log(x + 1)) without parameter estimation",
+        "D) Apply Quantile Transformation mapped to a Uniform Distribution with 10,000 empirical quantiles"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Apply Focal Loss with an alpha-balanced modulating factor (1 - p_t)^gamma to suppress the gradient contribution of well-classified examples.",
-      "explanation": "Focal Loss dynamically scales the standard cross-entropy loss by adding a modulating factor (1 - p_t)^gamma, where gamma is the focusing parameter. When an easy background sample is correctly classified with high probability (p_t -> 1), the modulating factor approaches 0, significantly down-weighting its gradient contribution. Combined with an alpha balancing factor for the rare malignant class (1.5%), it prevents the massive volume of easy benign examples from overwhelming the loss function and forces backpropagation to prioritize hard, rare pathological features."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Apply the Yeo-Johnson power transformation optimized via profile Maximum Likelihood Estimation (MLE)",
+      "explanation": "The Box-Cox transform is mathematically restricted to strictly positive real values (y > 0), causing domain runtime exceptions when zero values exist. While an ad-hoc shift like log1p (log(x + 1)) accommodates non-negative values, it enforces a rigid transformation parameter (equivalent to lambda = 0) that cannot guarantee variance stabilization or optimal residual normality across diverse tail behaviors. The Yeo-Johnson power transformation extends Box-Cox methodology to allow zero and negative values through a continuous piecewise function, using profile Maximum Likelihood Estimation (MLE) to estimate an optimal power parameter lambda that stabilizes variance and induces normality."
     }
   ]
 }

@@ -1,48 +1,48 @@
 {
-  "topic": "Memory Management & Garbage Collection Tuning",
-  "mode": "Java",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-throughput Spring Boot REST API deployed on Tomcat experiences progressive Old Generation memory growth, eventually triggering an `OutOfMemoryError: Java heap space` after 48 hours of uptime. A heap dump analysis reveals millions of `TransactionSnapshot` objects surviving in the Old Gen. You trace the issue to the following bean:\n\njava\n@Service\npublic class TransactionAuditor {\n    private static final ThreadLocal<List<TransactionSnapshot>> SNAPSHOT_HOLDER = \n            ThreadLocal.withInitial(ArrayList::new);\n\n    @Transactional(propagation = Propagation.REQUIRED)\n    public void auditTransaction(Transaction txn) {\n        List<TransactionSnapshot> list = SNAPSHOT_HOLDER.get();\n        list.add(new TransactionSnapshot(txn));\n        persistAuditLog(list);\n    }\n\n    private void persistAuditLog(List<TransactionSnapshot> list) {\n        // Persistence logic writes batch to DB\n    }\n}\n",
-      "question": "What is the primary cause of this memory leak and Old Generation exhaustion?",
+      "scenario": "A high-frequency FinTech fraud detection engine processes a continuous stream of credit card transactions featuring 65 continuous metrics per event. The system has a strict inference Service Level Agreement (SLA) of less than 15 milliseconds per transaction. Univariate Z-score and IQR-based filtering fail to capture sophisticated multi-attribute fraud patterns. Implementing Mahalanobis Distance resulted in runtime bottlenecks due to covariance matrix inversion overhead and rank deficiency from multicollinearity. Meanwhile, Local Outlier Factor (LOF) violated SLA limits due to O(N^2) pairwise distance computations against the dynamic reference buffer.",
+      "question": "Which outlier detection algorithm best satisfies the sub-15ms throughput constraint while effectively isolating multivariate anomalies without assuming parametric normality?",
       "options": [
-        "A) Spring's `@Transactional` proxy intercepts method exit and wraps the `ThreadLocal` in a transaction sync registry that suppresses GC.",
-        "B) Tomcat worker threads (`http-nio-exec-*`) are pooled and never die; because `SNAPSHOT_HOLDER.remove()` is never called, the `ArrayList` continuously appends objects across multiple HTTP requests on the same thread, promoting references into Tenured space.",
-        "C) The `ThreadLocal` is declared `static`, causing its internal `ThreadLocalMap` entry keys to be strong references instead of weak references, preventing garbage collection.",
-        "D) The Spring CGLIB proxy creates a synthetic subclass of `TransactionAuditor` that maintains a hidden root reference to all local method variables."
+        "A) Minimum Covariance Determinant (MCD) estimator combined with robust Mahalanobis distance calculation",
+        "B) Isolation Forest utilizing fixed subsample sizes (psi = 256) per isolation tree",
+        "C) Density-Based Spatial Clustering of Applications with Noise (DBSCAN) using a Ball-Tree index",
+        "D) Elliptic Envelope fitted via online Stochastic Gradient Descent"
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Tomcat worker threads (`http-nio-exec-*`) are pooled and never die; because `SNAPSHOT_HOLDER.remove()` is never called, the `ArrayList` continuously appends objects across multiple HTTP requests on the same thread, promoting references into Tenured space.",
-      "explanation": "In servlet containers like Tomcat, requests are handled by reusable thread pools. `ThreadLocal` variables persist on the `Thread.threadLocals` (`ThreadLocalMap`) instance for the lifetime of that thread. Failing to invoke `.remove()` in a `finally` block means subsequent requests executing on the same thread retain and continuously append to the existing `ArrayList`. Because the list and its contents survive multiple minor GC cycles, they are tenured into the Old Generation, eventually causing heap exhaustion."
+      "correct_answer_text": "B) Isolation Forest utilizing fixed subsample sizes (psi = 256) per isolation tree",
+      "explanation": "Isolation Forest explicitly isolates anomalies instead of profiling normal data points. Because anomalies require fewer random recursive partitions along feature axes, they exhibit noticeably shorter path lengths in isolation trees. By capping the subsampling size to psi = 256, the algorithm achieves an inference time complexity of O(t * log(psi)), where t is the number of trees. This decouples inference latency from dataset size N, easily satisfying the 15ms latency constraint, while successfully capturing multivariate anomalies without assuming Gaussian distribution or inverting high-dimensional covariance matrices."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where an ultra-low-latency order execution service running on JDK 17 with the G1 Garbage Collector (`-Xms32g -Xmx32g -XX:+UseG1GC -XX:MaxGCPauseMillis=25`) frequently breaches its SLA. Analysis of the GC logs shows frequent `G1 Evacuation Pause` spikes up to 350ms with `to-space exhausted` annotations, alongside numerous lines reading: `concurrent-mark-start (G1 Humongous Allocation)`. Application metrics show the system regularly constructs large 18MB transient analytical byte arrays.",
-      "question": "What is the root cause of these latency spikes, and what is the optimal JVM tuning adjustment to resolve it?",
+      "scenario": "A healthcare analytics platform predicts septic shock onset in Intensive Care Units (ICU) across 40 continuous biomarkers. A key clinical biomarker, Serum Lactate, contains 38% missing values. Statistical diagnostics determine that the data mechanism is Missing Not At Random (MNAR); physicians systematically order lactate assays only when patients manifest overt signs of physiological distress. The engineering team observes that applying standard Multivariate Imputation by Chained Equations (MICE) with Predictive Mean Matching artificially shifts the hazard ratio distribution and introduces severe selection bias into the downstream generalized linear model.",
+      "question": "What is the most statistically sound strategy to process this feature without violating clinical assumptions and biasing the linear model coefficients?",
       "options": [
-        "A) The default G1 region size for a 32GB heap is 16MB; objects exceeding 50% of the region size (8MB) are classified as Humongous, allocated directly into contiguous Old Gen regions, causing severe fragmentation and premature concurrent marking. Set `-XX:G1HeapRegionSize=32m`.",
-        "B) The `InitiatingHeapOccupancyPercent` (IHOP) default is 45%, which is too high for write-heavy workloads. Set `-XX:InitiatingHeapOccupancyPercent=15` and enable `-XX:+UseZGC`.",
-        "C) The Young Generation is too small; increase `-XX:G1NewSizePercent=40` and disable concurrent class unloading via `-XX:-ClassUnloadingWithConcurrentMark`.",
-        "D) G1 is encountering lock contention inside `Unsafe.allocateMemory()`; configure `-XX:+UseLargePages` and enable `-XX:G1ReservePercent=30`."
+        "A) Apply K-Nearest Neighbors (KNN) imputation weighted by Euclidean distance over non-missing physiological vitals",
+        "B) Perform Complete Case Analysis (listwise deletion) to ensure zero synthetic data corruption",
+        "C) Generate an explicit binary missingness indicator column and impute missing values with a domain-neutral baseline or conditional median",
+        "D) Impute missing values using Mean substitution combined with standard Min-Max scaling"
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The default G1 region size for a 32GB heap is 16MB; objects exceeding 50% of the region size (8MB) are classified as Humongous, allocated directly into contiguous Old Gen regions, causing severe fragmentation and premature concurrent marking. Set `-XX:G1HeapRegionSize=32m`.",
-      "explanation": "In G1GC, the heap is split into equal-sized regions (ranging from 1MB to 32MB). Any allocation larger than 50% of a region is treated as a 'Humongous' allocation and bypassed into contiguous sets of Old Generation regions. On a 32GB heap, the ergonomic default region size is 16MB, meaning any object > 8MB is Humongous. Allocating 18MB arrays leads to immediate Old Gen fragmentation, triggering premature concurrent cycles and evacuation failures (`to-space exhausted`). Setting `-XX:G1HeapRegionSize=32m` increases the region threshold so that an 18MB allocation is still Humongous, but better yet, optimizing the payload or setting maximum region size to 32MB raises the 50% threshold to 16MB (halving contiguous region searching requirements) while refactoring the byte arrays to be streamed or split."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Generate an explicit binary missingness indicator column and impute missing values with a domain-neutral baseline or conditional median",
+      "explanation": "Standard imputation algorithms (such as MICE, Mean, and KNN) operate under the assumption of Missing Completely At Random (MCAR) or Missing At Random (MAR). When data is Missing Not At Random (MNAR), the probability of missingness is causally linked to unobserved or clinical intent variables (i.e., missingness itself carries predictive information regarding the patient's low acuity). Under the Missing Indicator Method (Pattern-Mixture Modeling framework), appending a binary indicator flag (1 if missing, 0 otherwise) alongside an imputed conditional value preserves the informative missingness pattern, enabling downstream linear models to learn the distinct risks associated with test non-ordering."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a reactive Spring WebFlux microservice deployed with Netty crashes unpredictably with `java.lang.OutOfMemoryError: Direct buffer memory`. Heap monitoring demonstrates that the standard Java heap usage remains exceptionally healthy (< 20% of `-Xmx8g`). The service configuration includes `-XX:MaxDirectMemorySize=4g` and uses Spring's `WebClient` to stream large multipart payload transfers downstream using `DataBufferUtils`.",
-      "question": "Why is the JVM crashing with Direct Memory OOM when Java heap utilization remains exceptionally low, and how does JVM GC interact with direct byte buffers?",
+      "scenario": "An enterprise supply chain platform is designing a demand forecasting pipeline for replacement aircraft components. The target feature, Daily Part Demand, exhibits extreme positive skewness (skewness coefficient = 5.8) and contains exact zero values on 32% of operational days (intermittent demand). The downstream architecture relies on L1/L2 regularized linear regression (ElasticNet), which strictly requires homoscedasticity and approximately normally distributed error terms. The team attempts a Box-Cox power transform, which immediately raises an arithmetic domain error.",
+      "question": "Which transformation strategy mathematically resolves the domain failure while optimizing parameter estimation to stabilize error variance and normalize the feature distribution?",
       "options": [
-        "A) CGLIB proxy definitions generated by Spring AOP for transactional reactive pipelines are written to off-heap memory buffers and leak across hot reloads.",
-        "B) Direct memory allocation requests bypass the OS Virtual Memory Manager and cause a kernel panic when Linux swap space is exhausted.",
-        "C) Direct `ByteBuffer` deallocation relies on `Cleaner` (phantom references) triggered by Heap GC; because heap utilization is low, minor and major GCs rarely occur, preventing native memory reclamation before off-heap exhaustion.",
-        "D) Netty disables JVM Garbage Collection inside pooled direct allocators, meaning unreferenced buffers are only released upon JVM termination."
+        "A) Apply the Yeo-Johnson power transformation optimized via profile Maximum Likelihood Estimation (MLE)",
+        "B) Apply Box-Cox after adding an arbitrarily large empirical constant offset (c = 1000) to all observations",
+        "C) Apply standard Log1p transformation (log(x + 1)) without parameter estimation",
+        "D) Apply Quantile Transformation mapped to a Uniform Distribution with 10,000 empirical quantiles"
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Direct `ByteBuffer` deallocation relies on `Cleaner` (phantom references) triggered by Heap GC; because heap utilization is low, minor and major GCs rarely occur, preventing native memory reclamation before off-heap exhaustion.",
-      "explanation": "Off-heap memory allocated via `ByteBuffer.allocateDirect()` creates a small on-heap `DirectByteBuffer` stub containing a native address pointer and a `sun.misc.Cleaner` (a `PhantomReference`). The native memory is only unmapped when the on-heap stub is collected and its cleaner is processed during a garbage collection cycle. If the application creates huge off-heap buffers while generating minimal on-heap pressure, the JVM does not trigger Young or Tenured collections frequently enough to scavenge the stubs, causing direct memory to hit `-XX:MaxDirectMemorySize` before a GC can clean them."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Apply the Yeo-Johnson power transformation optimized via profile Maximum Likelihood Estimation (MLE)",
+      "explanation": "The Box-Cox transform is mathematically restricted to strictly positive real values (y > 0), causing domain runtime exceptions when zero values exist. While an ad-hoc shift like log1p (log(x + 1)) accommodates non-negative values, it enforces a rigid transformation parameter (equivalent to lambda = 0) that cannot guarantee variance stabilization or optimal residual normality across diverse tail behaviors. The Yeo-Johnson power transformation extends Box-Cox methodology to allow zero and negative values through a continuous piecewise function, using profile Maximum Likelihood Estimation (MLE) to estimate an optimal power parameter lambda that stabilizes variance and induces normality."
     }
   ]
 }
