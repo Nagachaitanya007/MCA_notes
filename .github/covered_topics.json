@@ -202,7 +202,8 @@
     "Data Integrity Verification: End-to-End Checksums and Bit Rot Detection",
     "Erasure Coding Mechanics: Reed-Solomon Encoding and Chunk Reconstruction",
     "Cross-Region Replication Mechanics and Conflict Resolution in Distributed Object Storage",
-    "Read-After-Write Consistency Engines in Distributed Object Storage"
+    "Read-After-Write Consistency Engines in Distributed Object Storage",
+    "CDN Byte-Range Slicing and Partial Object Caching: Scalable Large-File Delivery"
   ],
   "Database Sharding & Replication Strategies": [
     "Horizontal Sharding: Scaling Out Your Data",
