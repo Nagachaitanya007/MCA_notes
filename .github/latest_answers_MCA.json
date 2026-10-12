@@ -1,48 +1,48 @@
 {
-  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "topic": "Natural Language Processing: Transformers, Attention, and Tokenization",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A high-frequency FinTech fraud detection engine processes a continuous stream of credit card transactions featuring 65 continuous metrics per event. The system has a strict inference Service Level Agreement (SLA) of less than 15 milliseconds per transaction. Univariate Z-score and IQR-based filtering fail to capture sophisticated multi-attribute fraud patterns. Implementing Mahalanobis Distance resulted in runtime bottlenecks due to covariance matrix inversion overhead and rank deficiency from multicollinearity. Meanwhile, Local Outlier Factor (LOF) violated SLA limits due to O(N^2) pairwise distance computations against the dynamic reference buffer.",
-      "question": "Which outlier detection algorithm best satisfies the sub-15ms throughput constraint while effectively isolating multivariate anomalies without assuming parametric normality?",
+      "scenario": "A healthcare enterprise deploys a clinical decision-support pipeline utilizing a standard Transformer model with a WordPiece tokenizer trained primarily on Wikipedia and BookCorpus. When ingesting electronic health records (EHRs), complex pharmacological entities such as 'dextroamphetamine-amphetamine' and 'hydrochlorothiazide' are fragmented into 6 to 9 generic subword tokens. This causes sequence length explosions that frequently breach the 512-token ceiling and severely degrades named entity recognition (NER) macro F1-scores. The team must remediate this under strict edge-compute constraints without retraining the foundation model weights from scratch.",
+      "question": "Which vocabulary adaptation strategy is theoretically and practically optimal to prevent token inflation while preserving pre-trained contextual representations?",
       "options": [
-        "A) Minimum Covariance Determinant (MCD) estimator combined with robust Mahalanobis distance calculation",
-        "B) Isolation Forest utilizing fixed subsample sizes (psi = 256) per isolation tree",
-        "C) Density-Based Spatial Clustering of Applications with Noise (DBSCAN) using a Ball-Tree index",
-        "D) Elliptic Envelope fitted via online Stochastic Gradient Descent"
+        "A) Retrain a Byte-Pair Encoding (BPE) tokenizer exclusively on clinical EHRs and re-initialize all Transformer positional and token embeddings using Xavier normal initialization.",
+        "B) Expand the existing WordPiece vocabulary with domain-specific clinical terms, initialize their new embedding vectors via the mean of their constituent subwords, and fine-tune only the embedding layer and task head.",
+        "C) Switch to UTF-8 byte-level tokenization without vocabulary expansion to ensure zero out-of-vocabulary instances, while freezing the encoder backbone.",
+        "D) Apply dynamic subword regularization during inference to randomly merge split tokens before passing them into the multi-head self-attention block."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Isolation Forest utilizing fixed subsample sizes (psi = 256) per isolation tree",
-      "explanation": "Isolation Forest explicitly isolates anomalies instead of profiling normal data points. Because anomalies require fewer random recursive partitions along feature axes, they exhibit noticeably shorter path lengths in isolation trees. By capping the subsampling size to psi = 256, the algorithm achieves an inference time complexity of O(t * log(psi)), where t is the number of trees. This decouples inference latency from dataset size N, easily satisfying the 15ms latency constraint, while successfully capturing multivariate anomalies without assuming Gaussian distribution or inverting high-dimensional covariance matrices."
+      "correct_answer_text": "B) Expand the existing WordPiece vocabulary with domain-specific clinical terms, initialize their new embedding vectors via the mean of their constituent subwords, and fine-tune only the embedding layer and task head.",
+      "explanation": "Over-fragmentation occurs when out-of-domain words are decomposed into excessive subwords, inflating sequence lengths and dispersing semantic mass. Retraining from scratch (Option A) discards general linguistic priors and requires vast compute. Byte-level tokenization (Option C) worsens sequence inflation. Subword regularization (Option D) is a training-time data augmentation method, not an inference-time reduction technique. Expanding the vocabulary, warm-starting new token embeddings with the mean of their subword embeddings, and fine-tuning preserves pre-trained weights while directly shrinking sequence length for domain terms."
     },
     {
       "id": 2,
-      "scenario": "A healthcare analytics platform predicts septic shock onset in Intensive Care Units (ICU) across 40 continuous biomarkers. A key clinical biomarker, Serum Lactate, contains 38% missing values. Statistical diagnostics determine that the data mechanism is Missing Not At Random (MNAR); physicians systematically order lactate assays only when patients manifest overt signs of physiological distress. The engineering team observes that applying standard Multivariate Imputation by Chained Equations (MICE) with Predictive Mean Matching artificially shifts the hazard ratio distribution and introduces severe selection bias into the downstream generalized linear model.",
-      "question": "What is the most statistically sound strategy to process this feature without violating clinical assumptions and biasing the linear model coefficients?",
+      "scenario": "A legal-tech platform processes multi-party service contracts averaging 16,000 tokens per document. Using a standard multi-head self-attention architecture (Vaswani et al.), inferencing triggers CUDA Out-Of-Memory (OOM) faults on an Nvidia A100 (40GB) GPU at a batch size of 1. Profiling reveals that the intermediate attention map computation (softmax(QK^T / sqrt(d_k))) consumes over 32 GB of activation memory.",
+      "question": "Which attention mechanism variation provides an O(N) or O(N log N) asymptotic memory complexity while preserving both local lexical parsing and long-range cross-clause reference tracking?",
       "options": [
-        "A) Apply K-Nearest Neighbors (KNN) imputation weighted by Euclidean distance over non-missing physiological vitals",
-        "B) Perform Complete Case Analysis (listwise deletion) to ensure zero synthetic data corruption",
-        "C) Generate an explicit binary missingness indicator column and impute missing values with a domain-neutral baseline or conditional median",
-        "D) Impute missing values using Mean substitution combined with standard Min-Max scaling"
+        "A) Pure Sliding Window Attention with a fixed receptive field of k=512 tokens across all layers.",
+        "B) Sparse Attention combining local sliding window patterns with dedicated global attention tokens at structural boundaries.",
+        "C) Low-rank matrix factorization approximating the full N x N attention matrix using truncated Singular Value Decomposition (SVD) at each layer.",
+        "D) Replacing multi-head attention with Multi-Query Attention (MQA) while retaining the standard dense N x N dot-product computation."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Generate an explicit binary missingness indicator column and impute missing values with a domain-neutral baseline or conditional median",
-      "explanation": "Standard imputation algorithms (such as MICE, Mean, and KNN) operate under the assumption of Missing Completely At Random (MCAR) or Missing At Random (MAR). When data is Missing Not At Random (MNAR), the probability of missingness is causally linked to unobserved or clinical intent variables (i.e., missingness itself carries predictive information regarding the patient's low acuity). Under the Missing Indicator Method (Pattern-Mixture Modeling framework), appending a binary indicator flag (1 if missing, 0 otherwise) alongside an imputed conditional value preserves the informative missingness pattern, enabling downstream linear models to learn the distinct risks associated with test non-ordering."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Sparse Attention combining local sliding window patterns with dedicated global attention tokens at structural boundaries.",
+      "explanation": "Standard self-attention scales quadratically (O(N^2)) in both time and activation memory. Pure sliding window attention (Option A) reduces complexity to O(N * k), but loses direct long-range dependencies across distant contract clauses. Multi-Query Attention (Option D) reduces KV-cache memory during autoregressive generation but does not alter the O(N^2) activation cost of the attention matrix during parallel forward passes. Sparse Attention mechanisms (such as Longformer or BigBird) combine local sliding window attention with selected global tokens (e.g., at section headings or [CLS] tokens), cutting spatial complexity to O(N) while maintaining long-range cross-clause paths."
     },
     {
       "id": 3,
-      "scenario": "An enterprise supply chain platform is designing a demand forecasting pipeline for replacement aircraft components. The target feature, Daily Part Demand, exhibits extreme positive skewness (skewness coefficient = 5.8) and contains exact zero values on 32% of operational days (intermittent demand). The downstream architecture relies on L1/L2 regularized linear regression (ElasticNet), which strictly requires homoscedasticity and approximately normally distributed error terms. The team attempts a Box-Cox power transform, which immediately raises an arithmetic domain error.",
-      "question": "Which transformation strategy mathematically resolves the domain failure while optimizing parameter estimation to stabilize error variance and normalize the feature distribution?",
+      "scenario": "An AI research group is pre-training an experimental deep Transformer encoder with high-dimensional attention projections where the per-head dimension d_k is scaled up to 512. During the initial training steps, gradients propagating through the self-attention layer vanish almost completely, and the attention distribution matrix collapses into near one-hot categorical vectors (peaked attention on single tokens). An engineer discovers that the implementation omitted the scaling factor in the dot-product attention formulation: Attention(Q, K, V) = softmax(QK^T)V.",
+      "question": "What is the exact mathematical mechanism causing gradient vanishing in this unscaled formulation?",
       "options": [
-        "A) Apply the Yeo-Johnson power transformation optimized via profile Maximum Likelihood Estimation (MLE)",
-        "B) Apply Box-Cox after adding an arbitrarily large empirical constant offset (c = 1000) to all observations",
-        "C) Apply standard Log1p transformation (log(x + 1)) without parameter estimation",
-        "D) Apply Quantile Transformation mapped to a Uniform Distribution with 10,000 empirical quantiles"
+        "A) As d_k grows large, the dot products grow large in magnitude, driving the softmax function into regions with near-zero gradients.",
+        "B) The unscaled dot product violates the unitary projection constraint, forcing the eigenvalues of QK^T to decay exponentially.",
+        "C) The absence of 1/sqrt(d_k) causes the spectral norm of the Value matrix V to explode, saturating the LayerNorm operations that follow.",
+        "D) The dot product variance collapses toward zero as d_k increases, causing numerical underflow in the numerator of the softmax function."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) Apply the Yeo-Johnson power transformation optimized via profile Maximum Likelihood Estimation (MLE)",
-      "explanation": "The Box-Cox transform is mathematically restricted to strictly positive real values (y > 0), causing domain runtime exceptions when zero values exist. While an ad-hoc shift like log1p (log(x + 1)) accommodates non-negative values, it enforces a rigid transformation parameter (equivalent to lambda = 0) that cannot guarantee variance stabilization or optimal residual normality across diverse tail behaviors. The Yeo-Johnson power transformation extends Box-Cox methodology to allow zero and negative values through a continuous piecewise function, using profile Maximum Likelihood Estimation (MLE) to estimate an optimal power parameter lambda that stabilizes variance and induces normality."
+      "correct_answer_text": "A) As d_k grows large, the dot products grow large in magnitude, driving the softmax function into regions with near-zero gradients.",
+      "explanation": "Assuming components of Q and K are independent random variables with mean 0 and variance 1, their dot product has mean 0 and variance d_k. For large values of d_k (such as 512), the dot products attain large absolute magnitudes. Feeding large values into the softmax function pushes it into extreme saturation regions where the derivative of softmax (S_i * (delta_ij - S_j)) approaches zero. Scaling by 1/sqrt(d_k) pulls the variance back to 1, maintaining healthy gradient propagation during backpropagation."
     }
   ]
 }
