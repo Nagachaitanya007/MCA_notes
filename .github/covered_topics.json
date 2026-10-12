@@ -58,7 +58,8 @@
     "Two-Phase Commit (2PC) Exception Recovery: Managing Coordinator and Participant Failures",
     "The Try-Confirm-Cancel (TCC) Pattern: Business-Level Exception Recovery",
     "Centralized Exception Handling in Distributed Systems",
-    "The Store-and-Forward Pattern: Local Durable Spooling for Remote Outages"
+    "The Store-and-Forward Pattern: Local Durable Spooling for Remote Outages",
+    "Hedged Requests: Masking Distributed Timeout and Latency Exceptions"
   ],
   "Advanced Collections Framework & Custom Implementations": [
     "The LRU Cache: Mastering Custom Hybrid Collections",
