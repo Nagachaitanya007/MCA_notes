@@ -157,7 +157,8 @@
     "GC Root Scanning & Root Set Optimization: Tuning the Hidden Pause Bottleneck",
     "Reference Processing & Cleanup Queue Tuning: Eliminating GC Pause Spikes and Reference Accumulation",
     "Memory Management and Garbage Collection Tuning Fundamentals",
-    "Compressed OOPs (Ordinary Object Pointers) & Heap Alignment Tuning"
+    "Compressed OOPs (Ordinary Object Pointers) & Heap Alignment Tuning",
+    "NUMA-Aware Garbage Collection Tuning: Eliminating Cross-Socket Latency Penalties"
   ],
   "Design a URL Shortener (Key Generation Service, Sharding)": [
     "URL Shortener: Key Generation Service (KGS) & Sharding",
