@@ -1,0 +1,48 @@
+{
+  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
+  "mode": "Java",
+  "questions": [
+    {
+      "id": 1,
+      "scenario": "You are debugging a production issue where a high-throughput Spring Boot 3.2 microservice running on Java 21 was recently migrated to use Virtual Threads via `spring.threads.virtual.enabled=true`. Under heavy load, the service becomes completely unresponsive, CPU utilization plummets close to 0%, and thread dumps reveal that all carrier threads in `ForkJoinPool` are stuck in `WAITING` or `TIMED_WAITING`. You inspect the offending component:\n\njava\n@Component\npublic class CacheManager {\n    private final Map<String, String> localCache = new HashMap<>();\n\n    public synchronized String getOrFetch(String key, RemoteService remoteService) {\n        if (!localCache.containsKey(key)) {\n            String value = remoteService.blockingHttpFetch(key);\n            localCache.put(key, value);\n        }\n        return localCache.get(key);\n    }\n}\n",
+      "question": "What is the primary cause of this performance collapse under Virtual Threads?",
+      "options": [
+        "A) The `synchronized` keyword causes thread pinning, binding the virtual thread to its underlying carrier platform thread during the blocking I/O call and starving the carrier pool.",
+        "B) Virtual threads do not support non-blocking network socket operations, forcing the JVM to spawn platform threads until OS resources are exhausted.",
+        "C) The `HashMap` triggers a concurrent modification deadlock across virtual threads because its internal buckets are not volatile.",
+        "D) Virtual threads cannot acquire intrinsic monitors, resulting in an unrecoverable `IllegalMonitorStateException` that halts the scheduler."
+      ],
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The `synchronized` keyword causes thread pinning, binding the virtual thread to its underlying carrier platform thread during the blocking I/O call and starving the carrier pool.",
+      "explanation": "In Java 21, virtual threads are managed by a carrier pool (a work-stealing `ForkJoinPool` with default parallelism equal to available CPU cores). When a virtual thread executes a blocking operation inside a synchronized block/method (or calls native code), it cannot unmount from its carrier thread\u2014a state known as 'pinning'. When multiple virtual threads pin carrier threads while waiting on slow network I/O (`remoteService.blockingHttpFetch`), all carrier threads become exhausted, preventing any other virtual thread from being scheduled. The fix is to replace `synchronized` with `ReentrantLock` or thread-safe structures like `ConcurrentHashMap`."
+    },
+    {
+      "id": 2,
+      "scenario": "You are debugging a production issue where an order processing system occasionally leaves the database in an inconsistent state. The method is annotated with `@Transactional`, but database writes dispatched inside asynchronous stages fail to roll back when downstream steps throw an exception, resulting in orphaned records:\n\njava\n@Service\npublic class OrderService {\n    @Autowired private OrderRepository orderRepository;\n    @Autowired private InventoryService inventoryService;\n\n    @Transactional\n    public CompletableFuture<Void> processOrder(Order order) {\n        orderRepository.save(order);\n        return CompletableFuture.runAsync(() -> {\n            inventoryService.reserveStock(order.getId());\n            orderRepository.updateStatus(order.getId(), Status.PROCESSED);\n        });\n    }\n}\n",
+      "question": "Why does the transaction fail to wrap the operations executed inside `CompletableFuture.runAsync()`?",
+      "options": [
+        "A) Spring's `@Transactional` uses dynamic proxies that track calls by method signature; asynchronous lambdas bypass the CGLIB interceptor chain entirely.",
+        "B) Spring's declarative transaction management associates context with the calling thread via `ThreadLocal`, which is not propagated to the worker thread executing `runAsync()`.",
+        "C) `CompletableFuture.runAsync()` forces a `COMMIT` signal down to the database connection pool before executing the supplier lambda.",
+        "D) Virtual threads and `ForkJoinWorkerThread` instances automatically roll back any active JDBC transactions upon unmounting."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Spring's declarative transaction management associates context with the calling thread via `ThreadLocal`, which is not propagated to the worker thread executing `runAsync()`.",
+      "explanation": "Spring's `@Transactional` relies on `TransactionSynchronizationManager`, which binds the active `EntityManager` or JDBC `Connection` to the current thread using a `ThreadLocal`. When `CompletableFuture.runAsync()` executes, it runs on a separate worker thread (by default, `ForkJoinPool.commonPool()`). Because `ThreadLocal` values are not automatically propagated to new threads, the database operations inside `runAsync()` execute without the active transactional context, either opening new auto-commit transactions or failing silently with respect to the parent transaction boundaries."
+    },
+    {
+      "id": 3,
+      "scenario": "You are debugging a production issue where an edge gateway running on Java 21 with Virtual Threads enabled shows severe thread starvation, latency spikes, and rejected requests under 10,000 concurrent requests, despite having plenty of free memory and low CPU usage. The endpoint code was written as follows:\n\njava\n@GetMapping(\"/aggregate/{id}\")\npublic CompletableFuture<AggregatedResponse> aggregate(@PathVariable String id) {\n    return CompletableFuture.supplyAsync(() -> userService.fetchBlocking(id))\n        .thenCombine(\n            CompletableFuture.supplyAsync(() -> orderService.fetchBlocking(id)),\n            (user, order) -> new AggregatedResponse(user, order)\n        );\n}\n",
+      "question": "What is the primary cause of latency spikes under high load in this implementation?",
+      "options": [
+        "A) `CompletableFuture.thenCombine` allocates an OS-level semaphore for synchronization, exhausting the Linux kernel file descriptor table.",
+        "B) `CompletableFuture.supplyAsync()` without an explicit `Executor` runs tasks on `ForkJoinPool.commonPool()`, which has a platform-thread pool size bounded by CPU cores and is starved by blocking calls.",
+        "C) Returning `CompletableFuture` from a Spring `@RestController` disables virtual threads and forces Tomcat to allocate dedicated platform worker threads.",
+        "D) The JVM scheduler cannot switch virtual threads when combining two futures created by `supplyAsync()` due to context-switch thrashing."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) `CompletableFuture.supplyAsync()` without an explicit `Executor` runs tasks on `ForkJoinPool.commonPool()`, which has a platform-thread pool size bounded by CPU cores and is starved by blocking calls.",
+      "explanation": "When `CompletableFuture.supplyAsync()` is called without specifying an `Executor`, it submits the task to `ForkJoinPool.commonPool()`. The common pool is a fixed-size platform thread pool intended for CPU-bound computational tasks and defaults to `Runtime.getRuntime().availableProcessors() - 1` platform threads. Offloading blocking I/O tasks (`fetchBlocking`) into `ForkJoinPool.commonPool()` quickly starves all available carrier/platform threads in that pool, leading to massive queuing and high latency, completely negating the scalability advantages of Virtual Threads handling the incoming HTTP requests."
+    }
+  ]
+}
