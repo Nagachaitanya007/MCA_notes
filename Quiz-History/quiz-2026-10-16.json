@@ -1,0 +1,48 @@
+{
+  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
+  "mode": "Java",
+  "questions": [
+    {
+      "id": 1,
+      "scenario": "You are debugging a production issue where a high-throughput Spring Boot 3.2 service migrating to Java 21 Virtual Threads (`Executors.newVirtualThreadPerTaskExecutor()`) experiences severe throughput degradation and carrier thread starvation under heavy load. Thread dumps reveal the following component implementation:\n\njava\n@Service\npublic class RemoteBillingService {\n    private final Object lock = new Object();\n    private final RestClient restClient;\n\n    public RemoteBillingService(RestClient restClient) {\n        this.restClient = restClient;\n    }\n\n    public BillingResponse executeBilling(BillingRequest request) {\n        synchronized (lock) {\n            return restClient.post()\n                    .uri(\"/api/v1/charge\")\n                    .body(request)\n                    .retrieve()\n                    .body(BillingResponse.class);\n        }\n    }\n}\n",
+      "question": "What is the primary cause of the throughput collapse and carrier thread starvation?",
+      "options": [
+        "A) The blocking network I/O inside the `synchronized` block pins the virtual thread to its underlying carrier `ForkJoinWorkerThread`, preventing the carrier thread from being unmounted to process other tasks.",
+        "B) `RestClient` generates an OS-level file descriptor lock that prevents `ForkJoinPool` carrier workers from yielding control.",
+        "C) The `lock` object undergoes biased locking revocation, forcing all virtual threads into a `BLOCKED` state at the OS level.",
+        "D) Virtual threads do not support monitor operations; synchronization on plain `Object` references throws `IllegalMonitorStateException` under high concurrent load."
+      ],
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The blocking network I/O inside the `synchronized` block pins the virtual thread to its underlying carrier `ForkJoinWorkerThread`, preventing the carrier thread from being unmounted to process other tasks.",
+      "explanation": "In Java 21, virtual threads are pinned to their carrier thread (an underlying platform thread from a `ForkJoinPool`) in two main cases: 1) when running code inside a `synchronized` block or method, and 2) when executing a native method or foreign function. When a virtual thread performs blocking I/O while pinned inside a `synchronized` block, it cannot be unmounted. This exhausts the available carrier threads in the scheduler, starving other virtual threads from executing. Replacing `synchronized` with `java.util.concurrent.locks.ReentrantLock` allows the virtual thread to unmount freely during blocking operations."
+    },
+    {
+      "id": 2,
+      "scenario": "You are debugging a production issue where database records are intermittently committed even when downstream validation fails, resulting in partial state mutations. You locate the following service implementation in the codebase:\n\njava\n@Service\npublic class OrderFulfillmentService {\n    private final OrderRepository orderRepository;\n\n    public OrderFulfillmentService(OrderRepository orderRepository) {\n        this.orderRepository = orderRepository;\n    }\n\n    @Transactional\n    public CompletableFuture<Void> processOrderAsync(Order order) {\n        return CompletableFuture.runAsync(() -> {\n            orderRepository.save(order);\n            if (order.isInvalid()) {\n                throw new IllegalStateException(\"Invalid order payload detected\");\n            }\n        });\n    }\n}\n",
+      "question": "Why does the transaction fail to roll back when the `IllegalStateException` is thrown?",
+      "options": [
+        "A) Dynamic JDK proxies used by Spring cannot intercept methods returning `CompletableFuture`, causing `@Transactional` to be ignored.",
+        "B) Spring's `@Transactional` mechanism relies on `ThreadLocal` context bound to the caller thread; the asynchronous execution runs on a `ForkJoinPool` worker without transaction context, and the proxy commits before the lambda executes.",
+        "C) `CompletableFuture.runAsync` swallows unchecked exceptions by default unless `.join()` is called synchronously on the returned future.",
+        "D) `orderRepository.save(order)` internally detects asynchronous execution and automatically switches to auto-commit mode."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Spring's `@Transactional` mechanism relies on `ThreadLocal` context bound to the caller thread; the asynchronous execution runs on a `ForkJoinPool` worker without transaction context, and the proxy commits before the lambda executes.",
+      "explanation": "Spring's `@Transactional` uses an AOP proxy that binds transactional resources (like database connections) to the current execution thread via `ThreadLocal` (managed by `TransactionSynchronizationManager`). When `processOrderAsync` is called, the proxy opens a transaction on the caller thread, executes the method body which dispatches work asynchronously to `ForkJoinPool.commonPool()`, and then returns the `CompletableFuture`. The proxy perceives the method as having completed successfully and immediately commits the transaction on the calling thread. The code inside `runAsync` executes on an entirely different thread lacking the transaction context, causing `orderRepository.save()` to run in auto-commit mode, while any subsequent exception thrown in the background thread is decoupled from the proxy's lifecycle."
+    },
+    {
+      "id": 3,
+      "scenario": "You are debugging a production issue where an internal gateway deployed on Kubernetes (assigned 2 CPU cores) experiences extreme latency spikes and thread starvation across all services. The gateway fetches user information concurrently using the following code:\n\njava\npublic CompletableFuture<UserDashboard> getDashboard(String userId) {\n    CompletableFuture<UserProfile> profileFuture = CompletableFuture.supplyAsync(\n            () -> userClient.fetchProfile(userId));\n    CompletableFuture<List<Order>> ordersFuture = CompletableFuture.supplyAsync(\n            () -> orderClient.fetchOrders(userId));\n\n    return CompletableFuture.allOf(profileFuture, ordersFuture)\n            .thenApply(v -> new UserDashboard(profileFuture.join(), ordersFuture.join()));\n}\n",
+      "question": "What is the primary architectural flaw causing system-wide degradation under moderate load?",
+      "options": [
+        "A) `CompletableFuture.allOf()` blocks the calling thread until all child futures finish, causing incoming HTTP request threads to stall.",
+        "B) Calling `.join()` within `.thenApply()` throws an `InterruptedException` when executed inside a nested future context.",
+        "C) Omitting an explicit `Executor` causes `supplyAsync` to use `ForkJoinPool.commonPool()`, which defaults to only 1 worker thread in a 2-core container, leading to starvation when handling blocking I/O.",
+        "D) `CompletableFuture.allOf` cannot merge futures of different return types (`UserProfile` and `List<Order>`), causing JVM class-cast verification overhead on every invocation."
+      ],
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Omitting an explicit `Executor` causes `supplyAsync` to use `ForkJoinPool.commonPool()`, which defaults to only 1 worker thread in a 2-core container, leading to starvation when handling blocking I/O.",
+      "explanation": "When an explicit `Executor` is omitted in `CompletableFuture.supplyAsync()`, it falls back to `ForkJoinPool.commonPool()`. The parallelism of the common pool is determined by `Runtime.getRuntime().availableProcessors() - 1`. In a containerized environment constrained to 2 CPU cores, the common pool typically has only 1 worker thread. Because `userClient.fetchProfile()` and `orderClient.fetchOrders()` perform blocking network I/O, the single worker thread becomes blocked waiting for HTTP responses, causing a complete bottleneck and starvation for all asynchronous tasks across the entire JVM. To resolve this, blocking I/O should be dispatched to a dedicated, bounded thread pool or executed via virtual threads."
+    }
+  ]
+}
