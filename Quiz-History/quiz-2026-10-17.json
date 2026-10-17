@@ -1,0 +1,48 @@
+{
+  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
+  "mode": "Java",
+  "questions": [
+    {
+      "id": 1,
+      "scenario": "You are debugging a production issue where a high-throughput ledger service experiences silent data loss and missing database rollbacks. You inspect the following Spring service implementation:\n\njava\n@Service\npublic class AccountTransferService {\n    private final Map<String, BigDecimal> balanceCache = new ConcurrentHashMap<>();\n\n    public void executeBatch(List<TransferRequest> requests) {\n        for (TransferRequest req : requests) {\n            this.applyTransfer(req.getAccountId(), req.getAmount());\n        }\n    }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void applyTransfer(String accountId, BigDecimal delta) {\n        BigDecimal current = balanceCache.getOrDefault(accountId, BigDecimal.ZERO);\n        balanceCache.put(accountId, current.add(delta));\n        persistToDatabase(accountId, delta);\n    }\n\n    private void persistToDatabase(String accountId, BigDecimal delta) {\n        // JDBC/JPA persist operations\n    }\n}\n\n\nUnder high concurrency, metric monitors show that the transactional rollback handlers configured on `applyTransfer` are never executed during database write failures, and concurrent updates to the same `accountId` produce stale balance values.",
+      "question": "What are the two primary JVM and framework-level causes of this behavior?",
+      "options": [
+        "A) Calling `applyTransfer` via `this` bypasses Spring's AOP dynamic proxy (disabling `@Transactional`), and `getOrDefault` followed by `put` is a non-atomic composite operation susceptible to race conditions.",
+        "B) `ConcurrentHashMap` enforces a happens-before relationship only on reads, causing Java Memory Model (JMM) visibility issues across worker threads unless `balanceCache` is marked `volatile`.",
+        "C) The `@Transactional` annotation defaults to CGLIB class proxies, which disallow access to private methods such as `persistToDatabase`, triggering a silent rollback suppression.",
+        "D) `Propagation.REQUIRES_NEW` creates a separate classloader context that detaches `balanceCache` entries from the shared heap, creating isolated thread-local state."
+      ],
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Calling `applyTransfer` via `this` bypasses Spring's AOP dynamic proxy (disabling `@Transactional`), and `getOrDefault` followed by `put` is a non-atomic composite operation susceptible to race conditions.",
+      "explanation": "Spring's declarative transaction management operates via AOP proxies (JDK Dynamic Proxy or CGLIB). When `executeBatch` invokes `this.applyTransfer(...)`, it calls the method directly on the target instance rather than through the generated proxy interceptor pipeline; hence, no transaction context is initiated. Concurrently, while `ConcurrentHashMap` guarantees thread safety for individual operations, the pattern `current = getOrDefault(...)` followed by `put(...)` is a composite 'check-then-act' operation that lacks atomicity across threads, leading to lost updates. `compute` or `merge` must be used to ensure atomic mutations."
+    },
+    {
+      "id": 2,
+      "scenario": "You are debugging a production issue where an ultra-low-latency financial engine running OpenJDK 17 with `-XX:+UseG1GC` and a 4GB heap (`-Xms4g -Xmx4g`) experiences intermittent STW (Stop-The-World) latency pauses reaching 500ms. Default parameters are used (`-XX:G1HeapRegionSize` is unspecified, defaulting to 2MB). GC logs expose repeated entries of `To-space exhausted`, followed by `Evacuation Failure` and an emergency `Full GC`. Heap utilization graphs demonstrate that live object residency hovers around only 45%, but the system frequently ingests transient serialized market packets structured as raw `byte[]` arrays ranging between 1.1MB and 2.2MB.",
+      "question": "What is the primary JVM-level cause of these sudden Evacuation Failures and latency spikes?",
+      "options": [
+        "A) The G1 Young Generation is starving the Metaspace allocator because serialized arrays force dynamic byte-code compilation through the JIT C2 compiler.",
+        "B) Arrays $\\ge 1$MB exceed 50% of the 2MB G1 region size and are treated as Humongous Objects, which are allocated directly in contiguous Old Gen regions, causing severe fragmentation and preventing Eden evacuations.",
+        "C) The Z-page allocator overrides G1's Card Table, forcing SATB (Snapshot-At-The-Beginning) write barriers to trigger synchronous safepoints.",
+        "D) G1 fails to invoke parallel survivor thread scanning when objects survive more than 15 promotion cycles under default Tenuring Threshold rules."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Arrays $\\ge 1$MB exceed 50% of the 2MB G1 region size and are treated as Humongous Objects, which are allocated directly in contiguous Old Gen regions, causing severe fragmentation and preventing Eden evacuations.",
+      "explanation": "In the G1 Collector, any object that equals or exceeds 50% of the region size is classified as a 'Humongous Object'. With a 4GB heap, default region size calculation yields 2MB regions, setting the humongous threshold at 1MB. Humongous allocations skip the Young Generation entirely and are allocated directly into a contiguous sequence of Old Generation regions. High allocation rates of such objects rapidly fragment the heap, preventing G1 from finding free contiguous regions during Eden-to-Survivor/Old generation evacuations. This triggers `To-space exhausted` (Evacuation Failure) and ultimately forces a STW Full GC to compact the heap. Increasing region size via `-XX:G1HeapRegionSize=8m` mitigates this issue."
+    },
+    {
+      "id": 3,
+      "scenario": "You are debugging a production issue where an analytics microservice dynamically loads customer plugins at runtime via custom `URLClassLoader` instances. After running for 72 hours and processing thousands of dynamically loaded/unloaded plugin lifecycles, the JVM crashes with `java.lang.OutOfMemoryError: Metaspace`. Even though `-XX:MaxMetaspaceSize=1g` is configured and plugin references are nullified in the main application logic, GC logs confirm that repeated Full GC phases fail to reclaim Metaspace memory, keeping it pegged near 100%.",
+      "question": "Which JVM class loading mechanism explains why the Metaspace cannot be reclaimed by the garbage collector?",
+      "options": [
+        "A) A `ClassLoader` can only be garbage collected when all classes defined by it have their static final fields reset to `null` via reflection.",
+        "B) Classes are loaded into the bootstrap class loader by default if they implement standard JDK interfaces, preventing them from ever being unloaded.",
+        "C) A `ClassLoader` cannot be unloaded if any single instance of a class it loaded, or any reference to the `ClassLoader` itself (such as a lingering `ThreadLocal` or registered shutdown hook), remains strongly reachable.",
+        "D) Metaspace reclamation requires enabling `-XX:+CMSClassUnloadingEnabled`, which is strictly disabled in standard HotSpot configurations since Java 8."
+      ],
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) A `ClassLoader` cannot be unloaded if any single instance of a class it loaded, or any reference to the `ClassLoader` itself (such as a lingering `ThreadLocal` or registered shutdown hook), remains strongly reachable.",
+      "explanation": "In HotSpot, classes stored in Metaspace are strictly tied to the lifecycle of their defining `ClassLoader`. A class cannot be unloaded independently; all classes loaded by a `ClassLoader` can only be unloaded as a unit when the defining `ClassLoader` instance itself becomes unreachable and is garbage collected. If a single instance of any loaded class, a static reference, or a thread-context reference (such as an uncleaned `ThreadLocal` value referencing a plugin class) remains strongly reachable from GC roots, the entire `ClassLoader` and all its associated Metaspace metadata are preserved, resulting in a persistent Metaspace leak."
+    }
+  ]
+}
