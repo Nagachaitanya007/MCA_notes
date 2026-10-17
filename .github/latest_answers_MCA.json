@@ -4,45 +4,45 @@
   "questions": [
     {
       "id": 1,
-      "scenario": "A healthcare enterprise deploys a clinical decision-support pipeline utilizing a standard Transformer model with a WordPiece tokenizer trained primarily on Wikipedia and BookCorpus. When ingesting electronic health records (EHRs), complex pharmacological entities such as 'dextroamphetamine-amphetamine' and 'hydrochlorothiazide' are fragmented into 6 to 9 generic subword tokens. This causes sequence length explosions that frequently breach the 512-token ceiling and severely degrades named entity recognition (NER) macro F1-scores. The team must remediate this under strict edge-compute constraints without retraining the foundation model weights from scratch.",
-      "question": "Which vocabulary adaptation strategy is theoretically and practically optimal to prevent token inflation while preserving pre-trained contextual representations?",
+      "scenario": "A digital healthcare enterprise deploys a clinical decision-support NLP pipeline using a pre-trained BERT-base model utilizing standard WordPiece tokenization. Clinicians observe significant classification errors and frequent inference latency spikes when processing patient discharge summaries containing specialized pharmacology and ICD-10 diagnostic codes. An engineering audit reveals that clinical terms (e.g., 'dexmethylphenidate' and 'laparoscopic cholecystectomy') are being fragmented into 7 to 11 subword units. This subword explosion routinely drives sequences beyond the 512-token architectural ceiling, truncating critical historical context and distorting cross-attention representations.",
+      "question": "Which architectural and pre-processing intervention best mitigates this sequence elongation while maximizing knowledge retention from the base model without requiring full pre-training from scratch?",
       "options": [
-        "A) Retrain a Byte-Pair Encoding (BPE) tokenizer exclusively on clinical EHRs and re-initialize all Transformer positional and token embeddings using Xavier normal initialization.",
-        "B) Expand the existing WordPiece vocabulary with domain-specific clinical terms, initialize their new embedding vectors via the mean of their constituent subwords, and fine-tune only the embedding layer and task head.",
-        "C) Switch to UTF-8 byte-level tokenization without vocabulary expansion to ensure zero out-of-vocabulary instances, while freezing the encoder backbone.",
-        "D) Apply dynamic subword regularization during inference to randomly merge split tokens before passing them into the multi-head self-attention block."
+        "A) Expand the tokenizer vocabulary with domain-specific clinical terms, initialize their embedding weights via mean pooling of constituent subword embeddings, and perform Domain-Adaptive Pre-Training (DAPT).",
+        "B) Replace WordPiece with Byte-Pair Encoding (BPE) operating strictly at the character-byte level, and freeze all attention layers to prevent gradient corruption.",
+        "C) Downscale positional embedding matrices to fractional frequency representations, forcing the transformer to pack fragmented tokens into fewer positional indices.",
+        "D) Apply unigram token pruning to eliminate non-dictionary medical strings and map all unknown entities to a unified [UNK] token with high attention mask weights."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Expand the existing WordPiece vocabulary with domain-specific clinical terms, initialize their new embedding vectors via the mean of their constituent subwords, and fine-tune only the embedding layer and task head.",
-      "explanation": "Over-fragmentation occurs when out-of-domain words are decomposed into excessive subwords, inflating sequence lengths and dispersing semantic mass. Retraining from scratch (Option A) discards general linguistic priors and requires vast compute. Byte-level tokenization (Option C) worsens sequence inflation. Subword regularization (Option D) is a training-time data augmentation method, not an inference-time reduction technique. Expanding the vocabulary, warm-starting new token embeddings with the mean of their subword embeddings, and fine-tuning preserves pre-trained weights while directly shrinking sequence length for domain terms."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Expand the tokenizer vocabulary with domain-specific clinical terms, initialize their embedding weights via mean pooling of constituent subword embeddings, and perform Domain-Adaptive Pre-Training (DAPT).",
+      "explanation": "Subword fragmentation (or token bloat) occurs when domain-specific jargon is absent from a general-domain tokenizer's vocabulary, causing excessive chunking. Adding in-domain vocabulary entries prevents token explosion and keeps inputs within the 512-token limit. Initializing new token embeddings using the mean of their prior constituent subword embeddings preserves semantic priors, and Domain-Adaptive Pre-Training (DAPT) aligns the new parameters with the existing contextual transformer representations without catastrophic forgetting or the computational overhead of training from scratch."
     },
     {
       "id": 2,
-      "scenario": "A legal-tech platform processes multi-party service contracts averaging 16,000 tokens per document. Using a standard multi-head self-attention architecture (Vaswani et al.), inferencing triggers CUDA Out-Of-Memory (OOM) faults on an Nvidia A100 (40GB) GPU at a batch size of 1. Profiling reveals that the intermediate attention map computation (softmax(QK^T / sqrt(d_k))) consumes over 32 GB of activation memory.",
-      "question": "Which attention mechanism variation provides an O(N) or O(N log N) asymptotic memory complexity while preserving both local lexical parsing and long-range cross-clause reference tracking?",
+      "scenario": "A fintech corporation is designing an automated regulatory compliance auditor to evaluate master service agreements and loan indentures averaging 16,000 tokens per document. The engineering team implements an autoregressive decoder-only Transformer utilizing standard Multi-Head Scaled Dot-Product Attention. During pre-production stress tests on NVIDIA A10G GPUs (24GB VRAM), attempts to execute full-sequence inference result in immediate CUDA Out-Of-Memory (OOM) errors, and pipeline latency exceeds the mandatory 1.2-second SLA per contract by a factor of ten.",
+      "question": "To process the entire 16,000-token context within hardware memory limitations while maintaining both granular syntactic dependencies and long-distance cross-clause references, which architectural reconfiguration is mathematically optimal?",
       "options": [
-        "A) Pure Sliding Window Attention with a fixed receptive field of k=512 tokens across all layers.",
-        "B) Sparse Attention combining local sliding window patterns with dedicated global attention tokens at structural boundaries.",
-        "C) Low-rank matrix factorization approximating the full N x N attention matrix using truncated Singular Value Decomposition (SVD) at each layer.",
-        "D) Replacing multi-head attention with Multi-Query Attention (MQA) while retaining the standard dense N x N dot-product computation."
+        "A) Transition to an attention mechanism that combines local sliding-window attention with dedicated global attention tokens, reducing memory complexity from O(N^2) to O(N).",
+        "B) Replace dot-product attention with additive Bahdanau attention across all layers to enforce linear memory bounds independent of sequence length.",
+        "C) Partition contracts into contiguous 512-token blocks, compute isolated self-attention maps, and concatenate the final hidden states using max-pooling.",
+        "D) Project query and key matrices into a 1-dimensional latent subspace using singular value decomposition prior to calculating attention weights."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Sparse Attention combining local sliding window patterns with dedicated global attention tokens at structural boundaries.",
-      "explanation": "Standard self-attention scales quadratically (O(N^2)) in both time and activation memory. Pure sliding window attention (Option A) reduces complexity to O(N * k), but loses direct long-range dependencies across distant contract clauses. Multi-Query Attention (Option D) reduces KV-cache memory during autoregressive generation but does not alter the O(N^2) activation cost of the attention matrix during parallel forward passes. Sparse Attention mechanisms (such as Longformer or BigBird) combine local sliding window attention with selected global tokens (e.g., at section headings or [CLS] tokens), cutting spatial complexity to O(N) while maintaining long-range cross-clause paths."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Transition to an attention mechanism that combines local sliding-window attention with dedicated global attention tokens, reducing memory complexity from O(N^2) to O(N).",
+      "explanation": "Standard Multi-Head Attention has O(N^2) time and memory complexity with respect to sequence length N. For N = 16,000, storing the full N x N attention matrix across multiple heads and layers requires prohibitive VRAM. Architectures like Longformer or BigBird utilize sparse attention: sliding-window (local) attention to capture neighboring syntactic details and global attention on predetermined tokens (e.g., [CLS] or section headers) to capture document-wide relations. This reduces spatial and computational complexity to O(N), resolving OOM bottlenecks while preserving long-range dependencies."
     },
     {
       "id": 3,
-      "scenario": "An AI research group is pre-training an experimental deep Transformer encoder with high-dimensional attention projections where the per-head dimension d_k is scaled up to 512. During the initial training steps, gradients propagating through the self-attention layer vanish almost completely, and the attention distribution matrix collapses into near one-hot categorical vectors (peaked attention on single tokens). An engineer discovers that the implementation omitted the scaling factor in the dot-product attention formulation: Attention(Q, K, V) = softmax(QK^T)V.",
-      "question": "What is the exact mathematical mechanism causing gradient vanishing in this unscaled formulation?",
+      "scenario": "A machine learning research team is training a custom 32-head Transformer encoder from scratch on an enterprise corpus. The architecture specifies a model dimension of d_model = 4096 and an individual projection head dimension of d_k = 128. During mixed-precision (FP16) training, the engineers observe that early gradient updates stall completely: the gradients of the attention projection matrices (W_q, W_k, W_v) evaluate to near-zero, and the loss fails to decrease. A code inspection reveals that the attention equation was implemented as Attention(Q, K, V) = softmax(Q * K^T) * V, omitting the division by sqrt(d_k).",
+      "question": "What is the precise numerical and mathematical failure mode caused by omitting the scaling factor sqrt(d_k)?",
       "options": [
-        "A) As d_k grows large, the dot products grow large in magnitude, driving the softmax function into regions with near-zero gradients.",
-        "B) The unscaled dot product violates the unitary projection constraint, forcing the eigenvalues of QK^T to decay exponentially.",
-        "C) The absence of 1/sqrt(d_k) causes the spectral norm of the Value matrix V to explode, saturating the LayerNorm operations that follow.",
-        "D) The dot product variance collapses toward zero as d_k increases, causing numerical underflow in the numerator of the softmax function."
+        "A) The dot product QK^T attains an expected variance proportional to d_k, yielding extreme scalar values that saturate the softmax function into regions with vanishingly small first derivatives.",
+        "B) The unscaled matrix product QK^T loses positive semi-definiteness, causing the softmax denominator to evaluate to complex values that underflow in FP16 precision.",
+        "C) The magnitude of the attention logits forces the attention weights into a uniform distribution (high entropy), which zeroes out directional weight gradients during backpropagation.",
+        "D) The absence of scaling prevents positional encodings from injecting phase shifts, rendering query and key vectors linearly dependent."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) As d_k grows large, the dot products grow large in magnitude, driving the softmax function into regions with near-zero gradients.",
-      "explanation": "Assuming components of Q and K are independent random variables with mean 0 and variance 1, their dot product has mean 0 and variance d_k. For large values of d_k (such as 512), the dot products attain large absolute magnitudes. Feeding large values into the softmax function pushes it into extreme saturation regions where the derivative of softmax (S_i * (delta_ij - S_j)) approaches zero. Scaling by 1/sqrt(d_k) pulls the variance back to 1, maintaining healthy gradient propagation during backpropagation."
+      "correct_answer_text": "A) The dot product QK^T attains an expected variance proportional to d_k, yielding extreme scalar values that saturate the softmax function into regions with vanishingly small first derivatives.",
+      "explanation": "Assuming components of q and k are independent random variables with zero mean and unit variance, their dot product q * k has a mean of 0 and a variance of d_k. When d_k = 128, the standard deviation of dot products is roughly 11.3. For large values of d_k, the dot products grow substantially in magnitude, pushing the softmax function into regions where output probabilities approach 1 or 0 (one-hot saturation). In these saturated regions, the derivative of the softmax function (p_i * (delta_ij - p_j)) approaches zero, inducing severe vanishing gradients during backpropagation, especially in FP16 where small gradients underflow."
     }
   ]
 }
