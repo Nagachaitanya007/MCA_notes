@@ -31,7 +31,8 @@
     "CompletableFuture Lock-Free State Machine: Treiber Stacks, Completion Chains, and AltResult Mechanics",
     "Introduction to Java Concurrency & Multithreading with Virtual Threads and CompletableFuture",
     "Stack Chunk Slicing and Continuation Suspension: The Memory Engine Behind Virtual Threads",
-    "Context Propagation & Distributed Tracing: Managing MDC and Request Scope across CompletableFuture and Virtual Threads"
+    "Context Propagation & Distributed Tracing: Managing MDC and Request Scope across CompletableFuture and Virtual Threads",
+    "Heterogeneous Workload Partitioning: Routing CPU-Bound vs. I/O-Bound Concurrency across Virtual Threads and CompletableFuture"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
