@@ -1,0 +1,48 @@
+{
+  "topic": "Java Concurrency & Multithreading (Virtual Threads, CompletableFuture)",
+  "mode": "Java",
+  "questions": [
+    {
+      "id": 1,
+      "scenario": "You are debugging a production issue where an order-processing Spring Boot service fails to persist records reliably and occasionally encounters database connection leaks. A developer submitted the following refactored method intended to perform asynchronous order processing:\n\njava\n@Service\npublic class OrderService {\n    @Autowired\n    private OrderRepository orderRepository;\n\n    @Transactional\n    public CompletableFuture<Order> processOrder(OrderRequest request) {\n        return CompletableFuture.supplyAsync(() -> {\n            Order order = new Order(request);\n            return orderRepository.save(order);\n        });\n    }\n}\n",
+      "question": "What is the primary architectural bug causing the transactional failure in this code?",
+      "options": [
+        "A) Spring's `@Transactional` annotation cannot be applied to methods that return generic classes like `CompletableFuture`.",
+        "B) The asynchronous task executes on the common `ForkJoinPool`, losing the thread-bound transaction context managed by Spring's `TransactionSynchronizationManager`.",
+        "C) The Spring AOP proxy executes a rollback interceptor because `CompletableFuture` does not implement `TransactionAware`.",
+        "D) `orderRepository.save()` acquires a lock on `OrderRepository` that deadlocks the default `ForkJoinPool.commonPool()`."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The asynchronous task executes on the common `ForkJoinPool`, losing the thread-bound transaction context managed by Spring's `TransactionSynchronizationManager`.",
+      "explanation": "Spring's declarative transaction management (`@Transactional`) relies on thread-bound state maintained via `ThreadLocal` in `TransactionSynchronizationManager`. When `processOrder` is invoked, the proxy opens a transaction on the calling thread. The method immediately spawns asynchronous work via `CompletableFuture.supplyAsync()` (which uses `ForkJoinPool.commonPool()` by default) and returns the incomplete future. The calling thread considers method execution finished and attempts to commit or close the transaction immediately. Meanwhile, `orderRepository.save(order)` executes on a separate worker thread with no active transaction context, resulting in either running outside a transaction (auto-commit mode) or unpredictable database session states."
+    },
+    {
+      "id": 2,
+      "scenario": "You are debugging a production issue where an I/O-intensive Java 21 microservice was migrated from standard platform thread pools to Virtual Threads via `Executors.newVirtualThreadPerTaskExecutor()`. Under peak load, the application suffers from severe latency spikes and near-zero request throughput. Thread dumps indicate that all available OS platform threads (Carrier Threads) inside the internal `ForkJoinPool` are blocked in `WAITING` or `TIMED_WAITING` states despite thousands of virtual threads waiting to be scheduled.",
+      "question": "What is the primary cause of this Virtual Thread carrier starvation?",
+      "options": [
+        "A) Virtual threads do not support non-blocking network I/O operations and must allocate an OS thread for every socket read.",
+        "B) Virtual threads are executing blocking calls inside `synchronized` blocks or methods, which pins them to their underlying carrier threads and prevents unmounting.",
+        "C) The JVM default Garbage Collector (`G1GC`) suspends all carrier threads permanently when the virtual thread stack size exceeds 1MB.",
+        "D) `Executors.newVirtualThreadPerTaskExecutor()` creates un-parkable threads that bypass `ForkJoinPool` work-stealing scheduling."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Virtual threads are executing blocking calls inside `synchronized` blocks or methods, which pins them to their underlying carrier threads and prevents unmounting.",
+      "explanation": "In Java 21, virtual threads are unmounted from their carrier OS thread when they execute blocking operations (like standard socket I/O). However, 'pinning' occurs when a virtual thread performs a blocking operation while holding a monitor lock (i.e., inside a `synchronized` block or method) or while executing native code (JNI). Because the virtual thread cannot yield the carrier thread while pinned, the small pool of carrier threads (defaulting to the number of available CPU cores) becomes saturated and completely exhausted, starving all other unpinned virtual threads waiting to run. The fix is typically to replace `synchronized` blocks protecting blocking operations with `java.util.concurrent.locks.ReentrantLock`."
+    },
+    {
+      "id": 3,
+      "scenario": "You are debugging a production issue where an aggregation service hangs indefinitely under sustained concurrent load. The service uses a dedicated thread pool to process parent requests and their subtasks as shown in the following snippet:\n\njava\n@Service\npublic class AggregationService {\n    private final ExecutorService pool = Executors.newFixedThreadPool(8);\n\n    public CompletableFuture<Report> generateReport(List<String> userIds) {\n        return CompletableFuture.supplyAsync(() -> {\n            List<CompletableFuture<UserData>> futures = userIds.stream()\n                .map(id -> CompletableFuture.supplyAsync(() -> fetchUserData(id), pool))\n                .toList();\n            \n            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();\n            return buildReport(futures);\n        }, pool);\n    }\n}\n",
+      "question": "What JVM/concurrency flaw causes this service to hang indefinitely?",
+      "options": [
+        "A) Calling `.join()` inside `CompletableFuture.allOf()` throws an undeclared `InterruptedException` that halts the executor queue.",
+        "B) Thread Pool Starvation Deadlock occurs because the outer tasks occupy all 8 threads waiting on `.join()`, leaving no threads to execute the inner `fetchUserData` tasks.",
+        "C) `CompletableFuture.supplyAsync` cannot be called recursively using the same `ExecutorService` reference due to thread-local task rejection.",
+        "D) `CompletableFuture.allOf()` allocates an unmanaged thread per input future, violating the memory constraints of `newFixedThreadPool`."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Thread Pool Starvation Deadlock occurs because the outer tasks occupy all 8 threads waiting on `.join()`, leaving no threads to execute the inner `fetchUserData` tasks.",
+      "explanation": "This is a classic Thread Pool Starvation Deadlock (also known as synchronous-asynchronous deadlock). The `pool` has a fixed size of 8 threads. If 8 concurrent `generateReport` requests arrive at the same time, all 8 worker threads in `pool` are assigned to execute the outer `supplyAsync` supplier lambdas. Inside each outer task, multiple child tasks are submitted to the same `pool`, and the outer tasks invoke `.join()`, blocking the carrier threads until the child tasks complete. However, because all 8 threads in the pool are blocked waiting for completion, zero threads remain available to execute the newly queued child tasks (`fetchUserData`). As a result, the system deadlocks indefinitely."
+    }
+  ]
+}
