@@ -1,48 +1,48 @@
 {
-  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A large-scale healthcare data integration platform is architecting an ontology to unify Electronic Health Records (EHR) from over 200 hospital networks. The domain model demands extensive class hierarchies, complex part-whole relationships, and existential quantification over property chains (e.g., SNOMED CT medical taxonomy integration). The system currently uses an OWL 2 DL reasoner based on tableau algorithms (implementing the expressive Description Logic SROIQ(D)). During pilot deployment with 15 million patient instance assertions, terminological reasoning (classification) and consistency checks experienced exponential runtime degradation, triggering out-of-memory errors and failing SLA mandates requiring sub-second validation.",
-      "question": "Which Description Logic profile and reasoning paradigm should the architecture transition to in order to guarantee deterministic polynomial-time (PTime) algorithmic complexity for classification and subsumption without sacrificing existential restrictions?",
+      "scenario": "A financial fraud detection engine processes credit card transaction records where the 'transaction_amount' feature is severely right-skewed with extreme positive outliers, and contains genuine non-fraudulent authorization checks recorded as exactly zero dollars. The downstream machine learning model is an L2-regularized Logistic Regression classifier that requires continuous features to exhibit stabilized variance and approximate normality. Applying standard Box-Cox transformation throws an arithmetic runtime error, while manual log transformations like log(x + c) introduce arbitrary sensitivity to the choice of constant c.",
+      "question": "Which power transformation method mathematically supports non-positive values directly and optimizes the power parameter via Maximum Likelihood Estimation without introducing an arbitrary shift constant?",
       "options": [
-        "A) OWL 2 EL, which leverages the EL++ Description Logic family to guarantee polynomial-time reasoning for large terminologies with existential restrictions.",
-        "B) OWL 2 QL, which relies on the DL-Lite family to rewrite queries into standard SQL for relational storage engines.",
-        "C) OWL 2 RL, which maps axioms to Datalog rules executed via forward-chaining production rule engines.",
-        "D) OWL Full, which utilizes generalized First-Order Logic automated theorem proving with hyper-resolution."
+        "A) Yeo-Johnson Transformation",
+        "B) Box-Cox Transformation with Laplace smoothing",
+        "C) Freeman-Tukey Square-Root Transformation",
+        "D) Robust Sigmoidal Scaling"
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) OWL 2 EL, which leverages the EL++ Description Logic family to guarantee polynomial-time reasoning for large terminologies with existential restrictions.",
-      "explanation": "OWL 2 EL is based on the Description Logic EL++ and is specifically designed for ontologies with very large numbers of classes and properties where complex existential quantifications and conjunctions are required (such as SNOMED CT and Gene Ontology). The primary computational advantage of EL++ is that core reasoning tasks\u2014such as subsumption, classification, and satisfiability\u2014can be executed in deterministic polynomial time (PTime). In contrast, OWL 2 QL targets conjunctive query answering via relational database rewriting (DL-Lite) and lacks expressive property chains and existential restrictions on concept left-hand sides. OWL 2 RL restricts class expressions to ensure tractability via rule engines (ruling out certain existential quantifications on the right-hand side of subclass axioms), and OWL Full is undecidable."
+      "correct_answer_text": "A) Yeo-Johnson Transformation",
+      "explanation": "The Yeo-Johnson transformation extends the Box-Cox family by allowing zero and negative values. While Box-Cox is strictly defined for strictly positive values (x > 0), Yeo-Johnson provides piecewise continuous equations for x >= 0 and x < 0 parametrized by lambda, where lambda is determined by Maximum Likelihood Estimation (MLE). This avoids heuristic constants (e.g., log(x + 1)), which distort the variance structure at lower thresholds."
     },
     {
       "id": 2,
-      "scenario": "An autonomous intermodal logistics platform uses an extended Semantic Network to define operational rules, vehicle capabilities, and hazardous material routing constraints. The knowledge base utilizes multiple inheritance over a directed acyclic graph (DAG). During an edge case analysis, the system evaluates an automated delivery drone that is classified simultaneously as an 'Electric_Vehicle' (which inherits the permission 'Can_Traverse_Underground_Tunnels') and an 'Uncertified_Lithium_Transporter' (which inherits the restriction 'NOT(Can_Traverse_Underground_Tunnels)'). Because the network resolves inheritance paths via naive depth-first graph traversal, path ambiguity (the classical Nixon Diamond problem) causes nondeterministic access decisions, leading to regulatory safety violations.",
-      "question": "To resolve these conflicting inheritance assignments deterministically while avoiding exponential combinatorial path evaluation, which formal knowledge representation mechanic must be implemented?",
+      "scenario": "A smart intensive-care unit (ICU) system collects continuous 128-channel vital telemetry at 50 Hz. Due to intermittent sensor disconnects and RF noise, roughly 6% of the telemetry vectors suffer from Missing Completely at Random (MCAR) values. An offline batch model uses IterativeImputer (MICE with Bayesian Ridge), but deploying this in production violates the strict edge-device inference latency budget (p99 latency must remain under 15 milliseconds). Conversely, univariate mean/median imputation causes severe downstream classification drift by destroying inter-channel cross-covariance.",
+      "question": "Which imputation strategy best balances the preservation of cross-channel covariance with strict real-time edge latency (sub-15ms) constraints?",
       "options": [
-        "A) Unification with Skolemization using pure refutation resolution to produce a contradiction flag.",
-        "B) Inferential Distance Ordering (IDO) in defeasible inheritance networks, prioritizing subclasses over superclasses based on topological specificity.",
-        "C) Global circumscription using second-order logic predicate minimization across the entire network state.",
-        "D) Truth Maintenance Systems (TMS) utilizing credulous semantics to maintain all mutually exclusive dependency extensions concurrently."
+        "A) K-Nearest Neighbors (k-NN) imputation with a full spatial brute-force scan per frame",
+        "B) Pre-trained Denoising Autoencoder or Incremental Low-Rank Matrix Factorization projection",
+        "C) Complete Case Analysis (Listwise Deletion) per time slice",
+        "D) MissForest (Random Forest-based imputation) initialized with cold-start zero imputation"
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Inferential Distance Ordering (IDO) in defeasible inheritance networks, prioritizing subclasses over superclasses based on topological specificity.",
-      "explanation": "The Nixon Diamond is a classic anomaly in non-monotonic and semantic network inheritance where an individual inherits contradictory properties from two distinct parent nodes. Inferential Distance Ordering (IDO) resolves this deterministically by establishing that an inherited property from a closer ancestor (in terms of topological sub-path specificity) overrides a property inherited from a more distant ancestor. If node A is a subclass of node B, then properties derived along the path through A are preferred over those through B because A provides more specific context. Circumscription and full second-order logic minimization are computationally intractable (typically NP-hard or higher), and credulous reasoning accepts multiple branching valid worlds simultaneously rather than producing a single deterministic, conflict-free conclusion."
+      "correct_answer_text": "B) Pre-trained Denoising Autoencoder or Incremental Low-Rank Matrix Factorization projection",
+      "explanation": "Pre-trained Denoising Autoencoders (DAEs) or Low-Rank Matrix Projections (like Incremental SVD) compute imputations via forward-pass matrix multiplication (O(d * k) complexity), easily running in single-digit milliseconds on edge hardware while capturing complex inter-channel correlations. In contrast, MICE and MissForest require iterative convergence cycles that fail strict real-time SLAs, k-NN requires heavy pairwise search across reference buffers (O(N * d)), and Listwise Deletion discards valid temporal context critical in ICU telemetry."
     },
     {
       "id": 3,
-      "scenario": "A financial intelligence system implements an automated real-time anti-money laundering (AML) detection pipeline. The pipeline's rule base is formulated in standard First-Order Logic (FOL) and evaluated using an automated theorem prover based on Robinson's resolution refutation with Robinson unification. When high-velocity streaming transactions (20,000 events/second) arrive, the theorem prover encounters queries regarding accounts that are completely legitimate (i.e., non-theorems where the negation cannot be derived). Because First-Order Logic is semi-decidable, the resolution engine fails to terminate on several non-theorems, entering infinite loops through generated Skolem functions and accumulating an unbounded resolvent clause search space.",
-      "question": "Which algorithmic restriction and logical transformation directly resolves the non-termination issue on non-theorems while retaining sufficient relational expressivity?",
+      "scenario": "A semiconductor manufacturing facility monitors wafer quality using 300 highly collinear and multi-modal continuous sensor channels. Defective wafers represent less than 0.1% of samples. An engineer tries applying standard Minimum Covariance Determinant (MCD) to detect outliers via Mahalanobis distance, but it fails with a singular covariance matrix error. Next, the engineer applies standard Isolation Forest, but domain experts observe significant false alarms ('ghost anomalies') caused by unnatural axis-parallel bounding cuts slicing through tilted, highly-correlated multi-sensor manifolds.",
+      "question": "Which algorithm modification directly rectifies the axis-parallel hyper-rectangle partitioning artifact of standard Isolation Forests in high-dimensional correlated spaces without requiring full covariance matrix inversion?",
       "options": [
-        "A) Converting all FOL expressions to Monadic Second-Order Logic (MSOL) evaluated via Buchi automata.",
-        "B) Restricting the knowledge base to function-free Horn clauses (Datalog) and employing bottom-up evaluation with stratified negation.",
-        "C) Introducing equality axioms and replacing unification with complete semantic paramodulation over unrestricted clauses.",
-        "D) Replacing refutation resolution with binary branch-and-bound linear programming solvers after translating predicates into continuous matrices."
+        "A) Extended Isolation Forest (EIF) with random linear-combination hyperplanes",
+        "B) Local Outlier Factor (LOF) configured with Minkowski p=0.5 metric",
+        "C) Z-score standardization followed by feature-wise clipping at 3 standard deviations",
+        "D) Principal Component Imputation followed by univariate Grubbs' tests"
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Restricting the knowledge base to function-free Horn clauses (Datalog) and employing bottom-up evaluation with stratified negation.",
-      "explanation": "First-Order Logic is semi-decidable: if a formula is valid (a theorem), resolution refutation will eventually terminate and find the contradiction, but if it is invalid (a non-theorem), the search may proceed indefinitely across infinite Herbrand universes, especially in the presence of function symbols and Skolem constants. By restricting the representation to Datalog (function-free First-Order Horn clauses) with stratified negation, the Herbrand base becomes finite. Consequently, query evaluation is fully decidable, guaranteed to terminate in polynomial data complexity (PTime), and eliminates the non-halting problem for non-theorems while retaining the relational expressivity required for complex network analysis in fraud and AML detection."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Extended Isolation Forest (EIF) with random linear-combination hyperplanes",
+      "explanation": "Standard Isolation Forest chooses split points uniformly along individual coordinate axes (axis-parallel orthogonal cuts), which causes structural bias and produces 'ghost anomalies' where no data points actually reside along oblique distributions. Extended Isolation Forest (EIF) resolves this by selecting random hyperplanes with arbitrary slope/orientation vectors (linear combinations of features) at each node. This naturally conforms to correlated manifolds and eliminates axis-aligned artifacts while retaining the O(n log n) scaling efficiency, avoiding covariance matrix inversion required by Mahalanobis/MCD."
     }
   ]
 }
