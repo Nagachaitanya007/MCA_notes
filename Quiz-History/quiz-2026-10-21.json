@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
-  "mode": "Java",
+  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where an event-driven order processing application experiences sporadic `EntityNotFoundException` errors under heavy load. The system updates an order's status and immediately sends an email notification asynchronously using the following implementation:\n\njava\n@Service\npublic class OrderService {\n    @Autowired\n    private OrderRepository orderRepository;\n    @Autowired\n    private NotificationService notificationService;\n\n    @Transactional\n    public void completeOrder(Long orderId) {\n        Order order = orderRepository.findById(orderId).orElseThrow();\n        order.setStatus(OrderStatus.COMPLETED);\n        orderRepository.save(order);\n        notificationService.dispatchOrderCompletedEvent(order.getId());\n    }\n}\n\n@Service\npublic class NotificationService {\n    @Autowired\n    private OrderRepository orderRepository;\n\n    @Async\n    public void dispatchOrderCompletedEvent(Long orderId) {\n        Order order = orderRepository.findById(orderId)\n            .orElseThrow(() -> new EntityNotFoundException(\"Order not found: \" + orderId));\n        // Dispatch email notification\n    }\n}\n",
-      "question": "What is the primary cause of this issue?",
+      "scenario": "Real-world Industrial Problem Statement: A Tier-1 fintech core-banking platform monitors transactions across 180 continuous telemetry features to detect fraudulent wire transfers in real time. The event stream processes roughly 40,000 transactions per second with strict P99 latency bounds of under 12 milliseconds. Initial deployment utilized Mahalanobis Distance for multivariate outlier detection; however, the model pipeline suffered from covariance matrix instability due to high multicollinearity, alongside computational bottlenecks ($O(d^3)$ inversion overhead per batch update).",
+      "question": "Which algorithm and configuration strategy should the data engineering team adopt to isolate multivariate outliers effectively under these high-dimensional and sub-second execution constraints?",
       "options": [
-        "A) The Spring proxy for `@Async` runs on a separate worker thread and may query the database before the caller thread's Spring transaction interceptor commits the transaction to the database.",
-        "B) The call to `notificationService.dispatchOrderCompletedEvent(...)` is subject to Spring proxy self-invocation bypass, forcing the `@Async` execution onto the caller's thread.",
-        "C) The Java Memory Model allows the write of `order.setStatus(...)` to be reordered after the invocation of `dispatchOrderCompletedEvent(...)` due to compiler optimization.",
-        "D) `orderRepository.save(order)` does not invoke `flush()`, which prevents the entity from being written to the Level 1 Hibernate cache."
+        "A) Local Outlier Factor (LOF) using k-d trees with Minkowski $p=3$ distance metric.",
+        "B) Minimum Covariance Determinant (MCD) leveraging FastMCD approximation with full rank validation.",
+        "C) Isolation Forest with subsampling size constrained to $\\psi=256$ and path-length estimation across an ensemble of randomized trees.",
+        "D) DBSCAN with parameter tuning through k-distance graphs utilizing exact pairwise Euclidean distance computation."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) The Spring proxy for `@Async` runs on a separate worker thread and may query the database before the caller thread's Spring transaction interceptor commits the transaction to the database.",
-      "explanation": "Spring's `@Transactional` boundary is managed via an AOP around-advice proxy. The actual database commit (`connection.commit()`) is executed only when the `completeOrder` method returns and control unwinds back through the `TransactionInterceptor`. Because `dispatchOrderCompletedEvent` is annotated with `@Async`, the `AsyncExecutionInterceptor` immediately submits the task to a task executor thread. If the async thread executes `orderRepository.findById(orderId)` before the calling thread commits the active transaction, the read runs in a separate database transaction/connection under `READ_COMMITTED` isolation and fails to find the newly inserted/updated state. The standard FAANG-grade solution is to decouple the invocation using Spring's application event publisher with `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`."
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) Isolation Forest with subsampling size constrained to $\\psi=256$ and path-length estimation across an ensemble of randomized trees.",
+      "explanation": "Isolation Forest exhibits an average-case time complexity of $O(t \\cdot \\psi \\log \\psi)$, where $t$ is the number of trees and $\\psi$ is the sub-sampling size. A small subsample (e.g., 256) circumvents masking and swamping effects while mitigating the curse of dimensionality that plagues distance-based methods like LOF and DBSCAN ($O(N^2)$ or $O(N \\log N)$). Furthermore, Isolation Forest does not require computing matrix inverses or calculating expensive pairwise metrics, making it uniquely suitable for high-throughput streaming pipelines within tight millisecond SLAs."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a low-latency trading execution engine running on OpenJDK 17 with the Z Garbage Collector (`-XX:+UseZGC`) experiences sudden latency spikes exceeding 1.5 seconds. Thread dumps during the spike show application mutator threads stuck in `allocation stall` states, while GC logs indicate that concurrent mark phases are completing successfully without reference processor bottlenecks.",
-      "question": "What is the primary cause of these allocation stalls in ZGC?",
+      "scenario": "Real-world Industrial Problem Statement: An intensive care unit (ICU) clinical decision support system predicts 48-hour patient sepsis onset. Several continuous biomarkers (such as serum lactate, arterial blood gas, and C-reactive protein) exhibit 45% missingness. Exploratory analysis reveals the data is Missing Not at Random (MNAR): clinicians order these specific panels primarily when a patient displays symptomatic deterioration. Complete Case Analysis (listwise deletion) removes 70% of the patient cohort and introduces severe selection bias, while standard mean or median imputation distorts the feature variance and eliminates the clinical signal inherent in the missingness.",
+      "question": "Which imputation and feature engineering methodology is statistically optimal to preserve the predictive capacity of the downstream gradient boosted decision trees without introducing data leakage?",
       "options": [
-        "A) A stop-the-world Full GC fallback was triggered because Metaspace reached `MaxMetaspaceSize`, requiring synchronous unloading of dynamically generated proxy classes.",
-        "B) The application mutator threads allocated memory at a rate higher than the concurrent garbage collector could reclaim free pages, causing threads to block until memory was freed.",
-        "C) The colored pointer load barriers encountered memory bus lock contention on multi-socket NUMA nodes due to misconfigured `-XX:+UseNUMA` settings.",
-        "D) Mutator threads encountered safe-fetch segmentation faults caused by JIT-compiled C2 code bypassing ZGC read barriers during fast-path array copying."
+        "A) K-Nearest Neighbors (KNN) imputation computed over the entire unified dataset prior to k-fold cross-validation partitioning.",
+        "B) Multivariate Imputation by Chained Equations (MICE) paired with missingness indicator vectors (MissingIndicator), fitted strictly on the training partition.",
+        "C) Forward-fill (LOCF) across all patient records globally, backed by constant replacement with global maximum feature limits.",
+        "D) Listwise deletion augmented with Synthetic Minority Over-sampling Technique (SMOTE) to synthetically balance mortality labels."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) The application mutator threads allocated memory at a rate higher than the concurrent garbage collector could reclaim free pages, causing threads to block until memory was freed.",
-      "explanation": "ZGC is a concurrent, low-pause collector where marking, relocation, and reference processing occur concurrently with mutator threads. However, if the allocation rate of the mutator threads outpaces the rate at which concurrent GC phases can reclaim memory pages, the heap runs out of allocatable memory. When this occurs, ZGC cannot fulfill new allocation requests (`allocation stall`), forcing the allocating mutator threads to sleep or stall until the concurrent collection cycle completes and frees sufficient pages. Mitigations include sizing the heap larger (`-Xmx`), allocating more concurrent GC worker threads via `-XX:ConcGCThreads`, or tuning `-XX:ZAllocationSpikeTolerance`."
+      "correct_answer_text": "B) Multivariate Imputation by Chained Equations (MICE) paired with missingness indicator vectors (MissingIndicator), fitted strictly on the training partition.",
+      "explanation": "When data is Missing Not at Random (MNAR), the fact that a measurement is missing contains informative predictive value. Augmenting the feature space with binary missingness indicators (MissingIndicator) explicitly exposes this non-random clinical intent to the tree models. Using Multivariate Imputation by Chained Equations (MICE) models each feature conditional on the others, preserving multivariable dependencies and uncertainty far better than single-value imputation. Crucially, fitting the imputation estimators exclusively on the training split prevents data leakage into the validation/testing folds."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where an enterprise gateway that dynamically deploys and undeploys tenant plugins crashes after several days with `java.lang.OutOfMemoryError: Metaspace`. Analysis of the heap dump reveals that while the plugin instances were unregistered from Spring's `ApplicationContext`, thousands of instances of custom `PluginClassLoader` remain retained on the heap along with their loaded `Class<?>` instances and metadata.",
-      "question": "What is the primary cause preventing `PluginClassLoader` and its classes from being unloaded?",
+      "scenario": "Real-world Industrial Problem Statement: An enterprise retail analytics engine models Customer Lifetime Value (CLV) to optimize bidding across programmatic ad auctions. The target variable (365-day net realized spend) features high zero-inflation (82% of users spend exactly $0) and an extreme, heavy right-tail Pareto distribution (kurtosis > 45, skewness > 8.5) among spending users. The machine learning pipeline relies on an ElasticNet-regularized Generalized Linear Model (GLM). Applying standard Box-Cox transformation fails because the feature domain contains non-positive values ($y = 0$). Adding an arbitrary uniform shift ($y + c$) severely biases the log-likelihood optimization.",
+      "question": "Which mathematical transformation should be deployed to normalize the target distribution and stabilize residual variance across the entire non-negative real domain without arbitrary shifting?",
       "options": [
-        "A) The C2 JIT compiler permanently pins compiled native code in the CodeCache, which transitively holds strong roots to their defining `ClassLoader` instances.",
-        "B) Long-lived worker threads from a shared thread pool retain `ThreadLocal` entries holding plugin-defined objects, transitively referencing `PluginClassLoader`.",
-        "C) The JVM `BootstrapClassLoader` maintains an internal bi-directional cache of all loaded child class loaders for delegation safety.",
-        "D) The G1 garbage collector Humongous object allocation threshold prevents objects larger than 50% of the G1 region size from triggering class unloading."
+        "A) Yeo-Johnson Power Transformation optimized via Maximum Likelihood Estimation across the parameter $\\lambda$.",
+        "B) Standard Min-Max Normalization scaled to the range $[-1, 1]$.",
+        "C) Z-score standardization followed by quantile trimming at the 99th percentile.",
+        "D) Continuous Logarithmic Transform with zero-replacement using the empirical mean of non-zero values."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Long-lived worker threads from a shared thread pool retain `ThreadLocal` entries holding plugin-defined objects, transitively referencing `PluginClassLoader`.",
-      "explanation": "In Java, a `Class<?>` can only be garbage-collected and its Metaspace memory reclaimed if its defining `ClassLoader` is eligible for garbage collection. A `ClassLoader` cannot be collected if there is a strong reference to it, to any of its loaded classes, or to any instance of its loaded classes. A classic production leak occurs when reusable threads (e.g., Tomcat, Netty, or common `ForkJoinPool` worker threads) execute code from a plugin and populate a `ThreadLocal` without calling `ThreadLocal.remove()`. The thread's `ThreadLocalMap` retains the value, which references the plugin class, which references the `PluginClassLoader`, creating a root reference path that completely prevents Metaspace class unloading."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Yeo-Johnson Power Transformation optimized via Maximum Likelihood Estimation across the parameter $\\lambda$.",
+      "explanation": "The Yeo-Johnson transformation extends the Box-Cox framework to support zero and negative values continuously. Its piecewise formulation for non-negative values ($y \\ge 0$) with $\\lambda \\ne 0$ is defined as $((y + 1)^\\lambda - 1) / \\lambda$, and $\\log(y + 1)$ when $\\lambda = 0$. By optimizing the parameter $\\lambda$ using Maximum Likelihood Estimation (MLE), it dampens extreme right skewness and handles the massive zero mass natively without introducing an arbitrary, empirically ungrounded hyperparameter shift ($c$). Min-Max and Z-score transformations are linear mappings that preserve skewness rather than resolving it."
     }
   ]
 }
