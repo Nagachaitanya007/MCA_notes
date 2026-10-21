@@ -1,0 +1,48 @@
+{
+  "topic": "Advanced Collections Framework & Custom Implementations",
+  "mode": "Java",
+  "questions": [
+    {
+      "id": 1,
+      "scenario": "You are debugging a production issue where a high-throughput Spring Boot service experiences random worker threads hanging at 100% CPU utilization. Thread dumps reveal multiple threads executing inside `java.util.LinkedHashMap.get()`. The team uses a custom bounded cache implemented as follows:\n\njava\n@Component\npublic class UserSessionCache {\n    private final Map<String, UserSession> cache = \n        new LinkedHashMap<String, UserSession>(1024, 0.75f, true) {\n            @Override\n            protected boolean removeEldestEntry(Map.Entry<String, UserSession> eldest) {\n                return size() > 1000;\n            }\n        };\n\n    public UserSession getSession(String id) {\n        return cache.get(id);\n    }\n\n    public synchronized void putSession(String id, UserSession session) {\n        cache.put(id, session);\n    }\n}\n",
+      "question": "What is the primary cause of the 100% CPU hang in this implementation?",
+      "options": [
+        "A) Constructing `LinkedHashMap` with `accessOrder = true` mutates the internal doubly-linked list on `get()` calls; unsynchronized concurrent reads corrupt pointer references into an infinite cyclic loop.",
+        "B) Unsynchronized read access to `size()` inside `removeEldestEntry()` causes an integer overflow, triggering an infinite eviction loop.",
+        "C) The JVM monitor on `putSession` deadlocks with the garbage collector's concurrent sweep phase during bucket resizing.",
+        "D) `LinkedHashMap` rehashes bucket arrays during `get()` when elements are out of order, causing race conditions in table re-indexing."
+      ],
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Constructing `LinkedHashMap` with `accessOrder = true` mutates the internal doubly-linked list on `get()` calls; unsynchronized concurrent reads corrupt pointer references into an infinite cyclic loop.",
+      "explanation": "When `LinkedHashMap` is instantiated with `accessOrder = true`, invoking `get()` is not a read-only operation\u2014it performs a structural modification by moving the accessed entry node to the tail of the doubly-linked list (`after` and `before` pointers). Because `getSession()` lacks synchronization, concurrent invocations of `get()` corrupt the circular doubly-linked list pointers (creating self-referencing loops). Subsequent operations traversing this linked chain spin endlessly, consuming 100% CPU."
+    },
+    {
+      "id": 2,
+      "scenario": "You are debugging a production issue in an e-commerce application. A Spring `@Service` manages order lines within a `@Transactional` method using a custom domain collection backed by a `HashSet<OrderLine>`. The entity defines `equals()` and `hashCode()` using its database-generated primary key:\n\njava\n@Entity\npublic class OrderLine {\n    @Id\n    @GeneratedValue(strategy = GenerationType.IDENTITY)\n    private Long id;\n    private String sku;\n\n    @Override\n    public boolean equals(Object o) {\n        if (this == o) return true;\n        if (!(o instanceof OrderLine that)) return false;\n        return id != null && Objects.equals(id, that.id);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(id);\n    }\n}\n\n\nInside a transactional method, transient `OrderLine` instances are added to a `HashSet<OrderLine>`, the parent order is saved via `entityManager.persist()`, and `entityManager.flush()` executes. Later in the same method, `orderLineSet.contains(line)` returns `false` for entities explicitly added to the set.",
+      "question": "What is the root cause of `orderLineSet.contains(line)` returning `false` after the entity is flushed?",
+      "options": [
+        "A) Hibernate wraps the entity in a dynamic proxy that modifies `equals()` comparison logic during the flush phase.",
+        "B) Generating the primary key alters the entity's `hashCode()` value while it resides in the set, leaving it stranded in the original bucket based on the pre-flush hash code.",
+        "C) The Spring `@Transactional` aspect intercepts collection reads and replaces the `HashSet` with an unmodifiable snapshot.",
+        "D) `HashSet` automatically rehashes all elements upon detecting an identity mutation, evicting any entity whose `id` was modified."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Generating the primary key alters the entity's `hashCode()` value while it resides in the set, leaving it stranded in the original bucket based on the pre-flush hash code.",
+      "explanation": "Before persistence, `id` is `null`, yielding a `hashCode()` computed from `Objects.hash(null)`. The element is placed in the corresponding hash bucket inside the `HashSet`. When `flush()` executes, the persistence provider assigns a database-generated `id` to the entity. This mutates the entity's `hashCode()`. When `contains()` is subsequently called, `HashSet` computes the hash code based on the new `id` and searches a different bucket, failing to find the entity even though it physically remains in the underlying array."
+    },
+    {
+      "id": 3,
+      "scenario": "You are debugging a production issue where a microservice using dynamic Spring AOP advice steadily leaks memory, eventually crashing with `java.lang.OutOfMemoryError: Metaspace` followed by heap exhaustion. A heap dump shows millions of `Class<?>` instances and their corresponding `ClassLoader` instances retained through a custom reflection cache:\n\njava\n@Component\npublic class InvocationMetadataRegistry {\n    private final Map<Class<?>, InvocationMetadata> metadataCache = new WeakHashMap<>();\n\n    public void register(Class<?> targetClass, Method method) {\n        metadataCache.put(targetClass, new InvocationMetadata(targetClass, method));\n    }\n}\n\nclass InvocationMetadata {\n    private final Class<?> clazz;\n    private final Method method;\n\n    public InvocationMetadata(Class<?> clazz, Method method) {\n        this.clazz = clazz;\n        this.method = method;\n    }\n}\n",
+      "question": "Why does `WeakHashMap` fail to clean up dynamic classes generated at runtime in this scenario?",
+      "options": [
+        "A) `WeakHashMap` only cleans up expired keys when `size()` exceeds the capacity threshold and triggers rehashing.",
+        "B) Dynamic proxy classes generated at runtime reside permanently in Metaspace and cannot be collected by JVM garbage collection.",
+        "C) The value object `InvocationMetadata` maintains a strong reference back to the key (`targetClass`), preventing the `WeakReference` to the key from being cleared.",
+        "D) Spring's `@Component` proxy prevents garbage collection by holding strong reflection metadata for all dependency-injected beans."
+      ],
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) The value object `InvocationMetadata` maintains a strong reference back to the key (`targetClass`), preventing the `WeakReference` to the key from being cleared.",
+      "explanation": "In `WeakHashMap`, the entry key is held via a `WeakReference`, but the entry value is held via a standard strong reference. If the value object (`InvocationMetadata`) strongly references the key (`Class<?>`), a strong reference path exists from the map's internal table entry -> value -> key. As long as the `WeakHashMap` itself is reachable, the key remains strongly reachable and the GC can never clear the `WeakReference`. Consequently, dynamically generated proxy classes and their defining `ClassLoader` instances cannot be unloaded from Metaspace and Heap."
+    }
+  ]
+}
