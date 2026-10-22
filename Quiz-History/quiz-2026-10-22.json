@@ -1,0 +1,48 @@
+{
+  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
+  "mode": "Java",
+  "questions": [
+    {
+      "id": 1,
+      "scenario": "You are debugging a production issue where a high-concurrency Spring Boot microservice intermittently throws `NullPointerException` or returns partially populated data during rule evaluation. The team recently added a double-checked locking lazy initialization pattern to a singleton bean:\n\njava\n@Component\npublic class DynamicRuleEngine {\n    private RuleConfiguration cachedConfig;\n\n    public RuleResult process(RequestContext context) {\n        if (cachedConfig == null) {\n            synchronized (this) {\n                if (cachedConfig == null) {\n                    cachedConfig = new RuleConfiguration(context.getTenantId());\n                }\n            }\n        }\n        return cachedConfig.execute(context);\n    }\n}\n\n\nUnder high load with multiple worker threads, threads occasionally see `cachedConfig` as non-null, but its internal fields inside `execute()` contain default/uninitialized values.",
+      "question": "What is the root cause of this failure under the Java Memory Model (JMM)?",
+      "options": [
+        "A) The JVM JIT compiler or CPU reordered the memory write publishing the `cachedConfig` reference before executing the constructor body of `RuleConfiguration`.",
+        "B) Spring CGLIB proxying wraps `cachedConfig` in an uninitialized lazy proxy, leading to a race condition with the invocation handler.",
+        "C) The `synchronized (this)` block locks on the CGLIB proxy target rather than the proxy instance itself, bypassing thread synchronization.",
+        "D) The JIT compiler applied loop unrolling and escape analysis, determining that `cachedConfig` could be allocated entirely on the thread stack."
+      ],
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) The JVM JIT compiler or CPU reordered the memory write publishing the `cachedConfig` reference before executing the constructor body of `RuleConfiguration`.",
+      "explanation": "In Java, object creation involves three core steps: (1) allocating memory, (2) executing the constructor to initialize fields, and (3) assigning the memory reference to the variable (`cachedConfig`). Under the Java Memory Model, without a `volatile` modifier on `cachedConfig`, the compiler or CPU can reorder steps 2 and 3. When this happens, another thread executing the outer null check can observe `cachedConfig != null` before the fields of `RuleConfiguration` are initialized, leading to partial object publication. Marking `cachedConfig` as `volatile` establishes a happens-before relationship and inserts a memory barrier preventing instruction reordering across the write."
+    },
+    {
+      "id": 2,
+      "scenario": "You are debugging a production issue where a latency-sensitive payment service running on Java 17 with ZGC (`-XX:+UseZGC`) experiences sudden latency spikes exceeding 1.5 seconds during peak volume. The JVM heap is sized at 32 GB, and telemetry indicates total heap usage hovers at only 65%. GC logs reveal frequent occurrences of `Allocation Stall` events.",
+      "question": "What is the primary cause of these allocation stalls in ZGC, and what is the underlying mechanism triggering them?",
+      "options": [
+        "A) ZGC ran out of native thread stack space while executing colored pointer load barriers.",
+        "B) Mutator threads allocated heap memory faster than the concurrent GC phases could mark and reclaim pages, forcing mutator threads to block.",
+        "C) The young-generation promotion threshold dropped to zero, forcing an emergency stop-the-world Full GC pause.",
+        "D) Remembered Sets (RSets) overflowed, causing card-table scanning to revert to single-threaded STW processing."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Mutator threads allocated heap memory faster than the concurrent GC phases could mark and reclaim pages, forcing mutator threads to block.",
+      "explanation": "ZGC is a concurrent garbage collector designed for sub-millisecond pause times, where marking, relocation, and compaction occur concurrently with mutator execution. However, if the allocation rate of application (mutator) threads outpaces the rate at which concurrent GC phases can discover, relocate, and reclaim memory, free heap space is exhausted before collection finishes. When this occurs, mutator threads requesting allocations are forced into an `Allocation Stall` to slow down allocation until the GC frees up memory. In Java 17 (single-generation ZGC), this can be mitigated by tuning `-XX:InitiatingHeapOccupancyPercent`, sizing up the heap, or migrating to Generational ZGC (Java 21+)."
+    },
+    {
+      "id": 3,
+      "scenario": "You are debugging a production issue where a multi-tenant application dynamically compiles and reloads tenant rules at runtime using custom `URLClassLoader` instances. Over time, the JVM crashes with `java.lang.OutOfMemoryError: Metaspace`. Profiling confirms that old `URLClassLoader` references are nulled out, yet Metaspace usage continuously increases monotonically.",
+      "question": "What is the class loading mechanism preventing Metaspace memory from being reclaimed by the garbage collector?",
+      "options": [
+        "A) The JVM stores compiled native code and JIT metadata in Metaspace, which is permanently retained until the JVM process shuts down.",
+        "B) Classes generated via custom class loaders are automatically pinned into the System Dictionary and can only be collected during a forced `System.gc()` call.",
+        "C) A `Class` object maintains a strong reference to its defining `ClassLoader`, and loaded classes cannot be unloaded unless their `ClassLoader` is entirely unreachable and eligible for GC.",
+        "D) Metaspace allocations use native OS pages that are non-reclaimable by HotSpot's concurrent mark-sweep allocator once committed."
+      ],
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) A `Class` object maintains a strong reference to its defining `ClassLoader`, and loaded classes cannot be unloaded unless their `ClassLoader` is entirely unreachable and eligible for GC.",
+      "explanation": "In HotSpot JVM internals, a `Class` object retains a strong reference to the `ClassLoader` that defined it, and the `ClassLoader` maintains strong references to all the `Class` objects it has loaded. Furthermore, instances of those classes retain references to their respective `Class` objects (via `instance.getClass()`). For any class metadata to be unloaded from Metaspace, the entire defining `ClassLoader` must be completely unreachable from any live GC root. If a single instance, static variable, thread-local, or reflection cache retains a reference to any class loaded by that `ClassLoader`, the entire `ClassLoader` and all its loaded classes remain pinned in memory, causing a Metaspace leak."
+    }
+  ]
+}
