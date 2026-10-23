@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
+  "topic": "Advanced Collections Framework & Custom Implementations",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a high-concurrency Spring Boot microservice intermittently throws `NullPointerException` or returns partially populated data during rule evaluation. The team recently added a double-checked locking lazy initialization pattern to a singleton bean:\n\njava\n@Component\npublic class DynamicRuleEngine {\n    private RuleConfiguration cachedConfig;\n\n    public RuleResult process(RequestContext context) {\n        if (cachedConfig == null) {\n            synchronized (this) {\n                if (cachedConfig == null) {\n                    cachedConfig = new RuleConfiguration(context.getTenantId());\n                }\n            }\n        }\n        return cachedConfig.execute(context);\n    }\n}\n\n\nUnder high load with multiple worker threads, threads occasionally see `cachedConfig` as non-null, but its internal fields inside `execute()` contain default/uninitialized values.",
-      "question": "What is the root cause of this failure under the Java Memory Model (JMM)?",
+      "scenario": "You are debugging a production issue where a critical dependency resolution service hangs indefinitely, triggering thread starvation alerts under load. Thread dumps show dozens of worker threads stuck in `RUNNABLE` or `BLOCKED` states inside internal map methods. A recent PR introduced this implementation:\n\njava\n@Service\npublic class DependencyGraphService {\n    private final Map<String, String> resolvedCache = new ConcurrentHashMap<>();\n\n    public String resolveDependency(String node) {\n        return resolvedCache.computeIfAbsent(node, key -> {\n            String parent = extractParent(key);\n            return parent != null ? resolveDependency(parent) + \"->\" + key : key;\n        });\n    }\n\n    private String extractParent(String key) {\n        int idx = key.lastIndexOf(':');\n        return idx > 0 ? key.substring(0, idx) : null;\n    }\n}\n",
+      "question": "What is the primary cause of this issue?",
       "options": [
-        "A) The JVM JIT compiler or CPU reordered the memory write publishing the `cachedConfig` reference before executing the constructor body of `RuleConfiguration`.",
-        "B) Spring CGLIB proxying wraps `cachedConfig` in an uninitialized lazy proxy, leading to a race condition with the invocation handler.",
-        "C) The `synchronized (this)` block locks on the CGLIB proxy target rather than the proxy instance itself, bypassing thread synchronization.",
-        "D) The JIT compiler applied loop unrolling and escape analysis, determining that `cachedConfig` could be allocated entirely on the thread stack."
+        "A) Recursive updates inside `ConcurrentHashMap.computeIfAbsent` can lead to a deadlock or live-lock if the parent and child keys map to the same bucket bin, as bucket-level locking is held during computation.",
+        "B) `ConcurrentHashMap` enforces a compile-time restriction against nested method invocations inside lambdas, which falls back to an unindexed linear scan at runtime.",
+        "C) The Spring CGLIB proxy intercepts each recursive call to `resolveDependency`, exhausting the Spring transaction interceptor stack.",
+        "D) `computeIfAbsent` executes asynchronously on a background `ForkJoinWorkerThread`, leading to race conditions on shared memory pointers."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) The JVM JIT compiler or CPU reordered the memory write publishing the `cachedConfig` reference before executing the constructor body of `RuleConfiguration`.",
-      "explanation": "In Java, object creation involves three core steps: (1) allocating memory, (2) executing the constructor to initialize fields, and (3) assigning the memory reference to the variable (`cachedConfig`). Under the Java Memory Model, without a `volatile` modifier on `cachedConfig`, the compiler or CPU can reorder steps 2 and 3. When this happens, another thread executing the outer null check can observe `cachedConfig != null` before the fields of `RuleConfiguration` are initialized, leading to partial object publication. Marking `cachedConfig` as `volatile` establishes a happens-before relationship and inserts a memory barrier preventing instruction reordering across the write."
+      "correct_answer_text": "A) Recursive updates inside `ConcurrentHashMap.computeIfAbsent` can lead to a deadlock or live-lock if the parent and child keys map to the same bucket bin, as bucket-level locking is held during computation.",
+      "explanation": "In Java 8+, `ConcurrentHashMap.computeIfAbsent` locks the specific table bucket (bin) using synchronized blocks over the bin's root node while evaluating the mapping function. If the mapping function recursively attempts to compute or insert another key that hashes to the same bucket (or attempts to re-acquire locks held by the outer computation), it triggers a thread-level deadlock or self-deadlock. The Java documentation explicitly states: 'the computation should be short and simple, and must not attempt to update any other mappings of this map'."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a latency-sensitive payment service running on Java 17 with ZGC (`-XX:+UseZGC`) experiences sudden latency spikes exceeding 1.5 seconds during peak volume. The JVM heap is sized at 32 GB, and telemetry indicates total heap usage hovers at only 65%. GC logs reveal frequent occurrences of `Allocation Stall` events.",
-      "question": "What is the primary cause of these allocation stalls in ZGC, and what is the underlying mechanism triggering them?",
+      "scenario": "You are debugging a production issue where a batch-processing service processes customer orders using a custom collection implementation. The service executes inside a `@Transactional` boundary, but nested database updates within the collection processing step intermittently fail with `TransactionRequiredException`, and partial uncommitted states are observed:\n\njava\n@Service\npublic class OrderBatchService {\n    @Autowired\n    private OrderRepository orderRepository;\n\n    @Transactional\n    public void processPendingOrders(CustomBatchList<Order> orders) {\n        orders.parallelStream().forEach(this::applyDiscountAndSave);\n    }\n\n    public void applyDiscountAndSave(Order order) {\n        order.setDiscount(0.10);\n        orderRepository.save(order);\n    }\n}\n",
+      "question": "What is the root cause of these transaction failures?",
       "options": [
-        "A) ZGC ran out of native thread stack space while executing colored pointer load barriers.",
-        "B) Mutator threads allocated heap memory faster than the concurrent GC phases could mark and reclaim pages, forcing mutator threads to block.",
-        "C) The young-generation promotion threshold dropped to zero, forcing an emergency stop-the-world Full GC pause.",
-        "D) Remembered Sets (RSets) overflowed, causing card-table scanning to revert to single-threaded STW processing."
+        "A) Spring's `@Transactional` annotation does not support classes that consume custom subclasses of `java.util.AbstractList`.",
+        "B) The `parallelStream()` operations execute tasks on the common `ForkJoinPool`, where worker threads do not inherit the caller's `ThreadLocal` transaction context managed by `TransactionSynchronizationManager`.",
+        "C) Calling `this::applyDiscountAndSave` causes the JVM to bypass the proxy, which forces the underlying database connection pool to instantly close the active transaction.",
+        "D) Hibernate's first-level session cache rejects entities modified across multiple threads, triggering an automatic rollback of the parent thread."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Mutator threads allocated heap memory faster than the concurrent GC phases could mark and reclaim pages, forcing mutator threads to block.",
-      "explanation": "ZGC is a concurrent garbage collector designed for sub-millisecond pause times, where marking, relocation, and compaction occur concurrently with mutator execution. However, if the allocation rate of application (mutator) threads outpaces the rate at which concurrent GC phases can discover, relocate, and reclaim memory, free heap space is exhausted before collection finishes. When this occurs, mutator threads requesting allocations are forced into an `Allocation Stall` to slow down allocation until the GC frees up memory. In Java 17 (single-generation ZGC), this can be mitigated by tuning `-XX:InitiatingHeapOccupancyPercent`, sizing up the heap, or migrating to Generational ZGC (Java 21+)."
+      "correct_answer_text": "B) The `parallelStream()` operations execute tasks on the common `ForkJoinPool`, where worker threads do not inherit the caller's `ThreadLocal` transaction context managed by `TransactionSynchronizationManager`.",
+      "explanation": "Spring's transaction management relies on `TransactionSynchronizationManager`, which binds the active `EntityManager` and database connection to a `ThreadLocal` variable on the initiating thread. When `parallelStream()` is called, task execution is offloaded across worker threads in the common `ForkJoinPool`. These worker threads do not have the transaction bound to their `ThreadLocal` context, causing repository methods requiring an existing transaction to throw `TransactionRequiredException` or execute outside the transactional scope."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where a multi-tenant application dynamically compiles and reloads tenant rules at runtime using custom `URLClassLoader` instances. Over time, the JVM crashes with `java.lang.OutOfMemoryError: Metaspace`. Profiling confirms that old `URLClassLoader` references are nulled out, yet Metaspace usage continuously increases monotonically.",
-      "question": "What is the class loading mechanism preventing Metaspace memory from being reclaimed by the garbage collector?",
+      "scenario": "You are debugging a production issue where a long-running microservice crashes with `java.lang.OutOfMemoryError: Java heap space`. Memory dumps reveal that over 80% of the heap is consumed by entries in an internal cache implemented using `java.util.WeakHashMap<SessionKey, SessionContext>`. The developers intended for keys to be automatically garbage collected once client requests completed and the external references to `SessionKey` instances dropped to zero.",
+      "question": "What is the primary cause of this memory leak in the `WeakHashMap` implementation?",
       "options": [
-        "A) The JVM stores compiled native code and JIT metadata in Metaspace, which is permanently retained until the JVM process shuts down.",
-        "B) Classes generated via custom class loaders are automatically pinned into the System Dictionary and can only be collected during a forced `System.gc()` call.",
-        "C) A `Class` object maintains a strong reference to its defining `ClassLoader`, and loaded classes cannot be unloaded unless their `ClassLoader` is entirely unreachable and eligible for GC.",
-        "D) Metaspace allocations use native OS pages that are non-reclaimable by HotSpot's concurrent mark-sweep allocator once committed."
+        "A) `WeakHashMap` entries are only cleared when calling `size()` or `gc()`; passive reading via `get()` does not poll the reference queue.",
+        "B) Each `SessionContext` value retains a strong reference back to its corresponding `SessionKey`, preventing the key from becoming weakly reachable.",
+        "C) The JVM Garbage Collector treats `WeakReference` objects as strong references if their allocation survives more than two Minor GC cycles.",
+        "D) `WeakHashMap` keys must implement `java.lang.Comparable`; otherwise, the internal hashing algorithm defaults to retaining keys via `PhantomReference`."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) A `Class` object maintains a strong reference to its defining `ClassLoader`, and loaded classes cannot be unloaded unless their `ClassLoader` is entirely unreachable and eligible for GC.",
-      "explanation": "In HotSpot JVM internals, a `Class` object retains a strong reference to the `ClassLoader` that defined it, and the `ClassLoader` maintains strong references to all the `Class` objects it has loaded. Furthermore, instances of those classes retain references to their respective `Class` objects (via `instance.getClass()`). For any class metadata to be unloaded from Metaspace, the entire defining `ClassLoader` must be completely unreachable from any live GC root. If a single instance, static variable, thread-local, or reflection cache retains a reference to any class loaded by that `ClassLoader`, the entire `ClassLoader` and all its loaded classes remain pinned in memory, causing a Metaspace leak."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Each `SessionContext` value retains a strong reference back to its corresponding `SessionKey`, preventing the key from becoming weakly reachable.",
+      "explanation": "In `WeakHashMap`, the keys are stored as `WeakReference<K>` instances, but the values are held by strong references (`V`). If a value directly or indirectly holds a strong reference back to its corresponding key, the key remains strongly reachable through the value object. Because the key is not weakly reachable, the Garbage Collector never collects it and never places its `WeakReference` onto the internal `ReferenceQueue`. Consequently, the internal `expungeStaleEntries()` cleanup mechanism is never triggered, causing a permanent memory leak."
     }
   ]
 }

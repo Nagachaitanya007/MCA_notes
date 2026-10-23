@@ -1,0 +1,48 @@
+{
+  "topic": "Advanced Collections Framework & Custom Implementations",
+  "mode": "Java",
+  "questions": [
+    {
+      "id": 1,
+      "scenario": "You are debugging a production issue where a critical dependency resolution service hangs indefinitely, triggering thread starvation alerts under load. Thread dumps show dozens of worker threads stuck in `RUNNABLE` or `BLOCKED` states inside internal map methods. A recent PR introduced this implementation:\n\njava\n@Service\npublic class DependencyGraphService {\n    private final Map<String, String> resolvedCache = new ConcurrentHashMap<>();\n\n    public String resolveDependency(String node) {\n        return resolvedCache.computeIfAbsent(node, key -> {\n            String parent = extractParent(key);\n            return parent != null ? resolveDependency(parent) + \"->\" + key : key;\n        });\n    }\n\n    private String extractParent(String key) {\n        int idx = key.lastIndexOf(':');\n        return idx > 0 ? key.substring(0, idx) : null;\n    }\n}\n",
+      "question": "What is the primary cause of this issue?",
+      "options": [
+        "A) Recursive updates inside `ConcurrentHashMap.computeIfAbsent` can lead to a deadlock or live-lock if the parent and child keys map to the same bucket bin, as bucket-level locking is held during computation.",
+        "B) `ConcurrentHashMap` enforces a compile-time restriction against nested method invocations inside lambdas, which falls back to an unindexed linear scan at runtime.",
+        "C) The Spring CGLIB proxy intercepts each recursive call to `resolveDependency`, exhausting the Spring transaction interceptor stack.",
+        "D) `computeIfAbsent` executes asynchronously on a background `ForkJoinWorkerThread`, leading to race conditions on shared memory pointers."
+      ],
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Recursive updates inside `ConcurrentHashMap.computeIfAbsent` can lead to a deadlock or live-lock if the parent and child keys map to the same bucket bin, as bucket-level locking is held during computation.",
+      "explanation": "In Java 8+, `ConcurrentHashMap.computeIfAbsent` locks the specific table bucket (bin) using synchronized blocks over the bin's root node while evaluating the mapping function. If the mapping function recursively attempts to compute or insert another key that hashes to the same bucket (or attempts to re-acquire locks held by the outer computation), it triggers a thread-level deadlock or self-deadlock. The Java documentation explicitly states: 'the computation should be short and simple, and must not attempt to update any other mappings of this map'."
+    },
+    {
+      "id": 2,
+      "scenario": "You are debugging a production issue where a batch-processing service processes customer orders using a custom collection implementation. The service executes inside a `@Transactional` boundary, but nested database updates within the collection processing step intermittently fail with `TransactionRequiredException`, and partial uncommitted states are observed:\n\njava\n@Service\npublic class OrderBatchService {\n    @Autowired\n    private OrderRepository orderRepository;\n\n    @Transactional\n    public void processPendingOrders(CustomBatchList<Order> orders) {\n        orders.parallelStream().forEach(this::applyDiscountAndSave);\n    }\n\n    public void applyDiscountAndSave(Order order) {\n        order.setDiscount(0.10);\n        orderRepository.save(order);\n    }\n}\n",
+      "question": "What is the root cause of these transaction failures?",
+      "options": [
+        "A) Spring's `@Transactional` annotation does not support classes that consume custom subclasses of `java.util.AbstractList`.",
+        "B) The `parallelStream()` operations execute tasks on the common `ForkJoinPool`, where worker threads do not inherit the caller's `ThreadLocal` transaction context managed by `TransactionSynchronizationManager`.",
+        "C) Calling `this::applyDiscountAndSave` causes the JVM to bypass the proxy, which forces the underlying database connection pool to instantly close the active transaction.",
+        "D) Hibernate's first-level session cache rejects entities modified across multiple threads, triggering an automatic rollback of the parent thread."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The `parallelStream()` operations execute tasks on the common `ForkJoinPool`, where worker threads do not inherit the caller's `ThreadLocal` transaction context managed by `TransactionSynchronizationManager`.",
+      "explanation": "Spring's transaction management relies on `TransactionSynchronizationManager`, which binds the active `EntityManager` and database connection to a `ThreadLocal` variable on the initiating thread. When `parallelStream()` is called, task execution is offloaded across worker threads in the common `ForkJoinPool`. These worker threads do not have the transaction bound to their `ThreadLocal` context, causing repository methods requiring an existing transaction to throw `TransactionRequiredException` or execute outside the transactional scope."
+    },
+    {
+      "id": 3,
+      "scenario": "You are debugging a production issue where a long-running microservice crashes with `java.lang.OutOfMemoryError: Java heap space`. Memory dumps reveal that over 80% of the heap is consumed by entries in an internal cache implemented using `java.util.WeakHashMap<SessionKey, SessionContext>`. The developers intended for keys to be automatically garbage collected once client requests completed and the external references to `SessionKey` instances dropped to zero.",
+      "question": "What is the primary cause of this memory leak in the `WeakHashMap` implementation?",
+      "options": [
+        "A) `WeakHashMap` entries are only cleared when calling `size()` or `gc()`; passive reading via `get()` does not poll the reference queue.",
+        "B) Each `SessionContext` value retains a strong reference back to its corresponding `SessionKey`, preventing the key from becoming weakly reachable.",
+        "C) The JVM Garbage Collector treats `WeakReference` objects as strong references if their allocation survives more than two Minor GC cycles.",
+        "D) `WeakHashMap` keys must implement `java.lang.Comparable`; otherwise, the internal hashing algorithm defaults to retaining keys via `PhantomReference`."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Each `SessionContext` value retains a strong reference back to its corresponding `SessionKey`, preventing the key from becoming weakly reachable.",
+      "explanation": "In `WeakHashMap`, the keys are stored as `WeakReference<K>` instances, but the values are held by strong references (`V`). If a value directly or indirectly holds a strong reference back to its corresponding key, the key remains strongly reachable through the value object. Because the key is not weakly reachable, the Garbage Collector never collects it and never places its `WeakReference` onto the internal `ReferenceQueue`. Consequently, the internal `expungeStaleEntries()` cleanup mechanism is never triggered, causing a permanent memory leak."
+    }
+  ]
+}
