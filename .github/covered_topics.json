@@ -296,6 +296,7 @@
     "Zero-Coordination Unique Identifiers: Designing a Distributed Snowflake ID System",
     "High-Performance Unique Key Generation: Implementing the Snowflake Algorithm",
     "Distributed System Primitives: Designing a 64-Bit Snowflake ID Generator",
-    "Time-Ordered Distributed Identity: Deconstructing the 64-Bit Snowflake Architecture"
+    "Time-Ordered Distributed Identity: Deconstructing the 64-Bit Snowflake Architecture",
+    "Decentralized Monotonic Identifiers: Designing a Production-Grade Snowflake Generator"
   ]
 }
