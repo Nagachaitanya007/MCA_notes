@@ -265,7 +265,8 @@
     "Traffic Regulation Mechanics: Token Bucket vs. Leaky Bucket Rate Limiters",
     "High-Throughput API Throttling: Token Bucket vs. Leaky Bucket Mechanics",
     "Scalable Rate Limiting: Token Bucket vs. Leaky Bucket Algorithmic Trade-offs",
-    "Resilient API Guardrails: Token Bucket vs. Leaky Bucket Under High Load"
+    "Resilient API Guardrails: Token Bucket vs. Leaky Bucket Under High Load",
+    "API Traffic Shaping: Token Bucket vs. Leaky Bucket in Distributed Systems"
   ],
   "Design a Distributed Cache (Consistent Hashing, LRU)": [
     "Distributed Cache Design: Consistent Hashing & LRU",
