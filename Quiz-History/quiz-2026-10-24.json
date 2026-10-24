@@ -1,0 +1,48 @@
+{
+  "topic": "Advanced Collections Framework & Custom Implementations",
+  "mode": "Java",
+  "questions": [
+    {
+      "id": 1,
+      "scenario": "You are debugging a production issue where a mission-critical gateway service experiences an `OutOfMemoryError: Java heap space` after running for several days. A developer wrote the following custom cache to retain session contexts while automatically allowing idle user objects to be reclaimed under memory pressure:\n\njava\npublic class SessionRegistry {\n    private final Map<UserSession, SessionContext> cache =\n            Collections.synchronizedMap(new WeakHashMap<>());\n\n    public void registerSession(UserSession session) {\n        cache.computeIfAbsent(session, s -> new SessionContext(s, System.currentTimeMillis()));\n    }\n\n    public SessionContext getContext(UserSession session) {\n        return cache.get(session);\n    }\n}\n\nclass SessionContext {\n    private final UserSession session;\n    private final long createdAt;\n\n    public SessionContext(UserSession session, long createdAt) {\n        this.session = session;\n        this.createdAt = createdAt;\n    }\n}\n",
+      "question": "What is the primary cause of the memory leak in this implementation?",
+      "options": [
+        "A) `Collections.synchronizedMap` wraps entry mutators but does not synchronize the internal expunging loop during `WeakHashMap.get()` calls.",
+        "B) The `SessionContext` value object maintains a strong reference back to the `UserSession` key, preventing garbage collection of the weak key.",
+        "C) The lambda passed to `computeIfAbsent` retains a hidden synthetic closure reference to `SessionRegistry`, preventing GC traversal.",
+        "D) `WeakHashMap` keys are compared using identity (`==`) rather than `.equals()`, causing duplicates of `UserSession` to accumulate indefinitely."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) The `SessionContext` value object maintains a strong reference back to the `UserSession` key, preventing garbage collection of the weak key.",
+      "explanation": "In `WeakHashMap`, entries are stored as `Entry<K, V> extends WeakReference<Object> implements Map.Entry<K, V>`. The garbage collector only automatically discards keys and enqueues their corresponding `ReferenceQueue` nodes if the key is weakly reachable. Because `SessionContext` retains a direct strong reference to `UserSession` (`this.session = session`), the key is strongly reachable transitively through the map's own values table: `Map -> Entry -> Value (SessionContext) -> Key (UserSession)`. This forms a strong reference cycle that completely prevents the GC from reclaiming the key, rendering `WeakHashMap` ineffective and causing an `OutOfMemoryError`."
+    },
+    {
+      "id": 2,
+      "scenario": "You are debugging a production issue where an enterprise inventory system running on Spring Boot and Hibernate generates severe database lock contention and performance degradation. An engineer refactored a service method that updates the lines of an `Order` aggregate:\n\njava\n@Service\npublic class OrderService {\n    @Autowired private OrderRepository orderRepo;\n\n    @Transactional\n    public void updateOrderLines(Long orderId, Set<OrderLine> newLines) {\n        Order order = orderRepo.findById(orderId).orElseThrow();\n        order.setOrderLines(new HashSet<>(newLines));\n        orderRepo.save(order);\n    }\n}\n\n\nDuring high concurrency, SQL tracing reveals that Hibernate executes an unexpected `DELETE` query against all existing rows in the child table followed by batch `INSERT` statements for every item in `newLines`, rather than differential `UPDATE`, `INSERT`, and `DELETE` statements.",
+      "question": "What is the architectural cause of this collection behavior?",
+      "options": [
+        "A) Spring's `@Transactional` proxy executes dirty checks before `save()` is invoked, causing entity eviction from the persistence context.",
+        "B) Assigning a standard `HashSet` replaces Hibernate's internal `PersistentSet` proxy, breaking internal change-tracking and forcing Hibernate to de-reference and recreate the entire collection.",
+        "C) The `Set` collection contract requires elements to implement `Comparable`; missing this causes Hibernate to fall back to brute-force collection reconstruction.",
+        "D) Spring Data JPA's `save()` method detects a non-audited collection type and triggers a pessimistic schema synchronization across child tables."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Assigning a standard `HashSet` replaces Hibernate's internal `PersistentSet` proxy, breaking internal change-tracking and forcing Hibernate to de-reference and recreate the entire collection.",
+      "explanation": "Hibernate wraps persistent collections in custom proxies (such as `PersistentSet` or `PersistentBag`) to track state changes, manage lazy loading, and capture snapshot differences. When `order.setOrderLines(new HashSet<>(...))` is called, the managed `PersistentSet` is orphaned and replaced by an unmanaged raw `HashSet`. During dirty checking at transaction commit / flush time, Hibernate cannot compute a diff against the original snapshot because the original collection tracking reference was discarded. Consequently, Hibernate treats the old collection as dereferenced, executing a bulk `DELETE` on all associated child rows, followed by `INSERT` queries for each element in the new collection. The idiomatic pattern is to modify the existing collection (`order.getOrderLines().clear()` then `order.getOrderLines().addAll(newLines)`)."
+    },
+    {
+      "id": 3,
+      "scenario": "You are debugging a production issue where a low-latency financial order matcher suffers from severe throughput collapse and elevated p99 latencies across multiple CPU cores. Profiling shows high CPI (Cycles Per Instruction) and extreme cache line invalidations (`L1-dcache-load-misses`) in the following custom multi-threaded ring buffer:\n\njava\npublic class SequencedRingBuffer<T> {\n    private final Object[] entries;\n    private final int mask;\n    \n    // Head written by single consumer; Tail written by producers\n    private volatile long head = 0L;\n    private volatile long tail = 0L;\n\n    public SequencedRingBuffer(int capacity) {\n        this.entries = new Object[capacity];\n        this.mask = capacity - 1;\n    }\n    \n    public void produce(T item) { /* updates tail via CAS */ }\n    public T consume() { /* updates head via CAS */ }\n}\n",
+      "question": "What low-level JVM and hardware phenomenon is triggering this bottleneck, and how is it mitigated in modern Java?",
+      "options": [
+        "A) Atomic ABA aliasing in `entries[]`; mitigated by switching to `AtomicStampedReference`.",
+        "B) Memory safepoint bias invalidating object headers; mitigated by setting `-XX:-UseBiasedLocking`.",
+        "C) False sharing across adjacent volatile variables residing on the same 64-byte CPU cache line; mitigated via `@jdk.internal.vm.annotation.Contended` or manual field padding.",
+        "D) Memory alignment failure during array bounds checking; mitigated by wrapping accesses in `VarHandle.acquireFence()`."
+      ],
+      "correct_answer_letter": "C",
+      "correct_answer_text": "C) False sharing across adjacent volatile variables residing on the same 64-byte CPU cache line; mitigated via `@jdk.internal.vm.annotation.Contended` or manual field padding.",
+      "explanation": "Modern CPU architectures load and invalidate memory in discrete cache lines (typically 64 bytes). In `SequencedRingBuffer`, the volatile fields `head` (8 bytes) and `tail` (8 bytes) are declared adjacent to one another in memory. When producers update `tail` on Core 1 and consumers update `head` on Core 2, the CPU cache coherence protocol (e.g., MESI) continuously marks the entire 64-byte cache line as invalid across cores. This phenomenon\u2014False Sharing\u2014leads to excessive cache coherence bus traffic, memory stalls, and high cycle-per-instruction (CPI) penalties. It is mitigated by padding the memory between mutable references or annotating the fields with `@Contended` (enabling `-XX:-RestrictContended`) to isolate them onto distinct cache lines."
+    }
+  ]
+}
