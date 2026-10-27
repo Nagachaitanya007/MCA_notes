@@ -1,48 +1,48 @@
 {
-  "topic": "Data Preprocessing: Handling Outliers, Missing Values, and Skewed Data",
+  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "Real-world Industrial Problem Statement: A Tier-1 digital payments platform processes over 15,000 transactions per second (TPS) and must classify fraudulent attempts within an end-to-end SLA of 20 milliseconds. The incoming streaming feature vector contains 180 continuous variables. Due to intermittent network timeouts at merchant POS terminals, approximately 8% of feature entries are Missing at Random (MAR). The current offline pipeline used MissForest (iterative random forest imputation) to achieve high predictive accuracy, but deploying this directly into the real-time inference microservice caused severe thread pool exhaustion and breached the SLA by exceeding 250ms per request.",
-      "question": "Which architectural decision provides the optimal trade-off between statistical fidelity, operational latency, and avoiding train-test data leakage?",
+      "scenario": "A tier-1 fintech firm deploys an automated retail loan underwriting system trained on 10 years of historical transactional data. The target variable is loan default (binary). The sensitive attribute is gender ($A \\in \\{0, 1\\}$). Although explicit gender identifiers were removed during feature preprocessing, internal audit metrics reveal that the False Positive Rate ($P(\\hat{Y}=1 \\mid Y=0, A=a)$) is significantly higher for group $A=0$ than for group $A=1$, causing disproportionately higher denials of creditworthy applicants from group $A=0$. The operational constraint mandates that the production model cannot be completely retrained from scratch due to compute limits, but predictions must be calibrated to ensure non-discrimination based on actual outcomes.",
+      "question": "Which algorithmic fairness criteria and intervention strategy should the lead MLOps engineer implement to rectify this disparity without retraining the underlying black-box model?",
       "options": [
-        "A) Transition to K-Nearest Neighbors (KNN) Imputation using an approximate nearest neighbor (HNSW) index stored in Redis cache to impute dynamically at inference time.",
-        "B) Deploy offline-computed median values alongside generated binary missingness indicator features, or utilize gradient boosted decision trees that treat missing values as a native split direction.",
-        "C) Implement a streaming Multivariate Imputation by Chained Equations (MICE) worker thread running parallel to the scoring engine to estimate missing values asynchronously.",
-        "D) Impute missing values dynamically using a deep autoencoder model deployed on a dedicated GPU cluster to reconstruct the corrupted input vector in sub-5ms."
+        "A) Enforce Demographic Parity via an in-processing adversarial debiasing objective using an auxiliary network.",
+        "B) Enforce Equalized Odds (or Equal Opportunity) via post-processing threshold adjustments tailored across each demographic subgroup.",
+        "C) Apply Disparate Impact mitigation through pre-processing optimized data transformation (Feldman et al.) on remaining continuous features.",
+        "D) Implement Counterfactual Fairness by constructing a directed acyclic graph (DAG) and re-weighting historical training instances."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Deploy offline-computed median values alongside generated binary missingness indicator features, or utilize gradient boosted decision trees that treat missing values as a native split direction.",
-      "explanation": "In production streaming systems with stringent latency budgets (<20ms), complex iterative imputation strategies like MICE, MissForest, or KNN are computationally prohibitive because their inference complexity scales with dataset dimensions and iterations ($O(M \\cdot N \\cdot D)$ or requires distance metrics across large reference sets). Tree-based algorithms (such as XGBoost, LightGBM, and CatBoost) handle missing values natively during split finding by assigning missing values to whichever child node maximizes the split criterion (default direction determined during training), requiring zero imputation latency ($O(1)$ overhead). Alternatively, replacing missing values with offline-calculated static medians paired with binary missingness indicators preserves missingness pattern information without runtime computation bottlenecks or data leakage."
+      "correct_answer_text": "B) Enforce Equalized Odds (or Equal Opportunity) via post-processing threshold adjustments tailored across each demographic subgroup.",
+      "explanation": "The issue involves disparate error rates specifically conditioning on true labels: False Positive Rate (or True Positive Rate), which defines Equalized Odds ($P(\\hat{Y}=1 \\mid Y=y, A=0) = P(\\hat{Y}=1 \\mid Y=y, A=1)$ for $y \\in \\{0,1\\}$) or Equal Opportunity ($y=1$). Because retraining the black-box model is explicitly prohibited by operational compute constraints, in-processing (such as adversarial debiasing) and pre-processing techniques cannot be applied directly. Post-processing optimization (Hardt et al.) solves a linear program to find group-specific decision thresholds on the predicted probability scores $\\hat{Y}$ to equalize False Positive Rates and True Positive Rates across groups without updating model weights."
     },
     {
       "id": 2,
-      "scenario": "Real-world Industrial Problem Statement: A credit scoring engine is being developed for an algorithmic lending platform using an ElasticNet generalized linear model. One of the strongest predictive features, 'Net Rolling Cashflow', exhibits extreme positive skewness (skewness index > 6.2) along with heavy right tails. Crucially, the feature contains exact zero values (dormant accounts) and negative values (overdrawn accounts with operational deficits). When attempting to normalize the distribution to satisfy linear model assumptions, the data science team encountered run-time math exceptions and degenerate outputs.",
-      "question": "Which data transformation method mathematically accommodates the negative and zero values while effectively stabilizing variance and rectifying the skewness towards normality?",
+      "scenario": "A digital health platform runs a real-time clinical triage system in an Emergency Department. The system processes an incoming tabular feature vector of 450 clinical biomarkers, lab values, and vital statistics using an ensemble of 1,200 Gradient Boosted Decision Trees (LightGBM). Physicians demand local explanations within a strict SLA latency of under 50 milliseconds per patient to verify why the model designated a patient as 'High Risk of Sepsis' before initiating invasive procedures. A naive implementation of KernelSHAP causes timeouts, averaging 2.4 seconds per inference request.",
+      "question": "Which explainability approach satisfies the hard real-time latency requirement while providing mathematically consistent and locally accurate Shapley values for this high-dimensional model?",
       "options": [
-        "A) Box-Cox transformation parameterized via maximum likelihood estimation after applying an arbitrary scalar shift ($x + |\\min(x)| + 1$).",
-        "B) Standard Logarithmic transformation with increment $\\log(x + 1)$ applied strictly to the absolute magnitude of the feature values.",
-        "C) Yeo-Johnson power transformation applied directly to the continuous feature without manual shifting.",
-        "D) Reciprocal transformation ($1 / x$) coupled with standard Min-Max scaling between 0 and 1."
+        "A) TreeSHAP leveraging the polynomial-time algorithm $O(T L D^2)$ with path-dependent feature perturbation.",
+        "B) Integrated Gradients calculated across 50 Riemann summation steps using a zero-vector baseline.",
+        "C) Surrogate modeling using Local Interpretable Model-agnostic Explanations (LIME) with exponential kernel weights.",
+        "D) Global Permutation Feature Importance computed asynchronously over an offline validation sample."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Yeo-Johnson power transformation applied directly to the continuous feature without manual shifting.",
-      "explanation": "The Box-Cox transformation is strictly defined only for strictly positive values ($x > 0$). While applying an arbitrary translation parameter ($x + c$) is sometimes attempted, it introduces an arbitrary hyperparameter that distorts variance and correlation structures. The Yeo-Johnson transformation extends the Box-Cox principle to support zero and negative values through a continuous piecewise power function: for $x \\ge 0$, $\\psi(\\lambda, x) = ((x + 1)^\\lambda - 1) / \\lambda$ (for $\\lambda \\ne 0$), and for $x < 0$, $\\psi(\\lambda, x) = -((-x + 1)^{2 - \\lambda} - 1) / (2 - \\lambda)$ (for $\\lambda \\ne 2$). This stabilizes variance and reduces skewness across all real numbers without arbitrary shifting."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) TreeSHAP leveraging the polynomial-time algorithm $O(T L D^2)$ with path-dependent feature perturbation.",
+      "explanation": "KernelSHAP is model-agnostic but computationally prohibitive for real-time applications because it treats the model as a black box and requires exponential sampling ($O(2^{|F|})$ or heavily sampled linear regressions). TreeSHAP optimizes the computation of exact Shapley values specifically for tree-based ensembles (like LightGBM) by recursively tracking feature splits down the tree paths, reducing the complexity to $O(T L D^2)$ (where $T$ is the number of trees, $L$ is the maximum leaves, and $D$ is the maximum tree depth). This runs in milliseconds, meeting the <50ms SLA. Integrated Gradients applies only to differentiable neural networks, LIME introduces sampling overhead and instability, and Global Permutation Importance does not yield patient-specific local explanations."
     },
     {
       "id": 3,
-      "scenario": "Real-world Industrial Problem Statement: An IoT anomaly detection system monitors 220 high-frequency sensor streams from gas turbine engines. The feature space exhibits high dimensionality ($p = 220$) where true mechanical failure signatures manifest as sparse multivariate outliers. The engineering team initially deployed Mahalanobis Distance combined with a Chi-Square cut-off, but the system experienced mathematical breakdowns: the sample covariance matrix became ill-conditioned and singular during localized batch calculations. Furthermore, a secondary attempt using Euclidean distance-based Local Outlier Factor (LOF) failed due to distance concentration effects where distances between all pairs of points converged to nearly identical values.",
-      "question": "Which outlier detection strategy effectively circumvents both the distance concentration phenomenon of high-dimensional spaces and matrix inversion failure?",
+      "scenario": "An AI platform assesses high-risk commercial credit applications where rejected applicants have a legal 'Right to Explanation' under regulatory compliance (e.g., EU GDPR / US FCRA). The underlying inference engine is a deep neural network with multiple non-linear interactions. An applicant with a steady income of $65,000 and an existing debt load is denied. Model explanations derived from gradient-based feature attributions identify 'Debt-to-Income Ratio' as the highest contributing factor, but fail to provide an actionable pathway for the applicant to flip the model's decision.",
+      "question": "To achieve actionable and legally compliant recourse for the applicant, which explainability framework should be implemented, and what optimization problem does it solve?",
       "options": [
-        "A) Isolation Forest relying on recursive random axis-aligned feature partitioning.",
-        "B) Minimum Covariance Determinant (MCD) with Moore-Penrose generalized pseudo-inversion.",
-        "C) Z-score standardization followed by feature-wise univariate Interquartile Range (IQR) filtering.",
-        "D) Density-Based Spatial Clustering of Applications with Noise (DBSCAN) calibrated with Manhattan distance metric."
+        "A) Concept Activation Vectors (TCAV); optimizing directional derivatives over high-level conceptual user representations.",
+        "B) Counterfactual Explanations; optimizing $\\arg\\min_{x'} d(x, x') + \\lambda (f(x') - y^*)^2$ subject to actionability constraints on $x'$.",
+        "C) Partial Dependence Plots (PDP); marginalizing predictions across the Cartesian product of target features and background distributions.",
+        "D) Anchors (High-Precision Rules); computing if-then rules via multi-armed bandit exploration to maximize coverage."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) Isolation Forest relying on recursive random axis-aligned feature partitioning.",
-      "explanation": "Distance-based metrics (like LOF, DBSCAN, and Euclidean distance) suffer in high dimensions from the 'curse of dimensionality', specifically the distance concentration phenomenon where $\\lim_{d \\to \\infty} \\frac{\\text{dist}_{\\max} - \\text{dist}_{\\min}}{\\text{dist}_{\\min}} \\to 0$, rendering distance metrics discriminatively useless. Parametric elliptical methods like Mahalanobis Distance require computing the inverse covariance matrix $\\Sigma^{-1}$, which becomes non-invertible/singular or numerically unstable when $p$ is large or collinearity is present. Isolation Forest does not calculate explicit distance metrics or covariance matrices; instead, it exploits the vulnerability of outliers to random axis-aligned recursive partitioning (anomalies require significantly fewer random splits to isolate and thus have noticeably shorter average path lengths in isolation trees)."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Counterfactual Explanations; optimizing $\\arg\\min_{x'} d(x, x') + \\lambda (f(x') - y^*)^2$ subject to actionability constraints on $x'$.",
+      "explanation": "Feature attribution methods (SHAP, IG, Saliency Maps) only describe which features were influential for the prediction, but they do not provide actionable recourse (i.e., 'What changes must the user make to flip the prediction from rejected to approved?'). Counterfactual Explanations formulate an optimization problem finding a perturbed vector $x'$ that minimizes a distance metric $d(x, x')$ (such as $L_1$ norm or Mahalanobis distance) while driving the model output $f(x')$ toward the desired target class $y^*$. Crucially, constraints must be enforced so that non-actionable features (e.g., age) are immutable and actionable features (e.g., credit line, debt) change only within realistic, plausible bounds."
     }
   ]
 }
