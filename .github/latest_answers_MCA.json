@@ -1,48 +1,48 @@
 {
-  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
+  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "A tier-1 fintech firm deploys an automated retail loan underwriting system trained on 10 years of historical transactional data. The target variable is loan default (binary). The sensitive attribute is gender ($A \\in \\{0, 1\\}$). Although explicit gender identifiers were removed during feature preprocessing, internal audit metrics reveal that the False Positive Rate ($P(\\hat{Y}=1 \\mid Y=0, A=a)$) is significantly higher for group $A=0$ than for group $A=1$, causing disproportionately higher denials of creditworthy applicants from group $A=0$. The operational constraint mandates that the production model cannot be completely retrained from scratch due to compute limits, but predictions must be calibrated to ensure non-discrimination based on actual outcomes.",
-      "question": "Which algorithmic fairness criteria and intervention strategy should the lead MLOps engineer implement to rectify this disparity without retraining the underlying black-box model?",
+      "scenario": "Real-world Industrial Problem Statement: A global pharmaceutical conglomerate is designing an automated clinical decision-support platform that maps real-time patient EHR data against the SNOMED CT ontology (containing over 350,000 active concepts with deep existential quantifications) to flag adverse drug-drug interactions. The engine must evaluate streaming patient triage data within a hard real-time latency budget of less than 200 milliseconds per transaction. During load testing, using an OWL 2 DL tableau reasoner (such as Pellet or HermiT) resulted in combinatorial explosion, memory exhaustion, and inference times exceeding 45 seconds for complex concept satisfiability checks.",
+      "question": "Which ontology language profile and associated algorithmic reasoning strategy should the architecture adopt to guarantee deterministic polynomial-time (PTIME) reasoning while preserving existential property restrictions?",
       "options": [
-        "A) Enforce Demographic Parity via an in-processing adversarial debiasing objective using an auxiliary network.",
-        "B) Enforce Equalized Odds (or Equal Opportunity) via post-processing threshold adjustments tailored across each demographic subgroup.",
-        "C) Apply Disparate Impact mitigation through pre-processing optimized data transformation (Feldman et al.) on remaining continuous features.",
-        "D) Implement Counterfactual Fairness by constructing a directed acyclic graph (DAG) and re-weighting historical training instances."
+        "A) OWL 2 EL profile utilizing structural subsumption algorithms based on the EL++ description logic family.",
+        "B) OWL 2 QL profile relying on query rewriting into SQL via relational database engines.",
+        "C) OWL 2 RL profile executing forward-chaining rule engines with complete first-order axiomatization.",
+        "D) OWL 2 Full profile leveraging hyper-tableau algorithms with heuristic-driven backjumping."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) Enforce Equalized Odds (or Equal Opportunity) via post-processing threshold adjustments tailored across each demographic subgroup.",
-      "explanation": "The issue involves disparate error rates specifically conditioning on true labels: False Positive Rate (or True Positive Rate), which defines Equalized Odds ($P(\\hat{Y}=1 \\mid Y=y, A=0) = P(\\hat{Y}=1 \\mid Y=y, A=1)$ for $y \\in \\{0,1\\}$) or Equal Opportunity ($y=1$). Because retraining the black-box model is explicitly prohibited by operational compute constraints, in-processing (such as adversarial debiasing) and pre-processing techniques cannot be applied directly. Post-processing optimization (Hardt et al.) solves a linear program to find group-specific decision thresholds on the predicted probability scores $\\hat{Y}$ to equalize False Positive Rates and True Positive Rates across groups without updating model weights."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) OWL 2 EL profile utilizing structural subsumption algorithms based on the EL++ description logic family.",
+      "explanation": "OWL 2 EL is specifically designed for ontologies with extensive hierarchical structures and complex existential quantifications (like SNOMED CT and Gene Ontology). Reasoning tasks such as concept subsumption, classification, and instance checking in the underlying Description Logic EL++ have polynomial-time (PTIME) data and expression complexity. In contrast, OWL 2 DL reasoning has 2NEXPTIME complexity. While OWL 2 QL also operates in LOGSPACE/PTIME, it restricts existential quantifiers on the right-hand side of subclass axioms, making it unsuitable for SNOMED CT's expressive concept definitions. OWL 2 RL restricts existential quantifications to avoid non-deterministic rule generation, and OWL 2 Full is undecidable."
     },
     {
       "id": 2,
-      "scenario": "A digital health platform runs a real-time clinical triage system in an Emergency Department. The system processes an incoming tabular feature vector of 450 clinical biomarkers, lab values, and vital statistics using an ensemble of 1,200 Gradient Boosted Decision Trees (LightGBM). Physicians demand local explanations within a strict SLA latency of under 50 milliseconds per patient to verify why the model designated a patient as 'High Risk of Sepsis' before initiating invasive procedures. A naive implementation of KernelSHAP causes timeouts, averaging 2.4 seconds per inference request.",
-      "question": "Which explainability approach satisfies the hard real-time latency requirement while providing mathematically consistent and locally accurate Shapley values for this high-dimensional model?",
+      "scenario": "Real-world Industrial Problem Statement: An autonomous supply-chain logistics enterprise utilizes a First-Order Logic (FOL) automated theorem prover to validate multi-modal freight routing constraints across dynamic geo-zones. The automated reasoner employs resolution refutation over Conjunctive Normal Form (CNF) clauses. In edge test cases containing cyclic transport rules and dense relational networks, the theorem prover suffers from the 'combinatorial explosion of resolvents', consuming all system memory and failing to terminate because it redundantly re-resolves non-unit clauses and derives tautological or irrelevant sub-goals.",
+      "question": "Which inference refinement and representation constraint combination should the engineering team implement to guarantee refutation-completeness while eliminating search space redundancy in their Horn-like domain assertions?",
       "options": [
-        "A) TreeSHAP leveraging the polynomial-time algorithm $O(T L D^2)$ with path-dependent feature perturbation.",
-        "B) Integrated Gradients calculated across 50 Riemann summation steps using a zero-vector baseline.",
-        "C) Surrogate modeling using Local Interpretable Model-agnostic Explanations (LIME) with exponential kernel weights.",
-        "D) Global Permutation Feature Importance computed asynchronously over an offline validation sample."
+        "A) Unrestricted resolution paired with iterative deepening A* search over Skolemized existential variables.",
+        "B) SLD (Selected Linear Definite clause) resolution restricted to Horn clauses combined with forward subsumption deletion.",
+        "C) Semantic tableau expansion without branch-closing heuristics to preserve open-world model generation.",
+        "D) Unit resolution on arbitrary non-Horn CNF clauses without clause indexing or factoring."
       ],
-      "correct_answer_letter": "A",
-      "correct_answer_text": "A) TreeSHAP leveraging the polynomial-time algorithm $O(T L D^2)$ with path-dependent feature perturbation.",
-      "explanation": "KernelSHAP is model-agnostic but computationally prohibitive for real-time applications because it treats the model as a black box and requires exponential sampling ($O(2^{|F|})$ or heavily sampled linear regressions). TreeSHAP optimizes the computation of exact Shapley values specifically for tree-based ensembles (like LightGBM) by recursively tracking feature splits down the tree paths, reducing the complexity to $O(T L D^2)$ (where $T$ is the number of trees, $L$ is the maximum leaves, and $D$ is the maximum tree depth). This runs in milliseconds, meeting the <50ms SLA. Integrated Gradients applies only to differentiable neural networks, LIME introduces sampling overhead and instability, and Global Permutation Importance does not yield patient-specific local explanations."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) SLD (Selected Linear Definite clause) resolution restricted to Horn clauses combined with forward subsumption deletion.",
+      "explanation": "SLD resolution is a goal-directed, linear resolution refinement strategy that is sound and refutation-complete for Horn clause theories (which dominate operational supply-chain and rule-based systems). By coupling SLD resolution with forward subsumption deletion (indexing clauses and immediately discarding any new resolvent that is logically weaker than or isomorphic to an existing clause), the search space is pruned exponentially. Option A fails because unrestricted resolution without selection strategies is notoriously prone to combinatorial explosion. Option C does not terminate on cyclic patterns and is not a refutation search minimizer. Option D is incorrect because unit resolution is not refutation-complete for general non-Horn CNF clauses."
     },
     {
       "id": 3,
-      "scenario": "An AI platform assesses high-risk commercial credit applications where rejected applicants have a legal 'Right to Explanation' under regulatory compliance (e.g., EU GDPR / US FCRA). The underlying inference engine is a deep neural network with multiple non-linear interactions. An applicant with a steady income of $65,000 and an existing debt load is denied. Model explanations derived from gradient-based feature attributions identify 'Debt-to-Income Ratio' as the highest contributing factor, but fail to provide an actionable pathway for the applicant to flip the model's decision.",
-      "question": "To achieve actionable and legally compliant recourse for the applicant, which explainability framework should be implemented, and what optimization problem does it solve?",
+      "scenario": "Real-world Industrial Problem Statement: A telecommunications carrier represents network infrastructure dependencies using a rich Semantic Network with default inheritance hierarchies. The network features multiple inheritance paths: a specialized redundant edge node ('Edge_GW') inherits default QoS policies from both 'Secure_VoIP_Host' (which asserts `Default_Latency_Buffer = 5ms`) and 'Bulk_Data_Pipeline' (which asserts `Default_Latency_Buffer = 50ms`). Both parent classes inherit from 'Core_Node'. During failover re-routing, cyclic routing links and skewed node degree out-degrees cause non-deterministic latency configurations and graph traversal loops.",
+      "question": "To resolve this ambiguous inheritance conflict deterministically while preventing infinite traversal in cyclic semantic nets, which formal paradigm must be enforced?",
       "options": [
-        "A) Concept Activation Vectors (TCAV); optimizing directional derivatives over high-level conceptual user representations.",
-        "B) Counterfactual Explanations; optimizing $\\arg\\min_{x'} d(x, x') + \\lambda (f(x') - y^*)^2$ subject to actionability constraints on $x'$.",
-        "C) Partial Dependence Plots (PDP); marginalizing predictions across the Cartesian product of target features and background distributions.",
-        "D) Anchors (High-Precision Rules); computing if-then rules via multi-armed bandit exploration to maximize coverage."
+        "A) Breadth-first shortest path traversal prioritizing the leftmost edge parsed in the adjacency list.",
+        "B) Upward path-based inheritance reasoning using Touretzky's Inferential Distance Criterion combined with cycle detection via topological ordering.",
+        "C) Spreading activation network dynamics with decaying threshold weights across all is-a and has-a relations.",
+        "D) Closed-world propositional flattening utilizing Dempster-Shafer belief functions over acyclic directed trees."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Counterfactual Explanations; optimizing $\\arg\\min_{x'} d(x, x') + \\lambda (f(x') - y^*)^2$ subject to actionability constraints on $x'$.",
-      "explanation": "Feature attribution methods (SHAP, IG, Saliency Maps) only describe which features were influential for the prediction, but they do not provide actionable recourse (i.e., 'What changes must the user make to flip the prediction from rejected to approved?'). Counterfactual Explanations formulate an optimization problem finding a perturbed vector $x'$ that minimizes a distance metric $d(x, x')$ (such as $L_1$ norm or Mahalanobis distance) while driving the model output $f(x')$ toward the desired target class $y^*$. Crucially, constraints must be enforced so that non-actionable features (e.g., age) are immutable and actionable features (e.g., credit line, debt) change only within realistic, plausible bounds."
+      "correct_answer_text": "B) Upward path-based inheritance reasoning using Touretzky's Inferential Distance Criterion combined with cycle detection via topological ordering.",
+      "explanation": "The scenario describes a classical non-monotonic multiple inheritance anomaly known as the 'Nixon Diamond' problem in Semantic Networks. Touretzky's Inferential Distance Criterion resolves this by establishing that an inherited property from a class A preempts a conflicting property from class B if A is an inferential descendant of B (i.e., A is more specific than B with respect to the subclass path). Incorporating cycle detection via topological sort (or maintaining an visited-node invariant on directed acyclic structures) prevents infinite loops caused by cyclic network topology. Simple shortest path or breadth-first search (Option A) fails because it is sensitive to arbitrary syntactic edge orderings rather than semantic specificity. Spreading activation (Option C) does not solve formal semantic inheritance conflicts."
     }
   ]
 }
