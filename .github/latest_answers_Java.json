@@ -1,48 +1,48 @@
 {
-  "topic": "JVM Internals (Memory Model, G1/ZGC, Class Loading)",
+  "topic": "Memory Management & Garbage Collection Tuning",
   "mode": "Java",
   "questions": [
     {
       "id": 1,
-      "scenario": "You are debugging a production issue where a modular Spring Boot platform dynamically loads and unloads client plugins via custom `ClassLoader` instances. During continuous delivery deployments, plugins are frequently upgraded, but after a few hours, the JVM crashes with `java.lang.OutOfMemoryError: Metaspace`. A memory dump analysis reveals that thousands of instances of `PluginClassLoader` remain reachable despite having been discarded by the application framework.\n\nYou isolate the issue to the following shared framework utility invoked by long-running HTTP worker threads from the Tomcat thread pool:\n\njava\n@Component\npublic class PluginContextRegistry {\n    private static final ThreadLocal<Map<Class<?>, Object>> contextCache =\n            ThreadLocal.withInitial(HashMap::new);\n\n    public void bindPluginService(Class<?> pluginContract, Object serviceInstance) {\n        contextCache.get().put(pluginContract, serviceInstance);\n    }\n\n    public void clearThread() {\n        // Intended cleanup before thread goes back to pool\n        contextCache.get().clear();\n    }\n}\n",
-      "question": "Why does the `PluginClassLoader` fail to be garbage collected despite `contextCache.get().clear()` being invoked?",
+      "scenario": "You are debugging a production issue where a Spring Boot microservice periodically crashes with `java.lang.OutOfMemoryError: Java heap space`. Profiling indicates that the Old Generation retains gigabytes of large byte payloads. You identify the following service component:\n\njava\n@Service\npublic class OrderProcessingService {\n    private static final ThreadLocal<Map<String, Object>> AUDIT_CONTEXT = new ThreadLocal<>();\n\n    @Async(\"fixedThreadPoolTaskExecutor\")\n    @Transactional\n    public CompletableFuture<Void> processOrder(Order order) {\n        Map<String, Object> ctx = Optional.ofNullable(AUDIT_CONTEXT.get()).orElseGet(HashMap::new);\n        ctx.put(\"orderId\", order.getId());\n        ctx.put(\"payload\", order.getRawBinaryPayload()); // ~10MB per order\n        AUDIT_CONTEXT.set(ctx);\n\n        persistOrder(order);\n        return CompletableFuture.completedFuture(null);\n    }\n}\n",
+      "question": "What is the primary root cause of the memory leak in this implementation?",
       "options": [
-        "A) Calling `clear()` on the `Map` empties the entries, but the `ThreadLocal` key itself retains a strong reference to the enclosing class's `ProtectionDomain`.",
-        "B) The `ThreadLocal` entry retains a strong reference to `HashMap`, whose internal capacity table entries retain re-entrant lock references to the `PluginClassLoader`.",
-        "C) If any plugin execution terminates abnormally without reaching `clearThread()`, the worker thread retains the `Class<?>` key in its `ThreadLocalMap`. Every `Class<?>` instance holds an implicit strong reference to its defining `ClassLoader`, preventing Metaspace reclamation.",
-        "D) `ThreadLocal.withInitial()` creates an anonymous inner class tied to the `PluginClassLoader`, making the worker thread's stack frame root uncollectible."
+        "A) The `@Transactional` annotation creates a CGLIB proxy that captures and prevents GC collection of the `OrderProcessingService` instance.",
+        "B) Pooled worker threads from `fixedThreadPoolTaskExecutor` retain strong references to `AUDIT_CONTEXT`'s map values within their `ThreadLocalMap`, and `remove()` is never invoked.",
+        "C) The `ThreadLocal` key is a weak reference in `ThreadLocalMap`, causing the GC to reclaim the key on minor collections and nullify the map reference.",
+        "D) `CompletableFuture.completedFuture(null)` prevents the Spring `@Async` proxy from triggering default transaction synchronization cleanups."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) If any plugin execution terminates abnormally without reaching `clearThread()`, the worker thread retains the `Class<?>` key in its `ThreadLocalMap`. Every `Class<?>` instance holds an implicit strong reference to its defining `ClassLoader`, preventing Metaspace reclamation.",
-      "explanation": "In Java, every `Class<?>` object contains an implicit strong reference to its defining `ClassLoader` (`java.lang.Class.getClassLoader()`), and a `ClassLoader` retains strong references to all classes it has defined. Because Tomcat thread pool threads are long-lived and reused across requests, failing to call `ThreadLocal.remove()` (e.g., due to an unhandled exception bypassing manual cleanup) causes the thread's `ThreadLocalMap` to retain the `Class<?>` reference. This forms an unbroken GC root path: `Thread` -> `ThreadLocalMap` -> `Class<?>` -> `PluginClassLoader` -> Metaspace, causing a Metaspace leak."
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Pooled worker threads from `fixedThreadPoolTaskExecutor` retain strong references to `AUDIT_CONTEXT`'s map values within their `ThreadLocalMap`, and `remove()` is never invoked.",
+      "explanation": "In Java, `ThreadLocal` stores entries in each `Thread`'s internal `ThreadLocalMap`. Because worker threads in `fixedThreadPoolTaskExecutor` are pooled and kept alive indefinitely, any state associated with the thread persists across tasks. Furthermore, because `AUDIT_CONTEXT` is a `static final` reference, the key itself is strongly referenced, keeping the `Entry` and its large `payload` strongly reachable in the Old Generation. Failing to call `AUDIT_CONTEXT.remove()` in a `finally` block guarantees that every pooled thread retains heavy allocations indefinitely."
     },
     {
       "id": 2,
-      "scenario": "You are debugging a production issue where a low-latency payment processing engine was recently upgraded from Java 11 with G1 GC to Java 21 with ZGC (`-XX:+UseZGC`). While average round-trip pause times dropped well below 1 millisecond, the application intermittently experiences severe throughput drops and catastrophic latency spikes of 400ms+ under sudden bursts of market orders. The JVM log outputs repeated warnings containing `Allocation Stall` during these traffic spikes, even though the total heap usage has not reached the `-Xmx` limit.",
-      "question": "What is the root cause of these `Allocation Stall` events in ZGC?",
+      "scenario": "You are debugging a production issue where an ultra-high-throughput payment orchestration service deployed with G1GC (`-XX:+UseG1GC`) on a 32GB heap experiences sudden latency spikes of 700ms+. The GC logs highlight frequent occurrences of `to-space exhausted` (also known as evacuation failure) during Young GC cycles, rapidly followed by a Full GC cycle.",
+      "question": "What is the primary mechanism causing this evacuation failure, and which JVM tuning strategy is the most appropriate remedy?",
       "options": [
-        "A) ZGC pauses the mutator threads during the Concurrent Mark phase whenever the Remembered Sets (RSet) exceed their card table boundaries.",
-        "B) The application's mutator allocation rate temporarily exceeds the concurrent reclamation rate of ZGC, forcing worker threads to block until GC phases free sufficient memory.",
-        "C) Colored pointers encounter a load-barrier trap that forces synchronous Stop-The-World deoptimization of JIT-compiled methods.",
-        "D) ZGC triggers a synchronous Full GC because compressed class pointers (`UseCompressedClassPointers`) are incompatible with ZGC's 44-bit address space."
+        "A) Surviving objects could not fit into the available survivor or free regions during a pause; increase `-XX:G1ReservePercent` and lower `-XX:InitiatingHeapOccupancyPercent` (IHOP).",
+        "B) The Young generation generation size exceeded `-XX:NewRatio`; decrease `-XX:MaxGCPauseMillis` to force more aggressive concurrent cycles.",
+        "C) The JVM metaspace ran out of space during proxy reflection; increase `-XX:MetaspaceSize` and enable `-XX:+ExplicitGCInvokesConcurrent`.",
+        "D) Tenured objects failed string deduplication passes; disable `-XX:+UseStringDeduplication` to reclaim thread headroom."
       ],
-      "correct_answer_letter": "B",
-      "correct_answer_text": "B) The application's mutator allocation rate temporarily exceeds the concurrent reclamation rate of ZGC, forcing worker threads to block until GC phases free sufficient memory.",
-      "explanation": "ZGC is a concurrent, low-latency garbage collector where GC cycles run concurrently with mutator threads. However, if the application allocates memory at a higher rate than ZGC can concurrently reclaim it, the heap runs out of assignable pages. Because ZGC must avoid `OutOfMemoryError` while garbage exists, it throttles mutator threads by placing them into an 'Allocation Stall'. During an allocation stall, allocating threads are blocked until the concurrent garbage collection phases free sufficient memory pages, causing massive latency spikes."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Surviving objects could not fit into the available survivor or free regions during a pause; increase `-XX:G1ReservePercent` and lower `-XX:InitiatingHeapOccupancyPercent` (IHOP).",
+      "explanation": "In G1GC, an evacuation failure (`to-space exhausted`) happens when G1 attempts to evacuate (copy) live objects from Eden/Survivor regions into Survivor or Old regions, but finds no free regions available. This triggers expensive in-place object pinning and frequently cascades into an un-parallelized or slow Full GC. The standard remediations are: (1) Increasing `-XX:G1ReservePercent` (default is 10%) to preserve a larger buffer of empty regions for surviving objects, and (2) Lowering `-XX:InitiatingHeapOccupancyPercent` (IHOP) so that the concurrent marking cycle initiates earlier before Old Gen fills up."
     },
     {
       "id": 3,
-      "scenario": "You are debugging a production issue where reader threads in a high-throughput caching service periodically observe inconsistent state in domain objects. The cache is updated by background fetcher threads using double-checked locking without proper synchronization primitives:\n\njava\npublic class ConfigurationRegistry {\n    private ConfigHolder configHolder;\n\n    public ConfigHolder getConfig() {\n        if (configHolder == null) {\n            synchronized (this) {\n                if (configHolder == null) {\n                    configHolder = new ConfigHolder(\"PROD\", 5000);\n                }\n            }\n        }\n        return configHolder;\n    }\n}\n\npublic class ConfigHolder {\n    public String env;\n    public int timeoutMs;\n\n    public ConfigHolder(String env, int timeoutMs) {\n        this.env = env;\n        this.timeoutMs = timeoutMs;\n    }\n}\n\n\nUnder high concurrency, reader threads occasionally observe `configHolder.timeoutMs` as `0` or `configHolder.env` as `null`.",
-      "question": "Under the Java Memory Model (JMM / JSR-133), what is the architectural reason for this behavior?",
+      "scenario": "You are debugging a production issue where a long-running Spring Boot service experiences gradual native memory expansion, eventually throwing `java.lang.OutOfMemoryError: Metaspace` after several weeks. Heap inspection reveals stable Tenured and Eden utilization. Thread dumps and heap dumps reveal thousands of classes named `com.example.service.ReportService$$SpringCGLIB$$FastClass$$...` and `...EnhancerBySpringCGLIB$$...` continuously being defined.",
+      "question": "Which of the following architectural bugs is the most likely cause of this continuous class creation?",
       "options": [
-        "A) The JVM reorders the `monitorenter` instruction with field access instructions inside the synchronized block.",
-        "B) The CPU cache coherency protocol (MESI) marks the cache line invalid, triggering a fallback to default primitive values in L1 cache.",
-        "C) Without `volatile` on `configHolder` or `final` modifiers on `ConfigHolder` fields, the JIT compiler and CPU can reorder the write to the reference `configHolder` before the field initializations, resulting in an unsafe publication.",
-        "D) The Spring CGLIB proxy creates a second uninitialized target class instance when accessing public fields directly."
+        "A) A custom interceptor repeatedly creates new `org.springframework.aop.framework.ProxyFactory` instances at runtime per request without caching, forcing dynamic CGLIB byte generation.",
+        "B) The service contains `@Transactional` methods marked with `propagation = Propagation.REQUIRES_NEW`, forcing new CGLIB wrappers on each transaction invocation.",
+        "C) The JVM's tiered compilation is failing to deoptimize cold methods, causing compiled classes to leak from the CodeCache into Metaspace.",
+        "D) Spring context re-creates scoped beans because `@RequestScope` beans cannot be collected until the application server halts."
       ],
-      "correct_answer_letter": "C",
-      "correct_answer_text": "C) Without `volatile` on `configHolder` or `final` modifiers on `ConfigHolder` fields, the JIT compiler and CPU can reorder the write to the reference `configHolder` before the field initializations, resulting in an unsafe publication.",
-      "explanation": "Constructing an object involves memory allocation, field initialization, and assigning the memory address to the reference variable (`configHolder`). Without a `volatile` modifier on `configHolder` or `final` fields on `ConfigHolder` (which enforce freeze-action semantics at the end of constructors), the JVM and CPU are permitted to reorder the assignment of the reference before the fields (`env` and `timeoutMs`) are populated. As a result, an unsynchronized reader thread in the first null-check can observe a non-null `configHolder` reference pointing to a partially initialized object whose fields still reflect default values."
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) A custom interceptor repeatedly creates new `org.springframework.aop.framework.ProxyFactory` instances at runtime per request without caching, forcing dynamic CGLIB byte generation.",
+      "explanation": "Standard Spring proxying (such as via `@Transactional` or `@Service` annotations) creates dynamic proxy classes once during bean post-processing at application startup and caches them. However, if custom logic dynamically creates new `ProxyFactory` or `org.springframework.cglib.proxy.Enhancer` instances per incoming request (or fails to configure CGLIB class caching via `Enhancer.setUseCache(true)`), new bytecode and class metadata are generated and loaded into a ClassLoader for every invocation. Because class metadata resides in Metaspace and dynamic classes with non-collectible ClassLoaders cannot be unloaded, Metaspace will experience an irreversible memory leak."
     }
   ]
 }
