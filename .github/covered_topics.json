@@ -236,7 +236,8 @@
     "Local vs. Global Secondary Indexes in Sharded Databases",
     "Automated Failover & Split-Brain Prevention in Primary-Replica Replication",
     "Geo-Partitioning and Locality-Aware Replication",
-    "Write-Ahead Log (WAL) Streaming: LSNs, Engine Internals, and Replication Pipelines"
+    "Write-Ahead Log (WAL) Streaming: LSNs, Engine Internals, and Replication Pipelines",
+    "Scatter-Gather Queries: Sorting, Pagination, and Aggregation Across Shards"
   ],
   "Design a Notification System (Kafka + SQS + Webhooks)": [
     "Designing a Scalable Notification System (Kafka + SQS + Webhooks)",
