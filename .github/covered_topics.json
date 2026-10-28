@@ -124,7 +124,8 @@
     "JVM Memory Model: VarHandle Memory Orders, Acquire/Release Semantics, and Hardware Fences",
     "Generational ZGC Internals: Store Barriers, Metadata Bits, and Ultra-Low Latency Young Collections",
     "JVM GC Roots and OopMaps: Exact Stack Scanning and Pointer Identification",
-    "JVM G1 GC: Remembered Sets (RSets) and Cross-Region Reference Tracking"
+    "JVM G1 GC: Remembered Sets (RSets) and Cross-Region Reference Tracking",
+    "JVM Memory Model: Happens-Before Hierarchy, Synchronizes-With Edges, and DRF-SC Guarantees"
   ],
   "Design a Real-time Chat System (WebSockets, Redis Pub/Sub)": [
     "Scalable Real-time Chat: WebSockets & Redis Pub/Sub",
