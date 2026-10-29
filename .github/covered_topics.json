@@ -33,7 +33,8 @@
     "Stack Chunk Slicing and Continuation Suspension: The Memory Engine Behind Virtual Threads",
     "Context Propagation & Distributed Tracing: Managing MDC and Request Scope across CompletableFuture and Virtual Threads",
     "Heterogeneous Workload Partitioning: Routing CPU-Bound vs. I/O-Bound Concurrency across Virtual Threads and CompletableFuture",
-    "Downstream Saturation: Managing Database Connection Pools and Throttling with Virtual Threads and CompletableFuture"
+    "Downstream Saturation: Managing Database Connection Pools and Throttling with Virtual Threads and CompletableFuture",
+    "Backpressure and Flow Control: Managing Ingestion Overload in Virtual Threads vs. CompletableFuture"
   ],
   "Exception Handling Strategies in Distributed Systems": [
     "Unknown",
