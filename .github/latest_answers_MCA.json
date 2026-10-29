@@ -1,48 +1,48 @@
 {
-  "topic": "Knowledge Representation: Ontologies, Logic, and Semantic Nets",
+  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
   "mode": "MCA",
   "questions": [
     {
       "id": 1,
-      "scenario": "Real-world Industrial Problem Statement: A global pharmaceutical conglomerate is designing an automated clinical decision-support platform that maps real-time patient EHR data against the SNOMED CT ontology (containing over 350,000 active concepts with deep existential quantifications) to flag adverse drug-drug interactions. The engine must evaluate streaming patient triage data within a hard real-time latency budget of less than 200 milliseconds per transaction. During load testing, using an OWL 2 DL tableau reasoner (such as Pellet or HermiT) resulted in combinatorial explosion, memory exhaustion, and inference times exceeding 45 seconds for complex concept satisfiability checks.",
-      "question": "Which ontology language profile and associated algorithmic reasoning strategy should the architecture adopt to guarantee deterministic polynomial-time (PTIME) reasoning while preserving existential property restrictions?",
+      "scenario": "A tier-1 fintech firm deploys an XGBoost classifier for automated retail credit decisioning. Auditing reveals that the model violates the four-fifths rule for disparate impact on a protected class ($A \\in \\{0, 1\\}$), with $P(\\hat{Y}=1|A=0) / P(\\hat{Y}=1|A=1) = 0.61$, despite omitting the protected attribute from feature vectors. The data science team discovers that non-sensitive features (e.g., postal code, mobile device metadata) act as implicit proxy variables. Compute budgets and regulatory deadlines strictly prohibit retraining the model or altering the underlying gradient-boosted trees.",
+      "question": "Which algorithmic intervention should the engineering team implement to satisfy Equalized Odds while respecting the zero-retraining constraint?",
       "options": [
-        "A) OWL 2 EL profile utilizing structural subsumption algorithms based on the EL++ description logic family.",
-        "B) OWL 2 QL profile relying on query rewriting into SQL via relational database engines.",
-        "C) OWL 2 RL profile executing forward-chaining rule engines with complete first-order axiomatization.",
-        "D) OWL 2 Full profile leveraging hyper-tableau algorithms with heuristic-driven backjumping."
+        "A) Hardt et al.'s post-processing optimization to derive group-specific classification thresholds via linear programming.",
+        "B) Adversarial debiasing by attaching an auxiliary discriminator to intermediate leaf weights with a gradient reversal layer.",
+        "C) Feldman et al.'s disparate impact removal by applying quantile transformation to shift the marginal distributions of proxy features.",
+        "D) Calders-Verwer two-naive-Bayes re-weighing applied to the inference-time feature vectors."
       ],
       "correct_answer_letter": "A",
-      "correct_answer_text": "A) OWL 2 EL profile utilizing structural subsumption algorithms based on the EL++ description logic family.",
-      "explanation": "OWL 2 EL is specifically designed for ontologies with extensive hierarchical structures and complex existential quantifications (like SNOMED CT and Gene Ontology). Reasoning tasks such as concept subsumption, classification, and instance checking in the underlying Description Logic EL++ have polynomial-time (PTIME) data and expression complexity. In contrast, OWL 2 DL reasoning has 2NEXPTIME complexity. While OWL 2 QL also operates in LOGSPACE/PTIME, it restricts existential quantifiers on the right-hand side of subclass axioms, making it unsuitable for SNOMED CT's expressive concept definitions. OWL 2 RL restricts existential quantifications to avoid non-deterministic rule generation, and OWL 2 Full is undecidable."
+      "correct_answer_text": "A) Hardt et al.'s post-processing optimization to derive group-specific classification thresholds via linear programming.",
+      "explanation": "When retraining is prohibited, only post-processing techniques can be employed. Hardt, Price, and Srebro (2016) formulated Equalized Odds (matching True Positive Rates and False Positive Rates across protected groups) as a linear program over the output probabilities of a fixed classifier. By solving for group-specific operating thresholds ($t_0, t_1$), the model's predictions are aligned with fairness criteria at inference without altering tree topology or weights. Options B and C represent in-processing and pre-processing methods respectively, both of which necessitate complete model retraining."
     },
     {
       "id": 2,
-      "scenario": "Real-world Industrial Problem Statement: An autonomous supply-chain logistics enterprise utilizes a First-Order Logic (FOL) automated theorem prover to validate multi-modal freight routing constraints across dynamic geo-zones. The automated reasoner employs resolution refutation over Conjunctive Normal Form (CNF) clauses. In edge test cases containing cyclic transport rules and dense relational networks, the theorem prover suffers from the 'combinatorial explosion of resolvents', consuming all system memory and failing to terminate because it redundantly re-resolves non-unit clauses and derives tautological or irrelevant sub-goals.",
-      "question": "Which inference refinement and representation constraint combination should the engineering team implement to guarantee refutation-completeness while eliminating search space redundancy in their Horn-like domain assertions?",
+      "scenario": "A digital pathology platform runs an ensemble vision-tabular model (DenseNet-121 backbone concatenated with patient lab vitals) to detect malignant lesions. Regulatory compliance requires returning local, feature-attribution-based XAI heatmaps to oncologists within a strict real-time inference SLA of 150 ms per specimen. The current implementation utilizes KernelSHAP with a background reference set of $N=200$ samples, resulting in per-inference latency exceeding 12 seconds due to exponential combinatorial subset evaluation across the high-dimensional feature space.",
+      "question": "Which architectural shift in explainability methodology achieves theoretically grounded local feature attributions while satisfying the sub-150 ms latency threshold?",
       "options": [
-        "A) Unrestricted resolution paired with iterative deepening A* search over Skolemized existential variables.",
-        "B) SLD (Selected Linear Definite clause) resolution restricted to Horn clauses combined with forward subsumption deletion.",
-        "C) Semantic tableau expansion without branch-closing heuristics to preserve open-world model generation.",
-        "D) Unit resolution on arbitrary non-Horn CNF clauses without clause indexing or factoring."
+        "A) Replace KernelSHAP with LIME using a reduced perturbation count of $M=25$ evaluated directly in the native pixel space.",
+        "B) Switch to Integrated Gradients or DeepLIFT using pre-computed reference baselines to compute attributions through closed-form path integrals/backpropagation passes.",
+        "C) Approximate Shapley values via TreeSHAP path-dependent feature perturbation across the dense vision layers.",
+        "D) Implement Permutation Feature Importance computed across localized superpixel segments during the forward pass."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) SLD (Selected Linear Definite clause) resolution restricted to Horn clauses combined with forward subsumption deletion.",
-      "explanation": "SLD resolution is a goal-directed, linear resolution refinement strategy that is sound and refutation-complete for Horn clause theories (which dominate operational supply-chain and rule-based systems). By coupling SLD resolution with forward subsumption deletion (indexing clauses and immediately discarding any new resolvent that is logically weaker than or isomorphic to an existing clause), the search space is pruned exponentially. Option A fails because unrestricted resolution without selection strategies is notoriously prone to combinatorial explosion. Option C does not terminate on cyclic patterns and is not a refutation search minimizer. Option D is incorrect because unit resolution is not refutation-complete for general non-Horn CNF clauses."
+      "correct_answer_text": "B) Switch to Integrated Gradients or DeepLIFT using pre-computed reference baselines to compute attributions through closed-form path integrals/backpropagation passes.",
+      "explanation": "KernelSHAP and LIME are model-agnostic, perturbation-based sampling algorithms requiring hundreds or thousands of forward passes, inducing high computational latency ($O(M \\cdot N)$) that is incompatible with real-time SLAs. For deep neural networks, path-based axiomatic methods such as Integrated Gradients (Sundararajan et al.) or DeepLIFT compute feature attributions using direct backpropagation passes (typically 20\u201350 Riemann steps or a single backprop pass for DeepLIFT). Executed on GPUs, this reduces execution time from seconds to tens of milliseconds while preserving theoretical axioms such as Completeness and Implementation Invariance. TreeSHAP (Option C) is explicitly constrained to tree-based ensembles and cannot parse DenseNet architectures."
     },
     {
       "id": 3,
-      "scenario": "Real-world Industrial Problem Statement: A telecommunications carrier represents network infrastructure dependencies using a rich Semantic Network with default inheritance hierarchies. The network features multiple inheritance paths: a specialized redundant edge node ('Edge_GW') inherits default QoS policies from both 'Secure_VoIP_Host' (which asserts `Default_Latency_Buffer = 5ms`) and 'Bulk_Data_Pipeline' (which asserts `Default_Latency_Buffer = 50ms`). Both parent classes inherit from 'Core_Node'. During failover re-routing, cyclic routing links and skewed node degree out-degrees cause non-deterministic latency configurations and graph traversal loops.",
-      "question": "To resolve this ambiguous inheritance conflict deterministically while preventing infinite traversal in cyclic semantic nets, which formal paradigm must be enforced?",
+      "scenario": "A digital lending platform generates counterfactual explanations for rejected mortgage applicants. The underlying optimization leverages Wachter's loss function: $\\arg\\min_{x'} d(x, x') + \\lambda (f(x') - y^*)^2$. While mathematically optimal, the system frequently produces recommendations such as 'Decrease age by 6 years' or 'Increase monthly salary by 800% while retaining current job tenure'. Applicants cannot act upon these recommendations, leading to high complaint volumes regarding algorithmic recourse infeasibility.",
+      "question": "To mathematically guarantee actionable and plausible algorithmic recourse, how must the counterfactual generation objective be augmented?",
       "options": [
-        "A) Breadth-first shortest path traversal prioritizing the leftmost edge parsed in the adjacency list.",
-        "B) Upward path-based inheritance reasoning using Touretzky's Inferential Distance Criterion combined with cycle detection via topological ordering.",
-        "C) Spreading activation network dynamics with decaying threshold weights across all is-a and has-a relations.",
-        "D) Closed-world propositional flattening utilizing Dempster-Shafer belief functions over acyclic directed trees."
+        "A) Replace the L1 distance metric $d(x, x')$ with a Mahalanobis metric while unconstraining feature directionality.",
+        "B) Incorporate non-actionable feature masking, directional causality constraints via Structural Causal Models (SCMs), and a data manifold proximity penalty using a generative decoder (e.g., VAE reconstruction loss).",
+        "C) Add an adversarial perturbation bound $(\\epsilon)$ under an $L_\\infty$-norm constraint to minimize the distance to the nearest training sample.",
+        "D) Reformulate the loss function into a Pareto-optimal multi-objective genetic algorithm optimized solely for feature sparsity ($L_0$ norm)."
       ],
       "correct_answer_letter": "B",
-      "correct_answer_text": "B) Upward path-based inheritance reasoning using Touretzky's Inferential Distance Criterion combined with cycle detection via topological ordering.",
-      "explanation": "The scenario describes a classical non-monotonic multiple inheritance anomaly known as the 'Nixon Diamond' problem in Semantic Networks. Touretzky's Inferential Distance Criterion resolves this by establishing that an inherited property from a class A preempts a conflicting property from class B if A is an inferential descendant of B (i.e., A is more specific than B with respect to the subclass path). Incorporating cycle detection via topological sort (or maintaining an visited-node invariant on directed acyclic structures) prevents infinite loops caused by cyclic network topology. Simple shortest path or breadth-first search (Option A) fails because it is sensitive to arbitrary syntactic edge orderings rather than semantic specificity. Spreading activation (Option C) does not solve formal semantic inheritance conflicts."
+      "correct_answer_text": "B) Incorporate non-actionable feature masking, directional causality constraints via Structural Causal Models (SCMs), and a data manifold proximity penalty using a generative decoder (e.g., VAE reconstruction loss).",
+      "explanation": "Standard Wachter counterfactuals optimize solely for target classification confidence and distance minimization in unconstrained feature space, disregarding feasibility. Algorithmic Recourse (Ustun et al., Karimi et al.) requires three components: (1) Actionability masks (freezing immutable attributes like age or race; restricting directionality on attributes like education), (2) Structural Causal Models (SCMs) to account for downstream causal propagation (e.g., changing salary impacts disposable income), and (3) Data manifold closeness (often enforced via a Variational Autoencoder reconstruction loss $\\mathcal{L}_{VAE}(x')$) to prevent counterfactuals from landing in physically improbable, low-density regions of the feature space."
     }
   ]
 }
