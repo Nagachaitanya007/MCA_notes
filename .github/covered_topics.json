@@ -173,7 +173,8 @@
     "Compressed OOPs (Ordinary Object Pointers) & Heap Alignment Tuning",
     "NUMA-Aware Garbage Collection Tuning: Eliminating Cross-Socket Latency Penalties",
     "String Deduplication and String Table Tuning: Eliminating Redundant Heap Footprint",
-    "Evacuation Failure & To-Space Exhaustion: Tuning Heap Headroom to Prevent Full GC Fallbacks"
+    "Evacuation Failure & To-Space Exhaustion: Tuning Heap Headroom to Prevent Full GC Fallbacks",
+    "Explicit GC Invocation & Direct Memory Tuning: Fixing the DisableExplicitGC Trap"
   ],
   "Design a URL Shortener (Key Generation Service, Sharding)": [
     "URL Shortener: Key Generation Service (KGS) & Sharding",
