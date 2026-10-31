@@ -1,0 +1,48 @@
+{
+  "topic": "AI Ethics, Bias, and Explainable AI (XAI)",
+  "mode": "MCA",
+  "questions": [
+    {
+      "id": 1,
+      "scenario": "A tier-1 fintech firm deploys an automated credit-underwriting pipeline using an ensemble of Gradient Boosted Decision Trees (XGBoost) trained on 1,200 financial and behavioral features, processing over 3,000 real-time applications per second. To satisfy regional banking compliance (e.g., EU AI Act, FCRA), the engine must deliver local, feature-attribution explanations for every adverse decision. The baseline implementation uses sampling-based KernelSHAP; however, production profiling reveals that computing attributions causes average inference latencies to spike from 15 milliseconds to over 1,800 milliseconds per request, violating the strict 50-millisecond SLA.",
+      "question": "Which algorithmic optimization should the engineering team adopt to deliver mathematically sound Shapley attribution values within the designated real-time SLA without sacrificing the nonlinear ensemble architecture?",
+      "options": [
+        "A) Transition to TreeSHAP using the path-dependent feature perturbation method, which optimizes attribution computation to polynomial time O(TLD^2) relative to tree depth and ensemble size.",
+        "B) Switch to Local Interpretable Model-agnostic Explanations (LIME) with a low perturbation sample count (N = 50) and a ridge regression surrogate to enforce sub-50ms execution.",
+        "C) Compute global Permutation Feature Importance offline per batch deployment and cache the attribution vectors for run-time retrieval during local adverse decisions.",
+        "D) Apply Integrated Gradients directly to the XGBoost split boundaries using an all-zero baseline vector to compute feature gradients in linear time."
+      ],
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Transition to TreeSHAP using the path-dependent feature perturbation method, which optimizes attribution computation to polynomial time O(TLD^2) relative to tree depth and ensemble size.",
+      "explanation": "KernelSHAP is model-agnostic and approximates Shapley values by solving a weighted linear regression over combinatorial subsets of perturbed features, incurring an exponential complexity of O(M * 2^|F|), which causes latency bottlenecks in high-dimensional spaces. TreeSHAP is explicitly designed for tree-based ensembles (such as XGBoost, LightGBM, and CatBoost). By utilizing the internal graph topology of decision trees and evaluating conditional expectations recursively along tree paths, TreeSHAP reduces the computational complexity to O(TLD^2) (where T is the number of trees, L is the maximum number of leaves, and D is the maximum tree depth). This allows exact local Shapley value computation within sub-millisecond windows, satisfying the real-time production SLA."
+    },
+    {
+      "id": 2,
+      "scenario": "A public health network implements an automated clinical risk-scoring engine to allocate preventative intensive-care resources. The training set is historically skewed: Group B (an underserved demographic) exhibits lower historical hospitalization records compared to Group A, despite exhibiting identical physiological marker distributions of critical decompensation. When the team evaluated an initial model constrained by Demographic Parity (Statistical Parity), the system forced equal selection rates across both groups, resulting in substantial False Positives in Group B (leading to resource waste) and suppressed True Positives in Group A.",
+      "question": "To ensure equitable clinical treatment based strictly on medical necessity rather than historic group base-rates, which algorithmic fairness criterion and enforcement mechanism should the team implement?",
+      "options": [
+        "A) Demographic Parity via pre-processing reweighing, ensuring that the acceptance probability P(Y_hat = 1 | A = 0) equals P(Y_hat = 1 | A = 1).",
+        "B) Equalized Odds via post-processing threshold tuning, ensuring that both True Positive Rates and False Positive Rates are conditionally independent of the protected attribute given the true medical outcome.",
+        "C) Disparate Impact mitigation enforcing the Four-Fifths (80%) Rule via an adversarial debiasing network optimized against demographic mutual information.",
+        "D) Predictive Parity through equalizing Positive Predictive Values (PPV) while allowing False Negative Rates to freely fluctuate across both demographic groups."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Equalized Odds via post-processing threshold tuning, ensuring that both True Positive Rates and False Positive Rates are conditionally independent of the protected attribute given the true medical outcome.",
+      "explanation": "Demographic Parity requires that selection rates are independent of protected attributes: P(Y_hat=1 | A=0) = P(Y_hat=1 | A=1). When base rates differ or historical target variables are misaligned, Demographic Parity degrades predictive accuracy and clinical safety. Equalized Odds requires conditional independence between predictions and protected attributes given the ground truth label Y: P(Y_hat=1 | A=0, Y=y) = P(Y_hat=1 | A=1, Y=y) for both y in {0,1}. This guarantees that patients with identical actual clinical conditions have equal chances of being appropriately selected (equal TPR) or misclassified (equal FPR), correcting historical bias without arbitrary demographic quotas."
+    },
+    {
+      "id": 3,
+      "scenario": "An enterprise insurance platform serves a deep neural network that predicts personalized policy surcharges. To provide customer transparency, the company exposes an open REST API returning model predictions along with high-precision Integrated Gradients attributions for each input feature. A red-team security assessment executes an attribution-based Model Inversion attack: by submitting pairs of mildly perturbed feature queries and analyzing minute changes in the returned attribution gradients, the adversary reconstructs private, non-disclosed genomic markers from the training set with over 85% accuracy.",
+      "question": "Which mitigation strategy provides mathematically verifiable defense against this attribution-based privacy leakage while retaining local model explainability?",
+      "options": [
+        "A) Replace Integrated Gradients with static Partial Dependence Plots (PDP) pre-rendered at the population level.",
+        "B) Train the underlying model using Differentially Private Stochastic Gradient Descent (DP-SGD) with gradient clipping, and apply calibrated Laplace or Gaussian noise to the output feature attributions.",
+        "C) Quantize all returned feature attribution values to 8-bit precision and implement IP-based rate limiting on the API gateway.",
+        "D) Zero-out the top 10% most sensitive input features during forward inference and re-normalize the remaining attribution weights."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Train the underlying model using Differentially Private Stochastic Gradient Descent (DP-SGD) with gradient clipping, and apply calibrated Laplace or Gaussian noise to the output feature attributions.",
+      "explanation": "High-precision explanations (such as gradients or Shapley values) act as side-channels that leak sensitive training distributions and feature encodings, making models vulnerable to Model Inversion and Membership Inference attacks. Heuristic defenses like rate limiting or simple rounding do not provide theoretical safety margins. The robust solution is Differential Privacy (DP). Training via DP-SGD bounds the empirical sensitivity of the model weights using gradient clipping and Gaussian noise injection, ensuring that the presence of any single individual in the training set does not substantially alter the model parameters. Concurrently, applying calibrated differential privacy noise (Laplace/Gaussian mechanism based on global sensitivity) directly to the output explanations mathematically bounds the information leak per query."
+    }
+  ]
+}
