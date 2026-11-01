@@ -1,0 +1,48 @@
+{
+  "topic": "Search Algorithms: A*, Min-Max, and Heuristic Search Scenarios",
+  "mode": "MCA",
+  "questions": [
+    {
+      "id": 1,
+      "scenario": "An enterprise logistics company deploys an Automated Guided Vehicle (AGV) routing engine inside a 500,000 sq. ft. multi-tier fulfillment center. The navigation system uses the A* algorithm on a 2D occupancy grid. To meet a strict 40ms real-time replanning deadline per vehicle, an engineer applies an inflated heuristic: h'(n) = (1 + \u03b5) * h(n), where \u03b5 = 0.35 and h(n) is the standard Euclidean distance to the charging dock. Fleet management reports that while planning latency dropped well below the threshold, AGVs are now choosing suboptimal detours, causing excessive battery drain across shifts.",
+      "question": "Which theoretical property was traded off by introducing the scaling factor \u03b5, and what is the bounded guarantee of the resulting path?",
+      "options": [
+        "A) Admissibility is forfeited because h'(n) can overestimate true cost h*(n); the resulting path cost is guaranteed to be no worse than (1 + \u03b5) times the optimal path cost.",
+        "B) Consistency is retained because linear scaling preserves the triangle inequality; the resulting path remains strictly optimal while expanding fewer states.",
+        "C) Completeness is lost because the inflated heuristic turns A* into Depth-First Search; path cost bounds cannot be mathematically established.",
+        "D) Optimality is retained because Euclidean distance is inherently monotonic; suboptimal paths stem purely from tie-breaking anomalies in the priority queue."
+      ],
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Admissibility is forfeited because h'(n) can overestimate true cost h*(n); the resulting path cost is guaranteed to be no worse than (1 + \u03b5) times the optimal path cost.",
+      "explanation": "Standard A* guarantees finding an optimal path if the heuristic h(n) is admissible (h(n) <= h*(n)). Inflating the heuristic by (1 + \u03b5) with \u03b5 > 0 leads to Weighted A* search. Because h'(n) may exceed the minimal cost to the goal, admissibility is broken, thereby sacrificing strict optimality. However, Weighted A* provides a mathematically proven bound: the cost of the path found is guaranteed to be within a factor of (1 + \u03b5) of the optimal path cost, trading optimal solution quality for a dramatic reduction in expanded search states."
+    },
+    {
+      "id": 2,
+      "scenario": "A financial analytics platform uses Min-Max search with Alpha-Beta pruning to simulate high-frequency competitive bidding interactions between market-maker agents across a horizon depth of d = 8. During periods of extreme market volatility (branching factor b \u2248 25), the algorithm breaches its 10ms execution budget, forcing depth truncation down to d = 4. Profiling reveals that the algorithm explores close to O(b^d) states instead of the theoretical best-case O(b^(d/2)), indicating that pruning cutoffs rarely occur.",
+      "question": "What is the primary root cause of this performance collapse, and which strategy best restores effective pruning under tight execution budgets?",
+      "options": [
+        "A) The static evaluation function is non-monotonic; replacing it with random sampling stabilizes the alpha-beta bounds.",
+        "B) Moves are evaluated in poor or random order; combining Iterative Deepening with a Transposition Table and move-ordering heuristics restores optimal pruning efficiency.",
+        "C) The depth horizon d = 8 exceeds the maximum recursion stack of the Alpha-Beta algorithm; converting the search to breadth-first traversal eliminates the bottleneck.",
+        "D) Alpha-Beta pruning cannot operate in non-zero-sum game environments; the platform must replace Alpha-Beta with standard Breadth-First Branch and Bound."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Moves are evaluated in poor or random order; combining Iterative Deepening with a Transposition Table and move-ordering heuristics restores optimal pruning efficiency.",
+      "explanation": "The efficiency of Alpha-Beta pruning critically depends on move ordering. In the worst-case scenario where child nodes are ordered from worst to best, no pruning occurs, and complexity degrades to standard Min-Max: O(b^d). In the ideal case where best moves are examined first, time complexity drops to O(b^(d/2)). By utilizing Iterative Deepening paired with Transposition Tables and move-ordering heuristics (such as killer moves or the history heuristic), states evaluated in earlier iterations inform the ordering of branches in deeper iterations, ensuring maximal cutoffs within tight time limits."
+    },
+    {
+      "id": 3,
+      "scenario": "A telecom infrastructure provider is optimizing frequency channel allocations across 1,500 cellular towers in an urban zone to minimize cross-channel interference. Because the search space is combinatorial and discrete, the engineering team applies Local Beam Search with a beam width of k = 8. After a few iterations, the system consistently converges to an unacceptable local optimum. Diagnostic telemetry shows that all 8 state trackers rapidly concentrate in the exact same neighborhood of the solution space.",
+      "question": "What algorithmic vulnerability caused this failure, and which variation directly resolves this lack of exploration?",
+      "options": [
+        "A) The beam width k = 8 violates the constraint k >= b (branching factor); increasing k to match the branching factor converts it to Uniform Cost Search.",
+        "B) Deterministic selection of the top k candidates across all generated successors causes search paths to cluster on a single peak; Stochastic Beam Search resolves this by selecting successors probabilistically based on fitness.",
+        "C) Local Beam Search fails because it lacks an admissible heuristic function; converting the problem to A* search with an admissible heuristic is mandatory for discrete combinatorial spaces.",
+        "D) The heuristic evaluation function possesses plateau regions; switching to standard Greedy Best-First Search prevents beam concentration by eliminating heuristic updates."
+      ],
+      "correct_answer_letter": "B",
+      "correct_answer_text": "B) Deterministic selection of the top k candidates across all generated successors causes search paths to cluster on a single peak; Stochastic Beam Search resolves this by selecting successors probabilistically based on fitness.",
+      "explanation": "In standard Local Beam Search, the algorithm retains the top k successors from the entire pool of generated candidates. Often, the best k successors are minor variations clustered around a single promising peak, causing all k beams to collapse into the same local optimum and forfeiting diversity. Stochastic Beam Search mitigates this flaw: instead of deterministically picking the top k states, it selects successors with a probability proportional to their heuristic score (analogous to roulette-wheel selection in genetic algorithms), maintaining diversity across the search space."
+    }
+  ]
+}
