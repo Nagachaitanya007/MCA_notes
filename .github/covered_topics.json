@@ -96,7 +96,8 @@
     "The BK-Tree: Mastering Metric Spaces for Fuzzy Search Collections",
     "The Robin Hood Hash Table: Mastering Cache-Locality and Low-Variance Probing",
     "The Hashed Timing Wheel: Mastering O(1) Scalable Timer Collections",
-    "The Adaptive Radix Tree (ART): Mastering Dynamic Node Compression & Cache-Conscious Indexing"
+    "The Adaptive Radix Tree (ART): Mastering Dynamic Node Compression & Cache-Conscious Indexing",
+    "The Order Statistic Tree: Augmenting Balanced Search Trees for O(log N) Rank and Select"
   ],
   "JVM Internals (Memory Model, G1/ZGC, Class Loading)": [
     "JVM Internals: The Lifecycle of a Java Object",
