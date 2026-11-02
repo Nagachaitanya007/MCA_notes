@@ -1,0 +1,48 @@
+{
+  "topic": "Memory Management & Garbage Collection Tuning",
+  "mode": "Java",
+  "questions": [
+    {
+      "id": 1,
+      "scenario": "You are debugging a production issue where a batch processing Spring Boot service crashes with `java.lang.OutOfMemoryError: Java heap space` after processing several thousand records. The service consumes a streaming source and processes each record inside a transaction as shown below:\n\njava\n@Service\npublic class IngestionService {\n    @PersistenceContext\n    private EntityManager entityManager;\n\n    @Transactional\n    public void processBatch(Stream<DataRecord> recordStream) {\n        recordStream.forEach(record -> {\n            AuditLog log = new AuditLog(record.getId(), record.getPayload());\n            entityManager.persist(log);\n            if (record.getIndex() % 500 == 0) {\n                entityManager.flush();\n            }\n        });\n    }\n}\n",
+      "question": "What is the primary cause of this memory leak and heap exhaustion?",
+      "options": [
+        "A) `entityManager.flush()` synchronizes mutations with the database but leaves all managed `AuditLog` entities attached to the persistence context (L1 cache), keeping strong references alive until transaction boundary completion.",
+        "B) Spring's `@Transactional` annotation creates a dynamic CGLIB proxy that captures and buffers the elements of `recordStream` in heap memory to support rollback capabilities.",
+        "C) The Java `Stream` implementation captures references to `record` inside the lambda, preventing Young Generation garbage collection until the stream terminal operation finishes.",
+        "D) Calling `entityManager.persist()` without an explicit `savepoint` causes the underlying JDBC driver to retain LOB references inside the JVM native memory."
+      ],
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) `entityManager.flush()` synchronizes mutations with the database but leaves all managed `AuditLog` entities attached to the persistence context (L1 cache), keeping strong references alive until transaction boundary completion.",
+      "explanation": "The Hibernate/JPA `EntityManager` retains an internal cache (First-Level Cache / Persistence Context) of all managed entities within an active `@Transactional` boundary. While `entityManager.flush()` sends pending SQL `INSERT` statements to the database, it does NOT detach or clear the entities from memory. Because the entire `Stream` runs inside a single `@Transactional` method, every persisted entity remains strongly reachable in the persistence context until the transaction commits, eventually exhausting the heap. The fix is to invoke `entityManager.clear()` alongside `entityManager.flush()` or chunk the operations into smaller isolated transactions."
+    },
+    {
+      "id": 2,
+      "scenario": "You are debugging a production issue where an ultra-low-latency financial ledger service running on G1GC (`-XX:+UseG1GC`, `-Xms32g`, `-Xmx32g`) experiences sudden, unpredictable Stop-The-World (STW) pauses lasting over 1.2 seconds. GC logs reveal frequent `G1 Evacuation Pause` events followed by recurrent `To-space exhausted` and `G1 Humongous Allocation` messages, terminating in an emergency STW Full GC.",
+      "question": "What is the root cause of these sudden STW pauses, and which JVM tuning strategy directly remediates it?",
+      "options": [
+        "A) Memory allocations exceeding 50% of the G1 region size are treated as humongous objects and placed directly into contiguous regions in the Old Generation, causing severe heap fragmentation; increasing `-XX:G1HeapRegionSize` resolves this.",
+        "B) The Young Generation is too small to contain short-lived objects; increasing `-XX:NewRatio=4` will divert humongous allocations to Survivor spaces and avoid Full GCs.",
+        "C) G1GC concurrent thread workers are saturated by Metaspace class unloads; setting `-XX:-ClassUnloadingWithConcurrentMark` eliminates pause spikes.",
+        "D) The pause time target `-XX:MaxGCPauseMillis` is set too low, forcing G1GC to dynamically disable parallel GC phase execution."
+      ],
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Memory allocations exceeding 50% of the G1 region size are treated as humongous objects and placed directly into contiguous regions in the Old Generation, causing severe heap fragmentation; increasing `-XX:G1HeapRegionSize` resolves this.",
+      "explanation": "In G1GC, any object whose size exceeds 50% of a single G1 region is designated a 'Humongous Object'. These objects bypass the Young generation entirely and are allocated directly into contiguous regions in the Old generation. Frequent humongous allocations lead to rapid Old generation fragmentation, early concurrent marking cycles, and 'to-space exhaustion' when contiguous regions cannot be found during evacuation, triggering an expensive single-threaded or parallel Full GC. Increasing the region size via `-XX:G1HeapRegionSize` (up to 32MB) ensures these objects fit within standard regions rather than triggering humongous allocation mechanics."
+    },
+    {
+      "id": 3,
+      "scenario": "You are debugging a production issue where an asynchronous messaging microservice shows steady Old Generation memory growth over several days under steady load. A heap dump analysis reveals that millions of `java.lang.ThreadLocal$ThreadLocalMap$Entry` instances are retained in the heap. In these entries, the `referent` field is `null`, but the `value` field holds large request context byte arrays.",
+      "question": "What JVM and concurrency mechanic causes these `null`-keyed entries and their large `value` fields to leak?",
+      "options": [
+        "A) Thread pools reuse worker threads whose `ThreadLocalMap` retains strong references to `value` objects; while the `ThreadLocal` key is a `WeakReference` and gets collected, the `value` is only collected if explicitly removed or overwritten during subsequent hash collisions.",
+        "B) The JVM garbage collector prioritizes `Finalizer` queues over `WeakReference` reclamation, leaving cleared references stranded indefinitely if threads are idle.",
+        "C) ZGC's colored pointers do not trace `WeakReference` types in the Tenured generation without setting `-XX:+ZUncommit`.",
+        "D) Static fields in Spring `@Async` threads are automatically copied into each thread stack and cannot be reclaimed until the Spring `ApplicationContext` is closed."
+      ],
+      "correct_answer_letter": "A",
+      "correct_answer_text": "A) Thread pools reuse worker threads whose `ThreadLocalMap` retains strong references to `value` objects; while the `ThreadLocal` key is a `WeakReference` and gets collected, the `value` is only collected if explicitly removed or overwritten during subsequent hash collisions.",
+      "explanation": "`ThreadLocalMap.Entry` extends `WeakReference<ThreadLocal<?>>`. When the `ThreadLocal` variable itself loses all strong references, the GC clears the key (making the `referent` equal to `null`). However, because pooled worker threads (e.g., from `Executors.newFixedThreadPool`) live indefinitely, the thread holds a strong reference to its `ThreadLocalMap`, which holds strong references to the `Entry` instances and their associated `value` objects. While `ThreadLocalMap` performs incremental cleanup of stale entries during operations like `set()` or `get()`, threads with low activity or divergent hash paths may never clean them up, causing a significant leak unless `ThreadLocal.remove()` is strictly called in a `finally` block."
+    }
+  ]
+}
